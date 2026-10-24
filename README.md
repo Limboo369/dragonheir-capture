@@ -16,8 +16,9 @@ Program samo gleda sliku prozora, kao screenshot. Ne čita memoriju igre, ne dir
 ## Instalacija (bez programiranja)
 
 **Opcija A: gotov .exe** (GitHub → *Releases* → `DragonheirCapture.exe`)
-1. Skini `DragonheirCapture.exe` i `.env.example` u jedan folder.
-2. Pokreni `DragonheirCapture.exe`. Pri prvom Start-u traži API ključ; zalijepi ga i to je to.
+1. Skini `DragonheirCapture.exe` u svoj folder.
+2. Pokreni ga. Windows pita za administratorska prava: klikni **Yes**. To treba da F8 radi i dok si u igri (igra radi kao administrator, pa bez toga Windows ne pušta tastere do programa).
+3. Pri prvom Start-u traži API ključ; zalijepi ga i to je to.
 
 **Opcija B: preko Pythona**
 1. Instaliraj Python 3.12 sa https://www.python.org/downloads/ i **obavezno štikliraj "Add python.exe to PATH"**.
@@ -59,6 +60,12 @@ Plaćaju se samo ekrani koje Claude stvarno pogleda. Borbe, loading i ponovljeni
 Sa Haiku-om $100 kredita traje stotinama sati igre. Dnevni limit je $1. Procjena: slika ~1 600×900 px ≈ 2 000 tokena ulaza, ~1 000 tokena izlaza; cijene po milion tokena: Haiku 5.5 $0.10/$0.50, Opus 5.5 $4/$20. Tačna potrošnja se vidi u programu.
 
 **Najjeftinije:** `AUTO=false` i pritisni F8 samo na ekranima koje želiš upisati.
+
+## F8 i dugme 📸
+
+- **F8** (ili `HOTKEY` u `.env`, npr. `CTRL+SHIFT+F8`) čita trenutni ekran dok si u igri.
+- Iznad igre stoji malo plutajuće dugme **📸** (može se prevući mišem) koje radi isto.
+- Nakon svakog slikanja čuješ kratak zvuk, a pored dugmeta piše: *Capturing…* → *Hero detail · 6 items* (zeleno), *nothing to save* (narandžasto) ili greška (crveno).
 
 ## Hero sweep (prvo popunjavanje)
 

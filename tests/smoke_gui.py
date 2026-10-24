@@ -10,7 +10,7 @@ app.q.put({
         {"name": "Auster", "level": None, "power": 55000, "detailed": False, "gear": 0, "artifact": None},
         {"name": "Hvitar", "level": 48, "power": 51234, "detailed": True, "gear": 1, "artifact": "Misty Conch"},
     ],
-    "spent_today": 0.01, "spent_total": 0.02,
+    "spent_today": 0.01, "spent_total": 0.02, "event": (1, "done", "Hero detail · 4 items"),
 })
 app.root.after(1500, app.quit)
 app.run()

@@ -21,7 +21,12 @@ class Worker:
         self._pause = threading.Event()
         self._now = threading.Event()  # hotkey / "Read now" button
         self._thread = None
-        self.stats = {"captured": 0, "read": 0, "skipped": 0, "last": "", "error": ""}
+        self.stats = {"captured": 0, "read": 0, "skipped": 0, "last": "", "error": "",
+                      "event": (0, "", "")}  # (sequence, kind, text) for the capture toast
+
+    def _event(self, kind, text):
+        """kind: captured | done | skipped | failed. Shown as a toast over the game."""
+        self._emit(event=(self.stats["event"][0] + 1, kind, text))
 
     # --- control -------------------------------------------------------------
     def start(self, hwnd):
@@ -82,13 +87,17 @@ class Worker:
         img = winlist.capture(self.hwnd)
         if img is None:
             self._emit(last="game window hidden or minimized")
+            if force:
+                self._event("failed", "Game window not visible")
             return
         self.stats["captured"] += 1
         if force:
             h = self.gate.hash(img)
             if self.s.mode == "api" and self.store.spent_today() >= self.s.daily_budget_usd:
                 self._emit(last="daily budget reached")
+                self._event("failed", "Daily budget reached")
                 return
+            self._event("captured", "Captured · reading…")
         else:
             keep, reason, h = self.gate.check(img, self.store.spent_today())
             if not keep:
@@ -116,9 +125,9 @@ class Worker:
             self.stats["read"] += 1
             self._emit(last="saved " + name, error="")
             return
-        self._read_and_merge(jpeg, h, name)
+        self._read_and_merge(jpeg, h, name, forced=force)
 
-    def _read_and_merge(self, jpeg, h, name, pending_path: Path = None):
+    def _read_and_merge(self, jpeg, h, name, pending_path: Path = None, forced=False):
         self._emit(last="reading screen...")
         data, cost, err = self.extractor.read(jpeg)
         if err:
@@ -129,6 +138,8 @@ class Worker:
                 self._save(self.s.pending_dir / name, jpeg)  # retry later
             self.store.log_capture(h, None, None, cost, err)
             self._emit(error=err, last="will retry later")
+            if forced:
+                self._event("failed", "Not read · will retry")
             return False
         image_ref = None
         if self.s.keep_images:
@@ -140,7 +151,10 @@ class Worker:
         n = self.store.merge(data)
         export.write(self.store, self.s.export_path)
         self.stats["read"] += 1
-        self._emit(last=f"{data.get('screen_type')}: {n} items", error="")
+        stype = (data.get("screen_type") or "").replace("_", " ")
+        self._emit(last=f"{stype}: {n} items", error="")
+        if forced:
+            self._event("done" if n else "skipped", f"{stype.capitalize()} · {n} items" if n else f"{stype.capitalize()} · nothing to save")
         return True
 
     def _retry_pending(self):
