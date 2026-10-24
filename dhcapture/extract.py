@@ -29,8 +29,11 @@ DATA_SCREENS = {"hero_detail", "hero_gear", "gear_detail", "hero_list", "artifac
                 "artifact_list", "inventory", "resources", "team_setup", "player_profile"}
 
 
+# Structured outputs allow at most 16 union-typed (nullable) fields per schema, so
+# fields are plain types and "not shown on screen" is sent as "" or 0; unshow()
+# turns those back into None before merging.
 def _nullable(t):
-    return {"anyOf": [{"type": t}, {"type": "null"}]}
+    return {"type": t}
 
 
 def _obj(props, required=None):
@@ -124,7 +127,7 @@ def _known_names_text():
 SYSTEM = (
     "You read screenshots from the PC game Dragonheir: Silent Gods and extract the player's "
     "account state. Report only what is clearly visible on this screenshot; never guess or "
-    "fill in values from general game knowledge. Use null for anything not shown.\n"
+    "fill in values from general game knowledge. For anything not shown, use "" for text and 0 for numbers.\n"
     "- Pick screen_type from the enum. Battles, cutscenes, loading screens, chat and shops "
     "carry no account data: return empty arrays for them.\n"
     "- Write hero, artifact, skill and gear set names exactly as the game shows them. When a "
@@ -147,6 +150,17 @@ def to_jpeg(img, max_edge, quality):
     buf = io.BytesIO()
     img.save(buf, "JPEG", quality=quality, optimize=True)
     return buf.getvalue()
+
+
+def unshow(v):
+    """Turn the "" / 0 placeholders for "not shown" back into None (resource amounts stay)."""
+    if isinstance(v, dict):
+        return {k: (v[k] if k in ("amount", "notes") else unshow(v[k])) for k in v}
+    if isinstance(v, list):
+        return [unshow(x) for x in v]
+    if v == "" or (isinstance(v, (int, float)) and not isinstance(v, bool) and v == 0):
+        return None
+    return v
 
 
 class Extractor:
@@ -215,8 +229,11 @@ class Extractor:
             return None, 0.0, "API key rejected: check ANTHROPIC_API_KEY in .env"
         except anthropic.RateLimitError:
             return None, 0.0, "rate limited, will retry later"
+        except anthropic.BadRequestError as e:
+            return None, 0.0, ("Claude API rejected the request (bug in this version). "
+                               "The screen is saved and will be read after an update. " + str(e.message)[:160])
         except anthropic.APIStatusError as e:
-            return None, 0.0, f"API error {e.status_code}: {e.message}"
+            return None, 0.0, f"API error {e.status_code}, will retry later"
         except anthropic.APIConnectionError:
             return None, 0.0, "no connection to the API"
 
@@ -227,6 +244,6 @@ class Extractor:
             return None, cost, "answer was cut off"
         text = "".join(b.text for b in resp.content if b.type == "text")
         try:
-            return json.loads(text), cost, None
+            return unshow(json.loads(text)), cost, None
         except json.JSONDecodeError:
             return None, cost, "could not parse the answer"
