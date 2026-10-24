@@ -42,6 +42,7 @@ class Store:
         path.parent.mkdir(parents=True, exist_ok=True)
         self.db = sqlite3.connect(str(path), check_same_thread=False)
         self.db.row_factory = sqlite3.Row
+        self.last_hero = (None, 0.0)  # (name, time) of the last hero screen, for gear without a name
         self.db.executescript(SCHEMA_SQL)
         cols = {r[1] for r in self.db.execute("PRAGMA table_info(heroes)")}
         if "detailed" not in cols:  # databases from v0.1
@@ -68,7 +69,8 @@ class Store:
     def _upsert(self, table, key, row):
         old = self.db.execute(f"SELECT * FROM {table} WHERE key=?", (key,)).fetchone()
         if old:
-            merged = {k: (v if v not in (None, "", "[]") else old[k]) for k, v in row.items()}
+            merged = dict(old)
+            merged.update({k: v for k, v in row.items() if v not in (None, "", "[]")})
         else:
             merged = row
         merged["key"], merged["updated"] = key, now_iso()
@@ -96,8 +98,21 @@ class Store:
                 "detailed": detail,
             })
             n += 1
-        for g in data.get("gear", []):
-            if not (g.get("hero") and g.get("slot")):
+        # Gear and artifact screens often don't repeat the hero's name: use the one hero
+        # on this screen, else the hero opened in the last 3 minutes.
+        names = [h["name"] for h in data.get("heroes", []) if h.get("name")]
+        if len(names) == 1:
+            self.last_hero = (names[0], time.time())
+        owner = names[0] if len(names) == 1 else (
+            self.last_hero[0] if time.time() - self.last_hero[1] < 180 else None)
+        hero_screen = data.get("screen_type") in ("hero_detail", "hero_gear", "gear_detail")
+        if owner and data.get("screen_type") == "hero_gear" and not names:
+            # mark the owner as read in detail too
+            self._upsert("heroes", norm(owner), {"name": owner, "detailed": 1})
+        for i, g in enumerate(data.get("gear", [])):
+            g["hero"] = g.get("hero") or (owner if hero_screen else None)
+            g["slot"] = g.get("slot") or (f"Slot {i + 1}" if data.get("screen_type") == "hero_gear" else None)
+            if not (g["hero"] and g["slot"]):
                 continue  # can't tell where this piece belongs
             self._upsert("gear", norm(g["hero"]) + ":" + norm(g["slot"]), {
                 "hero": g["hero"], "slot": g["slot"], "set_name": g.get("set"),
@@ -108,6 +123,8 @@ class Store:
         for a in data.get("artifacts", []):
             if not a.get("name"):
                 continue
+            if not a.get("equipped_on") and hero_screen and owner:
+                a["equipped_on"] = owner
             self._upsert("artifacts", norm(a["name"]), {
                 "name": a["name"], "rarity": a.get("rarity"), "level": a.get("level"),
                 "stars": a.get("stars"), "equipped_on": a.get("equipped_on"),

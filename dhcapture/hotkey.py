@@ -43,6 +43,7 @@ class Hotkey:
         self.combo, self.callback = combo, callback
         self._tid = None
         self.method = None  # "hotkey", "hook" or None when nothing worked
+        self.errors = []    # Win32 error codes, for the log
 
     def start(self):
         spec = parse(self.combo)
@@ -55,12 +56,15 @@ class Hotkey:
 
     def _loop(self, spec, ready):
         mods, vk = spec
-        user32, kernel32 = ctypes.windll.user32, ctypes.windll.kernel32
+        user32 = ctypes.WinDLL("user32", use_last_error=True)
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
         self._tid = kernel32.GetCurrentThreadId()
         hook = None
         if user32.RegisterHotKey(None, 1, mods | MOD_NOREPEAT, vk):
             self.method = "hotkey"
         else:
+            # 1409 = another program (often an older copy of this tool) already owns the key.
+            self.errors.append(("RegisterHotKey", ctypes.get_last_error()))
             def down(k):
                 return bool(user32.GetAsyncKeyState(k) & 0x8000)
 
@@ -77,10 +81,13 @@ class Hotkey:
             user32.CallNextHookEx.argtypes = [wintypes.HHOOK, ctypes.c_int, wintypes.WPARAM, wintypes.LPARAM]
             user32.SetWindowsHookExW.argtypes = [ctypes.c_int, ctypes.c_void_p, wintypes.HINSTANCE, wintypes.DWORD]
             user32.SetWindowsHookExW.restype = wintypes.HHOOK
+            kernel32.GetModuleHandleW.restype = wintypes.HMODULE  # 64-bit handle, not int
             hook = user32.SetWindowsHookExW(WH_KEYBOARD_LL, ctypes.cast(proc, ctypes.c_void_p),
                                             kernel32.GetModuleHandleW(None), 0)
             if hook:
                 self.method = "hook"
+            else:
+                self.errors.append(("SetWindowsHookEx", ctypes.get_last_error()))
         ready.set()
         if not self.method:
             return
@@ -96,6 +103,15 @@ class Hotkey:
     def stop(self):
         if self._tid:
             ctypes.windll.user32.PostThreadMessageW(self._tid, WM_QUIT, 0, 0)
+
+
+def already_running():
+    """True when another copy of the tool is open (it would hold the hotkey)."""
+    if not hasattr(ctypes, "windll"):
+        return False
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    already_running._mutex = kernel32.CreateMutexW(None, False, "Local\\DragonheirCaptureSingleInstance")
+    return ctypes.get_last_error() == 183  # ERROR_ALREADY_EXISTS
 
 
 def i_am_admin():

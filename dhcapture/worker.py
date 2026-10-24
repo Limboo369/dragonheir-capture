@@ -152,7 +152,7 @@ class Worker:
         export.write(self.store, self.s.export_path)
         self.stats["read"] += 1
         stype = (data.get("screen_type") or "").replace("_", " ")
-        self._emit(last=f"{stype}: {n} items", error="")
+        self._emit(last=f"{stype}: {n} items · saved for Companion", error="")
         if forced:
             self._event("done" if n else "skipped", f"{stype.capitalize()} · {n} items" if n else f"{stype.capitalize()} · nothing to save")
         return True

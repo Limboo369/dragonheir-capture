@@ -136,6 +136,11 @@ SYSTEM = (
     "name matches one of the known names below (ignoring apostrophes and case), use the known spelling exactly; gear set and artifact names especially must use the known spelling.\n"
     "- Convert abbreviated amounts to plain numbers (1.2K -> 1200, 3.4M -> 3400000).\n"
     "- In a roster grid, list every hero card you can read, with level and stars if shown.\n"
+    "- On any screen about one hero (details, gear, artifact, skills), put that hero in heroes with "
+    "its name, and give every gear piece hero = that name and a slot (the slot name the game shows, "
+    "else Weapon/Helmet/Armor/Gloves/Boots/Ring/Necklace by the icon, else 'Slot 1'..'Slot 6' in "
+    "order). List every equipped piece you can see, even if only its set, rarity and level show.\n"
+    "- If the hero's equipped artifact shows, add it to artifacts with equipped_on = the hero.\n"
     "- Stats keep the game's wording and unit, e.g. {stat: 'Crit Rate', value: '35.2%'}.\n"
     "- notes: one short line on anything useful that did not fit the fields, else ''.\n\n"
     + _known_names_text()

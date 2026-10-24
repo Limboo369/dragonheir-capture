@@ -11,7 +11,7 @@ import customtkinter as ctk
 
 from . import export, winlist
 from .config import APP_DIR, Settings
-from .hotkey import Hotkey, game_is_elevated
+from .hotkey import Hotkey, already_running, game_is_elevated
 from .worker import Worker
 
 # Dark, quiet palette (Apple-like system colours).
@@ -59,7 +59,7 @@ def short(n):
 class Ring(tk.Canvas):
     """Progress ring with the count in the middle."""
 
-    def __init__(self, master, size=86):
+    def __init__(self, master, size=92):
         super().__init__(master, width=size, height=size, bg=CARD, highlightthickness=0)
         self.size = size
         self.set(0, 0)
@@ -72,8 +72,8 @@ class Ring(tk.Canvas):
             extent = -359.9 * done / total
             colour = GREEN if done == total else BLUE
             self.create_arc(w, w, s - w, s - w, start=90, extent=extent, style="arc", outline=colour, width=w)
-        self.create_text(s / 2, s / 2 - 7, text=f"{done}", fill=FG, font=(FONT, 18, "bold"))
-        self.create_text(s / 2, s / 2 + 13, text=f"of {total}", fill=MUTED, font=(TEXT, 9))
+        self.create_text(s / 2, s / 2 - 9, text=f"{done}", fill=FG, font=(FONT, 15, "bold"))
+        self.create_text(s / 2, s / 2 + 15, text=f"of {total}", fill=MUTED, font=(TEXT, 8))
 
 
 class Pill(ctk.CTkLabel):
@@ -158,6 +158,15 @@ class App:
         self.refresh_windows()
         self.hotkey = Hotkey(self.s.hotkey, lambda: self.ui.put("hotkey"))
         self.hotkey_ok = self.hotkey.start()
+        if not self.hotkey_ok and self.s.hotkey != "CTRL+SHIFT+F8":
+            first = self.hotkey
+            self.hotkey = Hotkey("CTRL+SHIFT+F8", lambda: self.ui.put("hotkey"))
+            self.hotkey_ok = self.hotkey.start()
+            self.hotkey.errors = first.errors + self.hotkey.errors
+            if self.hotkey_ok:
+                self.s.hotkey = "CTRL+SHIFT+F8"
+                self.read_btn.configure(text=f"📸  Read now · Ctrl+Shift+F8")
+        self._log_hotkey()
         self._show_hotkey_state()
         self.root.after(200, self._poll)
         self.root.protocol("WM_DELETE_WINDOW", self.quit)
@@ -282,11 +291,15 @@ class App:
             ctk.CTkLabel(right, text="open", font=f(11, "bold", text=True), text_color=ORANGE).pack(side="left")
 
     # --- actions ---------------------------------------------------------------
+    def _log_hotkey(self):
+        self.s.data_dir.mkdir(parents=True, exist_ok=True)
+        with open(self.s.data_dir / "hotkey.log", "a", encoding="utf-8") as fh:
+            fh.write(f"{self.s.hotkey}: method={self.hotkey.method} errors={self.hotkey.errors}\n")
+
     def _show_hotkey_state(self):
         if not self.hotkey_ok:
             self.read_btn.configure(text="📸  Read now")
-            self._banner(f"{self.s.hotkey} could not be set up. Use the 📸 button over the game, "
-                         "or set another key in .env (HOTKEY=CTRL+SHIFT+F8).", admin=False)
+            self._banner("The hotkey could not be set up. Use the 📸 button over the game.", admin=False)
 
     def _banner(self, text, admin):
         self.banner_lbl.configure(text=text)
@@ -367,7 +380,8 @@ class App:
     def export_now(self):
         w = self.worker or Worker(self.s, lambda _: None)
         path = export.write(w.store, self.s.export_path)
-        self.activity.configure(text=f"Saved {path.name}", text_color=MUTED)
+        self.activity.configure(text=f"Saved {path.name} · now Import it in Companion", text_color=GREEN)
+        self.open_folder()
 
     def open_folder(self):
         self.s.data_dir.mkdir(parents=True, exist_ok=True)
@@ -436,4 +450,12 @@ class App:
 
 
 def main():
+    if already_running():
+        import tkinter.messagebox as mb
+
+        r = tk.Tk()
+        r.withdraw()
+        mb.showinfo("Dragonheir Capture", "Dragonheir Capture is already open. Close the other copy first "
+                                          "(check the taskbar), it is holding the hotkey.")
+        return
     App().run()
