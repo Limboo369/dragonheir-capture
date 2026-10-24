@@ -1,15 +1,16 @@
 """Change the REGAL Discord server from the command line with the bot's token.
 
-Usage:  venv/bin/python manage.py '<json>'
+Usage:  venv/bin/python manage.py '<json>'      or      venv/bin/python manage.py layouts/<file>.json
 The JSON is one action or a list of actions:
   {"do": "category", "name": "🏆 EVENTS", "access": "guild"}
   {"do": "channel", "name": "🏆・guild-war", "category": "⚔️ DRAGONHEIR", "type": "text",
    "topic": "...", "access": "guild"}            type: text | voice | forum (forum takes "tags": ["Boss", ...])
   {"do": "rename", "name": "old-name", "to": "new-name"}
-  {"do": "post", "channel": "announcements", "title": "...", "text": "..."}
+  {"do": "post", "channel": "announcements", "title": "...", "text": "...", "pin": true}
   {"do": "delete", "name": "old-channel"}         asks for confirmation
 access: public (everyone), readonly (everyone reads, officers write), guild (guild roles only),
-        guildann (guild reads, officers write), officers (Leader and Officer only).
+        guildann (guild reads, officers write), commands (guild reads, only slash commands),
+        officers (Leader and Officer only).
 A channel without "access" copies its category's permissions.
 """
 import json
@@ -90,6 +91,8 @@ class Server:
         if access == "guildann":
             return ([ow(self.gid, deny=VIEW | SEND)] + [ow(r, allow=VIEW, deny=SEND) for r in members]
                     + [ow(r, allow=VIEW | SEND) for r in officers])
+        if access == "commands":   # guild sees it, nobody types; slash commands still work
+            return ([ow(self.gid, deny=VIEW | SEND)] + [ow(r, allow=VIEW, deny=SEND) for r in members + officers])
         if access == "officers":
             return [ow(self.gid, deny=VIEW)] + [ow(r, allow=VIEW) for r in officers]
         raise SystemExit(f"Unknown access '{access}'")
@@ -134,7 +137,15 @@ def run(server, a):
         if not c:
             raise SystemExit(f"No channel called {a['channel']}")
         embed = {"title": a.get("title", ""), "description": a.get("text", ""), "color": 0xF1C40F}
-        call("POST", f"/channels/{c['id']}/messages", {"embeds": [embed]})
+        msg = call("POST", f"/channels/{c['id']}/messages", {"embeds": [embed]})
+        if a.get("pin"):
+            try:
+                call("PUT", f"/channels/{c['id']}/messages/pins/{msg['id']}")
+            except SystemExit:
+                try:
+                    call("PUT", f"/channels/{c['id']}/pins/{msg['id']}")   # older endpoint
+                except SystemExit:
+                    print("  (could not pin the message)")
         print(f"> posted in {c['name']}")
     elif do == "delete":
         c = server.find(a["name"])
@@ -152,7 +163,9 @@ def run(server, a):
 def main():
     if len(sys.argv) < 2:
         raise SystemExit(__doc__)
-    actions = json.loads(sys.argv[1])
+    arg = sys.argv[1]
+    path = HERE / arg
+    actions = json.loads(path.read_text(encoding="utf-8") if arg.endswith(".json") and path.exists() else arg)
     server = Server()
     print(f"Server: {server.guild['name']}")
     for a in actions if isinstance(actions, list) else [actions]:

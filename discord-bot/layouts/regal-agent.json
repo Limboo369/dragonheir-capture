@@ -1,0 +1,6 @@
+[
+  {"do": "channel", "name": "🤖・regal-agent", "category": "DRAGONHEIR", "access": "commands",
+   "topic": "Ask REGAL Agent with /ask. Only you see your answers here."},
+  {"do": "post", "channel": "regal-agent", "pin": true, "title": "🤖 REGAL Agent",
+   "text": "REGAL Agent is our AI helper for **Dragonheir: Silent Gods**: heroes, teams, gear, bosses and events.\n\n**How to ask**\n1. Type `/ask` in the message box\n2. Click **question** and write your question\n3. Press **Enter**\n\n🔒 **In this room only you see your question and the answer.**\n💬 You can use `/ask` in other rooms too, but there **everyone sees** it.\n\n📊 Everyone gets **20 questions per day**. Each answer shows how many you used, e.g. `5/20`.\n🐉 REGAL Agent only answers Dragonheir questions.\n\n_Tip: private answers disappear when you restart Discord, so copy anything you want to keep._"}
+]

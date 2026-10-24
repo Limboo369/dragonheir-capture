@@ -112,7 +112,7 @@ def knowledge_block() -> str:
     return "\n".join(lines)
 
 
-SYSTEM_PROMPT = f"""You are REGAL Bot, the helper of the REGAL alliance in the mobile/PC game Dragonheir: Silent Gods.
+SYSTEM_PROMPT = f"""You are REGAL Agent, the AI helper of the REGAL alliance in the mobile/PC game Dragonheir: Silent Gods.
 
 Scope: answer ONLY questions about Dragonheir: Silent Gods (heroes, teams, gear sets, artifacts, schools, bosses,
 game modes, events, alliance activities, account progress). If a question is about anything else, reply exactly:
@@ -197,36 +197,41 @@ async def school_cmd(interaction: discord.Interaction, school: app_commands.Choi
     await interaction.response.send_message(embed=e)
 
 
-@bot.tree.command(name="ask", description=f"Ask a Dragonheir question ({ASK_PER_USER} per day)")
+AGENT_CHANNEL = os.environ.get("AGENT_CHANNEL", "regal-agent")
+
+
+@bot.tree.command(name="ask", description=f"Ask REGAL Agent a Dragonheir question ({ASK_PER_USER} per day)")
 @app_commands.describe(question="Your Dragonheir question")
 async def ask_cmd(interaction: discord.Interaction, question: str):
     uid = str(interaction.user.id)
+    # in the agent room only the asker sees the answer; elsewhere it is public
+    private = AGENT_CHANNEL in getattr(interaction.channel, "name", "")
     if claude is None:
-        await interaction.response.send_message("Ask is not set up yet.", ephemeral=True)
+        await interaction.response.send_message("REGAL Agent is not set up yet.", ephemeral=True)
         return
     if len(question) > 500:
         await interaction.response.send_message("Please keep the question under 500 characters.", ephemeral=True)
         return
     if asks_used(uid) >= ASK_PER_USER:
         await interaction.response.send_message(
-            f"You've used all {ASK_PER_USER} questions for today. New ones tomorrow! 🌙", ephemeral=True)
+            f"You've used all {ASK_PER_USER}/{ASK_PER_USER} questions for today. New ones tomorrow! 🌙",
+            ephemeral=True)
         return
     if asks_used() >= ASK_PER_SERVER:
         await interaction.response.send_message("The server's daily question limit is reached. Try tomorrow!",
                                                 ephemeral=True)
         return
     count_ask(uid)
-    await interaction.response.defer(thinking=True)
+    await interaction.response.defer(thinking=True, ephemeral=private)
     try:
         answer = await ask_claude(question)
     except anthropic.APIError as exc:
         log.warning("Claude error: %s", exc)
-        answer = "Something went wrong while asking Claude. Try again in a minute."
-    left = ASK_PER_USER - asks_used(uid)
+        answer = "Something went wrong while asking REGAL Agent. Try again in a minute."
     e = discord.Embed(description=answer[:4000], color=0xF1C40F)
     e.set_author(name=f"❓ {question[:250]}")
-    e.set_footer(text=f"{left} questions left today")
-    await interaction.followup.send(embed=e)
+    e.set_footer(text=f"🤖 REGAL Agent · {asks_used(uid)}/{ASK_PER_USER} questions today")
+    await interaction.followup.send(embed=e, ephemeral=private)
 
 
 # ---------- reminders ----------
