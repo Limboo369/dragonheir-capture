@@ -12,7 +12,7 @@
 (function (root, factory) {
   var api = factory();
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
-  else root.DHSim = api;
+  root.DHSim = api;
 })(typeof window !== 'undefined' ? window : globalThis, function () {
   'use strict';
 
@@ -794,6 +794,7 @@
     var team = prepareSide(b, 'A', opts.team, opts);
     enemySide(b, opts.enemy, opts);
     var maxTime = opts.seconds || (opts.enemy && opts.enemy.seconds) || R.maxTime;
+    b.maxTime = maxTime;
     b.run(maxTime);
     return b;
   }
@@ -801,7 +802,7 @@
   function summarize(battles, opts) {
     var n = battles.length, first = battles[0];
     var A = first.units.filter(function (u) { return u.side === 'A'; });
-    var wins = 0, ttk = [], dps = [], hpLeft = [], deaths = 0;
+    var wins = 0, ttk = [], dps = [], hpLeft = [], deaths = 0, clear = [];
     var per = A.map(function (u) { return { slot: u.slot, heroId: u.heroId, name: u.name, kit: u.kit.conf || 'hand', damage: 0, by: {}, healing: 0, shielding: 0, taken: 0, deaths: 0, ults: 0, battles: 0, basics: 0 }; });
     battles.forEach(function (b) {
       var aUnits = b.units.filter(function (u) { return u.side === 'A'; });
@@ -815,6 +816,11 @@
         total += u.rec.dmg;
       });
       if (b.result === 'win') { wins++; ttk.push(b.t); }
+      var eh = 0, el = 0;
+      b.units.forEach(function (u) { if (u.side === 'B' && u.maxHp0 < 1e11) { eh += u.maxHp0; el += u.maxHp0 - Math.max(0, u.hp); } });
+      var progress = eh ? el / eh : 0;
+      if (b.waves) progress = (b.waveIdx + progress) / b.waves.length;
+      clear.push(b.result === 'win' ? 1 + (b.maxTime - b.t) / b.maxTime : progress);
       dps.push(total / Math.max(b.t, 1e-9));
       var mh = 0, ch = 0;
       aUnits.forEach(function (u) { mh += b.maxHp(u); ch += Math.max(0, u.hp); });
@@ -841,7 +847,7 @@
     for (var k2 in RULE_INFO) if (RULE_INFO[k2].conf === 'assumed') assumed.push(k2);
     var autoKits = per.filter(function (p) { return p.kit === 'auto'; }).map(function (p) { return p.name; });
     return {
-      runs: n, winRate: wins / n, ttk: stats(ttk), dps: stats(dps), teamHpLeft: stats(hpLeft),
+      runs: n, winRate: wins / n, ttk: stats(ttk), dps: stats(dps), teamHpLeft: stats(hpLeft), clear: stats(clear),
       perHero: per, captain: first.captain && first.captain.A, enemy: first.enemyInfo || null,
       timeline: opts.timelineStep ? first.timeline : undefined, log: opts.log ? first.log : undefined,
       confidence: {
@@ -865,6 +871,7 @@
       case 'ttk': return res.ttk ? -res.ttk.mean : -1e9;
       case 'win': return res.winRate * 1000 + (res.dps ? res.dps.mean / 1e6 : 0);
       case 'survival': return res.teamHpLeft.mean;
+      case 'clear': return res.clear.mean;
       default: return res.dps.mean;
     }
   }
@@ -927,6 +934,49 @@
     return { base: { deltaPct: baseCmp.deltaPct, better: baseCmp.better }, rows: rows, robust: flips.length === 0, flips: flips };
   }
 
+  // Score spec variants for one slot, e.g. artifacts or sets:
+  // variants = [{label, patch: {artifact: {...}}}]
+  function rankVariants(opts, slot, variants, rk) {
+    rk = rk || {};
+    var out = variants.map(function (v) {
+      var team = opts.team.slice();
+      team[slot] = Object.assign({}, team[slot], v.patch);
+      var r = simulate(Object.assign({}, opts, { team: team, runs: rk.runs || opts.runs || 80, seed: rk.seed || 5150 }));
+      return { label: v.label, score: metric(r, rk.objective), heroDamage: r.perHero[slot].damage, dps: r.dps.mean, winRate: r.winRate, result: r };
+    });
+    out.sort(function (x, y) { return y.score - x.score; });
+    return out;
+  }
+  // Local search over a roster: swap one slot at a time while the objective
+  // improves. roster: list of hero specs (or ids). fixed: slots never changed.
+  function optimizeTeam(opts, roster, ok) {
+    ok = ok || {};
+    var specOf = function (c) { return typeof c === 'object' ? c : { hero: c, level: (opts.team[0] && opts.team[0].level) || 60 }; };
+    var team = opts.team.slice();
+    var run = function (tm) { return simulate(Object.assign({}, opts, { team: tm, runs: ok.runs || 30, seed: ok.seed || 3131 })); };
+    var best = run(team), bestScore = metric(best, ok.objective), steps = [];
+    for (var round = 0; round < (ok.maxRounds || 4); round++) {
+      var improved = false;
+      for (var slot = 0; slot < team.length; slot++) {
+        if (ok.fixed && ok.fixed.indexOf(slot) >= 0) continue;
+        var inTeam = team.map(function (x) { return hero(x.hero).id; });
+        roster.forEach(function (c) {
+          var sp = specOf(c);
+          if (inTeam.indexOf(hero(sp.hero).id) >= 0) return;
+          var tm = team.slice(); tm[slot] = sp;
+          var r = run(tm), sc = metric(r, ok.objective);
+          if (sc > bestScore * (1 + (ok.minGain || 0.01))) {
+            steps.push({ slot: slot, out: hero(team[slot].hero).n, in: hero(sp.hero).n, from: bestScore, to: sc });
+            team = tm; best = r; bestScore = sc; improved = true;
+            inTeam = team.map(function (x) { return hero(x.hero).id; });
+          }
+        });
+      }
+      if (!improved) break;
+    }
+    return { team: team.map(function (x) { return hero(x.hero).n; }), specs: team, score: bestScore, steps: steps, result: best };
+  }
+
   function registerKit(id, kit) { KITS[id] = kit; }
   function registerArtifact(name, fx) { ARTIFACT_FX[name] = fx; }
   function registerSet(name, fx) { SET_FX[name] = fx; }
@@ -939,7 +989,7 @@
     starsForLevel: starsForLevel, captainFx: captainFx, artifactByName: artifactByName, setByName: setByName,
     registerKit: registerKit, registerArtifact: registerArtifact, registerSet: registerSet, registerBond: registerBond, registerBoss: registerBoss,
     kits: function () { return KITS; }, bosses: function () { return BOSSES; }, artifactsCoded: function () { return Object.keys(ARTIFACT_FX); }, setsCoded: function () { return Object.keys(SET_FX); },
-    simulate: simulate, compare: compare, rankCandidates: rankCandidates, statWeights: statWeights, sensitivity: sensitivity,
+    simulate: simulate, compare: compare, rankCandidates: rankCandidates, rankVariants: rankVariants, optimizeTeam: optimizeTeam, statWeights: statWeights, sensitivity: sensitivity, metric: metric,
     runOnce: runOnce, Battle: Battle, parseStatus: parseStatus, autoKit: autoKit
   };
 });

@@ -70,9 +70,9 @@
     }
   });
   S.registerBoss('boss', {
-    name: 'Generic boss', conf: 'estimated', note: 'Single boss: 60x the HP of a level-matched hero, 2.5x ATK, area skill every 12s, team-wide ultimate. Multipliers are guesses.',
+    name: 'Generic boss', conf: 'estimated', note: 'Single boss: 40x the HP of a level-matched hero, 1.6x ATK, area skill every 12s, team-wide ultimate. Multipliers are guesses.',
     make: function (e) {
-      var st = scaled(e, { hpX: 60, atkX: 2.5, defX: 1.2 });
+      var st = scaled(e, { hpX: 40, atkX: 1.6, defX: 1.2 });
       return { units: [unitSpec(e.name || 'Boss', st, { isBoss: true, kit: bossKit(e), res: e.res == null ? 30 : e.res, acc: e.acc || 30 })] };
     }
   });

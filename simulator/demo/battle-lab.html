@@ -1,0 +1,410 @@
+<title>Dragonheir Battle Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: one centered column (max 760px), large title, segmented tabs, grouped cards like iOS Settings. */
+:root {
+  --bg: #f2f3f7; --card: #ffffff; --fill: #eceef3; --fg: #15171c; --muted: #6b707c; --line: rgba(20, 24, 40, 0.09);
+  --accent: #0b74e5; --accent-soft: rgba(11, 116, 229, 0.12); --good: #1f9d55; --warn: #c27400; --bad: #d63a3a;
+  --c-basic: #9aa1ad; --c-battle: #2f7cf6; --c-ult: #8a5cf6; --c-passive: #14a3a3; --c-dot: #2fae5b; --c-gear: #e8902b;
+  --shadow: 0 1px 2px rgba(20, 24, 40, 0.06), 0 8px 24px rgba(20, 24, 40, 0.06);
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0b0c0f; --card: #17191e; --fill: #22252c; --fg: #f1f2f5; --muted: #9a9fab; --line: rgba(255, 255, 255, 0.09);
+  --accent: #3d95ff; --accent-soft: rgba(61, 149, 255, 0.16); --good: #3ccf77; --warn: #f0a63a; --bad: #ff6461;
+  --c-basic: #7d8490; --shadow: 0 1px 2px rgba(0, 0, 0, 0.4); color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0b0c0f; --card: #17191e; --fill: #22252c; --fg: #f1f2f5; --muted: #9a9fab; --line: rgba(255, 255, 255, 0.09);
+  --accent: #3d95ff; --accent-soft: rgba(61, 149, 255, 0.16); --good: #3ccf77; --warn: #f0a63a; --bad: #ff6461;
+  --c-basic: #7d8490; --shadow: 0 1px 2px rgba(0, 0, 0, 0.4); color-scheme: dark; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 15px; line-height: 1.4; -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 760px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 48px; display: grid; gap: 18px; }
+header { display: grid; gap: 4px; }
+.eyebrow { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+h1 { font-family: var(--font-display); font-size: 34px; line-height: 1.1; letter-spacing: -0.02em; margin: 0; font-weight: 700; text-wrap: balance; }
+.sub { color: var(--muted); margin: 0; max-width: 60ch; }
+.seg { display: grid; grid-template-columns: repeat(4, 1fr); background: var(--fill); border-radius: 10px; padding: 2px; gap: 2px; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.seg button { border: 0; background: transparent; color: var(--fg); font: 600 13px var(--font); padding: 8px 4px; border-radius: 8px; cursor: pointer; }
+.seg button[aria-selected="true"] { background: var(--card); box-shadow: var(--shadow); }
+.seg button:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+section[role="tabpanel"] { display: grid; gap: 14px; }
+.group { display: grid; gap: 6px; }
+.group > .label { font-size: 13px; color: var(--muted); padding-left: 4px; display: flex; justify-content: space-between; gap: 8px; }
+.card { background: var(--card); border-radius: 16px; box-shadow: var(--shadow); padding: 14px; display: grid; gap: 12px; min-width: 0; }
+.team { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.slot { border: 0; background: var(--fill); border-radius: 14px; padding: 10px 4px 8px; display: grid; justify-items: center; gap: 6px; cursor: pointer; color: var(--fg); position: relative; min-width: 0; }
+.slot.sel { box-shadow: inset 0 0 0 2px var(--accent); }
+.av { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; font: 700 16px var(--font-display); color: #fff; letter-spacing: -0.02em; }
+.slot .nm { font-size: 12px; font-weight: 600; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px; }
+.crown { position: absolute; top: 4px; right: 6px; font-size: 11px; color: var(--warn); font-weight: 700; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill { border: 0; background: var(--fill); color: var(--fg); border-radius: 999px; padding: 7px 12px; font: 600 13px var(--font); cursor: pointer; }
+.pill[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.field { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.field input[type="range"] { width: 100%; accent-color: var(--accent); }
+select, input[type="search"] { font: 15px var(--font); color: var(--fg); background: var(--fill); border: 0; border-radius: 10px; padding: 9px 10px; width: 100%; }
+.run { border: 0; background: var(--accent); color: #fff; font: 600 16px var(--font); padding: 13px; border-radius: 12px; cursor: pointer; width: 100%; }
+.run:disabled { opacity: 0.6; cursor: progress; }
+.kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.kpi { background: var(--fill); border-radius: 12px; padding: 10px 12px; display: grid; gap: 2px; min-width: 0; }
+.kpi .k { font-size: 12px; color: var(--muted); }
+.kpi .v { font: 700 22px var(--font-display); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kpi .s { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.bars { display: grid; gap: 10px; }
+.bar { display: grid; grid-template-columns: 92px minmax(0, 1fr) 56px; gap: 10px; align-items: center; }
+.bar.wide { grid-template-columns: 150px minmax(0, 1fr) 56px; }
+.bar .who { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.track { height: 12px; border-radius: 6px; background: var(--fill); display: flex; overflow: hidden; }
+.track span { height: 100%; }
+.bar .pct { text-align: right; font-variant-numeric: tabular-nums; font-size: 13px; color: var(--muted); }
+.legend { display: flex; flex-wrap: wrap; gap: 10px; font-size: 12px; color: var(--muted); }
+.legend i { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.conf { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; color: var(--muted); }
+.chip { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; white-space: nowrap; letter-spacing: 0.02em; }
+.chip.verified { background: rgba(31, 157, 85, 0.14); color: var(--good); }
+.chip.estimated { background: rgba(194, 116, 0, 0.14); color: var(--warn); }
+.chip.assumed { background: rgba(214, 58, 58, 0.12); color: var(--bad); }
+.chip.model { background: var(--fill); color: var(--muted); }
+.chip.hand { background: var(--accent-soft); color: var(--accent); }
+.chip.auto { background: rgba(194, 116, 0, 0.14); color: var(--warn); }
+.list { display: grid; }
+.li { display: grid; grid-template-columns: 26px 36px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 9px 2px; border-top: 1px solid var(--line); }
+.li:first-child { border-top: 0; }
+.li .rk { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 13px; text-align: center; }
+.li .av { width: 34px; height: 34px; font-size: 13px; }
+.li .t { min-width: 0; }
+.li .t b { display: block; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.li .t small { color: var(--muted); font-size: 12px; }
+.delta { font: 700 14px var(--font); font-variant-numeric: tabular-nums; text-align: right; }
+.delta.up { color: var(--good); } .delta.down { color: var(--bad); } .delta.same { color: var(--muted); }
+.note { font-size: 13px; color: var(--muted); margin: 0; }
+.rules { display: grid; }
+.rule { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; padding: 10px 2px; border-top: 1px solid var(--line); }
+.rule:first-child { border-top: 0; }
+.rule .n { font-weight: 600; font-size: 14px; }
+.rule .d { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
+.rule input[type="range"] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+.rule .val { font-variant-numeric: tabular-nums; font-size: 13px; color: var(--muted); }
+.sheet { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.35); display: grid; align-items: end; z-index: 20; }
+.sheet .panel { background: var(--card); border-radius: 18px 18px 0 0; max-height: 80vh; display: grid; grid-template-rows: auto auto minmax(0, 1fr); gap: 10px; padding: 14px max(16px, env(safe-area-inset-right, 0px)) calc(14px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); max-width: 760px; width: 100%; margin: 0 auto; }
+.sheet .head { display: flex; justify-content: space-between; align-items: center; }
+.sheet .head b { font-size: 17px; }
+.x { border: 0; background: var(--fill); color: var(--fg); border-radius: 999px; padding: 6px 12px; font: 600 13px var(--font); cursor: pointer; }
+.scroll { overflow-y: auto; }
+.pick { width: 100%; border: 0; background: transparent; color: var(--fg); text-align: left; cursor: pointer; font: inherit; }
+.tag { font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; margin-left: 6px; }
+.busy { font-size: 13px; color: var(--muted); }
+@media (max-width: 480px) { h1 { font-size: 28px; } .kpi .v { font-size: 18px; } .bar { grid-template-columns: 74px minmax(0, 1fr) 46px; } .av { width: 40px; height: 40px; font-size: 14px; } }
+@media (prefers-reduced-motion: no-preference) { .track span { transition: width 0.35s ease; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Dragonheir · Combat math</div>
+    <h1>Battle Lab</h1>
+    <p class="sub">Monte Carlo fights built from the official hero tables. Use it to compare heroes, swaps and gear on equal terms.</p>
+  </header>
+
+  <nav class="seg" role="tablist" aria-label="Sections">
+    <button role="tab" id="tab-sim" aria-selected="true" aria-controls="p-sim">Fight</button>
+    <button role="tab" id="tab-swap" aria-selected="false" aria-controls="p-swap">Swap</button>
+    <button role="tab" id="tab-gear" aria-selected="false" aria-controls="p-gear">Gear</button>
+    <button role="tab" id="tab-model" aria-selected="false" aria-controls="p-model">Model</button>
+  </nav>
+
+  <section role="tabpanel" id="p-sim" aria-labelledby="tab-sim">
+    <div class="group">
+      <div class="label"><span>Team · tap a hero to change it</span></div>
+      <div class="card">
+        <div class="team" id="team"></div>
+        <div class="field"><label for="cap">Captain</label><select id="cap"></select></div>
+        <div class="field"><label for="lvl">Hero level <b id="lvlv">60</b></label><input id="lvl" type="range" min="20" max="80" step="1" value="60"></div>
+      </div>
+    </div>
+    <div class="group">
+      <div class="label"><span>Enemy</span></div>
+      <div class="card">
+        <div class="pills" id="enemy"></div>
+        <p class="note" id="enemyNote"></p>
+      </div>
+    </div>
+    <button class="run" id="runBtn">Run 60 fights</button>
+    <div class="group">
+      <div class="label"><span>Result</span><span id="runInfo"></span></div>
+      <div class="card" id="result">
+        <div class="kpis">
+          <div class="kpi"><span class="k">Team DPS</span><span class="v" id="kDps">–</span><span class="s" id="kDpsS"></span></div>
+          <div class="kpi"><span class="k" id="kTtkL">Time to kill</span><span class="v" id="kTtk">–</span><span class="s" id="kTtkS"></span></div>
+          <div class="kpi"><span class="k">Win rate</span><span class="v" id="kWin">–</span><span class="s" id="kWinS"></span></div>
+        </div>
+        <div class="bars" id="bars"></div>
+        <div class="legend">
+          <span><i style="background:var(--c-basic)"></i>Basic</span><span><i style="background:var(--c-battle)"></i>Battle skill</span>
+          <span><i style="background:var(--c-ult)"></i>Ultimate</span><span><i style="background:var(--c-passive)"></i>Passive</span>
+          <span><i style="background:var(--c-dot)"></i>Poison/DoT</span><span><i style="background:var(--c-gear)"></i>Artifact/set</span>
+        </div>
+        <div class="conf" id="conf"></div>
+      </div>
+    </div>
+  </section>
+
+  <section role="tabpanel" id="p-swap" aria-labelledby="tab-swap" hidden>
+    <div class="group">
+      <div class="label"><span>Who leaves the team?</span></div>
+      <div class="card"><div class="team" id="team2"></div>
+        <div class="pills" id="objective"></div>
+      </div>
+    </div>
+    <button class="run" id="swapBtn">Test every owned hero in this slot</button>
+    <div class="group">
+      <div class="label"><span id="swapTitle">Best replacements</span><span id="swapInfo"></span></div>
+      <div class="card"><div class="list" id="swapList"><p class="note">Pick a slot, then run. Each hero gets the same level and gear profile, so only the kit differs.</p></div></div>
+    </div>
+  </section>
+
+  <section role="tabpanel" id="p-gear" aria-labelledby="tab-gear" hidden>
+    <div class="group">
+      <div class="label"><span>Hero</span></div>
+      <div class="card"><div class="team" id="team3"></div></div>
+    </div>
+    <button class="run" id="gearBtn">Rank stats and artifacts</button>
+    <div class="group">
+      <div class="label"><span>Stat priority</span><span>damage gain per step</span></div>
+      <div class="card"><div class="bars" id="weights"><p class="note">Shows how much more damage this hero deals from one step of each stat, in this team and fight.</p></div></div>
+    </div>
+    <div class="group">
+      <div class="label"><span>Artifacts with coded effects</span><span>team DPS</span></div>
+      <div class="card"><div class="list" id="arts"></div></div>
+    </div>
+  </section>
+
+  <section role="tabpanel" id="p-model" aria-labelledby="tab-model" hidden>
+    <div class="group">
+      <div class="label"><span>What the numbers rest on</span></div>
+      <div class="card">
+        <p class="note">Hero stats, level growth, skill multipliers, artifact and set values come from the official game tables. The game does not publish cooldowns, energy gain, the DEF curve or buff values, so these are assumptions. Move a slider and rerun: if a verdict holds across the whole range, it does not depend on the guess.</p>
+        <div class="rules" id="rules"></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <div class="head"><b id="sheetTitle">Choose a hero</b><button class="x" id="sheetClose">Done</button></div>
+    <input type="search" id="q" placeholder="Search 351 heroes" aria-label="Search heroes">
+    <div class="scroll"><div class="list" id="pickList"></div></div>
+  </div>
+</div>
+
+<script src="dhsim.js"></script>
+<script>
+(function () {
+  'use strict';
+  var S = window.DHSim;
+  var EL = { Ice: '#3aa7e8', Poison: '#2aa35a', Fire: '#e5602f', Lightning: '#8b5cf6', Necrosis: '#5f6675', Radiance: '#d8a019' };
+  // Darko's roster (owned) and heroes on the way.
+  var OWNED = ['Auster', 'Hvitar', 'Lossenia', 'Hochadir', 'Voresh', 'Ergander', 'Alphanarsy', 'Vinyara', 'Gardrus', 'Felosia', 'Eurion', 'Torrin', 'Durango', 'Oggok', 'Frurbath', 'Vicuc',
+    'Rowena', 'Horace', 'Brody', 'Liko', 'Irma', 'Thia', 'Martina', 'Zadok', 'Eches', 'Theodore', 'Garian', 'Sifris'];
+  var INCOMING = ['Twitch', 'Lothair'];
+  var ENEMIES = [
+    { id: 'dummy', label: 'Single boss', seconds: 60, objective: 'dps' },
+    { id: 'dummy5', label: '5 targets', seconds: 60, objective: 'dps' },
+    { id: 'boss', label: 'Boss fight', seconds: 120, objective: 'clear' },
+    { id: 'waves', label: '3 waves', seconds: 150, objective: 'clear' }
+  ];
+  var state = { team: ['Lossenia', 'Auster', 'Hvitar', 'Voresh', 'Ergander'], captain: 0, level: 60, enemy: 'dummy', slot: 2, gearSlot: 1, rules: {}, objective: null };
+  try { var saved = JSON.parse(localStorage.getItem('dhlab1') || 'null'); if (saved && saved.team && saved.team.length === 5) Object.assign(state, saved); } catch (e) {}
+  function save() { try { localStorage.setItem('dhlab1', JSON.stringify({ team: state.team, captain: state.captain, level: state.level, enemy: state.enemy, rules: state.rules })); } catch (e) {} }
+
+  var $ = function (id) { return document.getElementById(id); };
+  function H(name) { return S.hero(name); }
+  function initials(n) { var p = n.split(/[\s'-]+/).filter(Boolean); return (p[0][0] + (p[1] ? p[1][0] : p[0][1] || '')).toUpperCase(); }
+  function avatar(n) { var h = H(n); return '<span class="av" style="background:' + (EL[h.el] || '#777') + '">' + initials(h.n) + '</span>'; }
+  function hasKit(n) { return !!S.kits()[H(n).id]; }
+  function fmt(x) { return x >= 1e6 ? (x / 1e6).toFixed(2) + 'M' : x >= 1e4 ? Math.round(x / 1e3) + 'k' : Math.round(x).toLocaleString('en-US'); }
+  function pct(x, d) { return (x * 100).toFixed(d == null ? 0 : d) + '%'; }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function enemyCfg() { return ENEMIES.filter(function (e) { return e.id === state.enemy; })[0]; }
+  function opts(runs) {
+    var e = enemyCfg();
+    return { team: state.team.map(function (n) { return { hero: n, level: state.level }; }), captain: state.captain, enemy: { preset: e.id, level: state.level },
+      seconds: e.seconds, runs: runs || 60, mode: 'grave_of_venom', rules: state.rules };
+  }
+  function later(fn) { setTimeout(fn, 30); }
+
+  // ---------- tabs
+  var tabs = ['sim', 'swap', 'gear', 'model'];
+  tabs.forEach(function (t) {
+    $('tab-' + t).addEventListener('click', function () {
+      tabs.forEach(function (o) { $('tab-' + o).setAttribute('aria-selected', o === t ? 'true' : 'false'); $('p-' + o).hidden = o !== t; });
+    });
+  });
+
+  // ---------- team rows
+  function renderTeam(id, sel, onPick) {
+    $(id).innerHTML = state.team.map(function (n, i) {
+      return '<button class="slot' + (i === sel ? ' sel' : '') + '" data-i="' + i + '" aria-label="' + esc(n) + '">' + (i === state.captain ? '<span class="crown" title="Captain">C</span>' : '') + avatar(n) + '<span class="nm">' + esc(H(n).n) + '</span></button>';
+    }).join('');
+    Array.prototype.forEach.call($(id).querySelectorAll('.slot'), function (b) {
+      b.addEventListener('click', function () { onPick(+b.dataset.i); });
+    });
+  }
+  function pickSlot(i) { openSheet(i); }
+
+  // ---------- hero sheet
+  var sheetSlot = 0;
+  function openSheet(i) { sheetSlot = i; $('sheetTitle').textContent = 'Slot ' + (i + 1) + ' · ' + H(state.team[i]).n; $('q').value = ''; listHeroes(''); $('sheet').hidden = false; }
+  function closeSheet() { $('sheet').hidden = true; }
+  $('sheetClose').addEventListener('click', closeSheet);
+  $('sheet').addEventListener('click', function (e) { if (e.target === $('sheet')) closeSheet(); });
+  $('q').addEventListener('input', function () { listHeroes(this.value); });
+  function listHeroes(q) {
+    var D = S.data(), all = Object.keys(D.heroes).map(function (k) { return D.heroes[k]; }).filter(function (h) { return h.b.hp > 0 && h.sk && h.sk.b; });
+    q = q.trim().toLowerCase();
+    var rank = function (h) { return (OWNED.indexOf(h.n) >= 0 ? 0 : INCOMING.indexOf(h.n) >= 0 ? 1 : 2) * 10 + (S.kits()[h.id] ? 0 : 1); };
+    all = all.filter(function (h) { return !q || h.n.toLowerCase().indexOf(q) >= 0 || (h.sc || '').toLowerCase().indexOf(q) >= 0; });
+    all.sort(function (a, b) { return rank(a) - rank(b) || a.n.localeCompare(b.n); });
+    $('pickList').innerHTML = all.slice(0, 120).map(function (h) {
+      var own = OWNED.indexOf(h.n) >= 0 ? '<span class="tag">Owned</span>' : INCOMING.indexOf(h.n) >= 0 ? '<span class="tag">Coming</span>' : '';
+      return '<button class="pick li" data-n="' + esc(h.n) + '"><span></span>' + avatar(h.n) + '<span class="t"><b>' + esc(h.n) + own + '</b><small>' + esc([h.r, h.el, h.sc].join(' · ')) + '</small></span><span class="chip ' + (S.kits()[h.id] ? 'hand">Full kit' : 'auto">Rough kit') + '</span></button>';
+    }).join('') || '<p class="note">No hero matches.</p>';
+    Array.prototype.forEach.call($('pickList').querySelectorAll('.pick'), function (b) {
+      b.addEventListener('click', function () {
+        var n = b.dataset.n, j = state.team.indexOf(n);
+        if (j >= 0) state.team[j] = state.team[sheetSlot];
+        state.team[sheetSlot] = n; save(); closeSheet(); renderAll(); runSim();
+      });
+    });
+  }
+
+  // ---------- enemy + level
+  function renderEnemy() {
+    $('enemy').innerHTML = ENEMIES.map(function (e) { return '<button class="pill" aria-pressed="' + (e.id === state.enemy) + '" data-id="' + e.id + '">' + e.label + '</button>'; }).join('');
+    Array.prototype.forEach.call($('enemy').querySelectorAll('.pill'), function (b) {
+      b.addEventListener('click', function () { state.enemy = b.dataset.id; save(); renderEnemy(); runSim(); });
+    });
+    var p = S.bosses()[state.enemy];
+    $('enemyNote').textContent = p ? p.note : '';
+  }
+  $('lvl').addEventListener('input', function () { state.level = +this.value; $('lvlv').textContent = state.level; });
+  $('lvl').addEventListener('change', function () { save(); runSim(); });
+
+  // ---------- fight
+  var SRC = [['basic', '--c-basic'], ['battle', '--c-battle'], ['ult', '--c-ult'], ['passive', '--c-passive'], ['dot', '--c-dot'], ['artifact', '--c-gear'], ['set', '--c-gear']];
+  function runSim() {
+    $('runBtn').disabled = true; $('runBtn').textContent = 'Running…';
+    later(function () {
+      var t0 = performance.now(), r = S.simulate(opts(60));
+      $('runBtn').disabled = false; $('runBtn').textContent = 'Run 60 fights';
+      $('runInfo').textContent = r.runs + ' fights · ' + Math.round(performance.now() - t0) + ' ms';
+      $('kDps').textContent = fmt(r.dps.mean);
+      $('kDpsS').textContent = '± ' + fmt(r.dps.sd);
+      var e = enemyCfg();
+      if (e.id.indexOf('dummy') === 0) { $('kTtkL').textContent = 'Damage in ' + e.seconds + 's'; $('kTtk').textContent = fmt(r.dps.mean * e.seconds); $('kTtkS').textContent = 'no kill target'; }
+      else { $('kTtkL').textContent = 'Time to kill'; $('kTtk').textContent = r.ttk ? r.ttk.mean.toFixed(1) + 's' : '—'; $('kTtkS').textContent = r.ttk ? 'p10 ' + r.ttk.p10.toFixed(0) + 's · p90 ' + r.ttk.p90.toFixed(0) + 's' : 'no win in ' + e.seconds + 's'; }
+      $('kWin').textContent = e.id.indexOf('dummy') === 0 ? '—' : pct(r.winRate);
+      $('kWinS').textContent = e.id.indexOf('dummy') === 0 ? 'endless target' : 'HP left ' + pct(r.teamHpLeft.mean);
+      var max = Math.max.apply(null, r.perHero.map(function (p) { return p.share; })) || 1;
+      $('bars').innerHTML = r.perHero.map(function (p) {
+        var segs = SRC.map(function (s) { var v = (p.by[s[0]] || 0) / (p.damage || 1) * p.share / max * 100; return v > 0 ? '<span style="width:' + v.toFixed(2) + '%;background:var(' + s[1] + ')"></span>' : ''; }).join('');
+        var extra = p.healing > 1 ? ' · heal ' + fmt(p.healing) : p.shielding > 1 ? ' · shield ' + fmt(p.shielding) : '';
+        return '<div class="bar"><span class="who" title="' + esc(p.name + extra) + '">' + esc(p.name) + '</span><span class="track">' + segs + '</span><span class="pct">' + pct(p.share, 1) + '</span></div>';
+      }).join('');
+      var cap = r.captain;
+      $('conf').innerHTML = '<span class="chip ' + (r.confidence.level === 'medium' ? 'estimated' : 'assumed') + '">' + (r.confidence.level === 'medium' ? 'Estimate' : 'Rough') + '</span><span>' +
+        (cap ? 'Captain ' + esc(cap.hero) + (cap.active ? ' active: ' : ' inactive here: ') + esc((cap.effect || 'no captain skill').replace(/\.$/, '')) + '. ' : '') +
+        (r.confidence.autoKits.length ? 'Rough kit (damage only) for ' + esc(r.confidence.autoKits.join(', ')) + '. ' : '') +
+        'Good for comparing options, not for exact in-game numbers.</span>';
+    });
+  }
+  $('runBtn').addEventListener('click', runSim);
+
+  // ---------- swap
+  var OBJ = [['dps', 'Most damage'], ['clear', 'Fastest clear'], ['survival', 'Most HP left']];
+  function renderObj() {
+    $('objective').innerHTML = OBJ.map(function (o) { var cur = state.objective || enemyCfg().objective; return '<button class="pill" aria-pressed="' + (o[0] === cur) + '" data-o="' + o[0] + '">' + o[1] + '</button>'; }).join('');
+    Array.prototype.forEach.call($('objective').querySelectorAll('.pill'), function (b) { b.addEventListener('click', function () { state.objective = b.dataset.o; renderObj(); }); });
+  }
+  function swapPick(i) { state.slot = i; renderTeam('team2', i, swapPick); }
+  $('swapBtn').addEventListener('click', function () {
+    var btn = $('swapBtn'); btn.disabled = true; btn.textContent = 'Testing…';
+    later(function () {
+      var o = opts(30), slot = state.slot, obj = state.objective || enemyCfg().objective;
+      var pool = OWNED.concat(INCOMING).filter(function (n) { return state.team.indexOf(n) < 0 || n === state.team[slot]; });
+      var t0 = performance.now();
+      var rk = S.rankCandidates(o, slot, pool, { objective: obj, runs: 30 });
+      var base = rk.filter(function (x) { return x.name === H(state.team[slot]).n; })[0];
+      btn.disabled = false; btn.textContent = 'Test every owned hero in this slot';
+      $('swapTitle').textContent = 'Instead of ' + H(state.team[slot]).n;
+      $('swapInfo').textContent = rk.length + ' heroes · ' + Math.round((performance.now() - t0) / 1000 * 10) / 10 + ' s';
+      $('swapList').innerHTML = rk.map(function (x, i) {
+        var d = base && base.score ? (x.score - base.score) / Math.abs(base.score) : 0;
+        var cls = Math.abs(d) < 0.02 ? 'same' : d > 0 ? 'up' : 'down';
+        var tag = INCOMING.indexOf(x.name) >= 0 ? '<span class="tag">Coming</span>' : x.name === H(state.team[slot]).n ? '<span class="tag">Current</span>' : '';
+        return '<div class="li"><span class="rk">' + (i + 1) + '</span>' + avatar(x.name) + '<span class="t"><b>' + esc(x.name) + tag + '</b><small>' + (obj === 'dps' ? fmt(x.dps) + ' DPS' : 'win ' + pct(x.winRate) + (x.ttk ? ' · ' + x.ttk.toFixed(0) + 's' : '')) + ' · <span class="chip ' + x.kit + '">' + (x.kit === 'hand' ? 'Full kit' : 'Rough kit') + '</span></small></span><span class="delta ' + cls + '">' + (x.name === H(state.team[slot]).n ? '—' : (d > 0 ? '+' : '') + pct(d, 1)) + '</span></div>';
+      }).join('');
+    });
+  });
+
+  // ---------- gear
+  function gearPick(i) { state.gearSlot = i; renderTeam('team3', i, gearPick); }
+  var STEP_LABEL = { atkP: '+10% ATK', critRate: '+10% Crit Rate', critDmg: '+20% Crit DMG', ench: '+30 Enlightenment', haste: '+30 Skill Haste', atkF: '+100 flat ATK', acc: '+30 Accuracy' };
+  $('gearBtn').addEventListener('click', function () {
+    var btn = $('gearBtn'); btn.disabled = true; btn.textContent = 'Testing…';
+    later(function () {
+      var o = opts(40), slot = state.gearSlot;
+      var w = S.statWeights(o, slot, { runs: 60 });
+      var rows = Object.keys(w.weights).map(function (k) { return [k, w.weights[k].heroDmgPct]; }).sort(function (a, b) { return b[1] - a[1]; });
+      var mx = Math.max.apply(null, rows.map(function (r) { return Math.abs(r[1]); })) || 1;
+      $('weights').innerHTML = rows.map(function (r) {
+        return '<div class="bar wide"><span class="who">' + STEP_LABEL[r[0]] + '</span><span class="track"><span style="width:' + (Math.max(0, r[1]) / mx * 100).toFixed(1) + '%;background:var(--accent)"></span></span><span class="pct">' + (r[1] >= 0 ? '+' : '') + pct(r[1], 1) + '</span></div>';
+      }).join('');
+      var arts = S.artifactsCoded().map(function (n) { return { label: n, patch: { artifact: { name: n, level: 20, tier: 0 } } }; });
+      arts.unshift({ label: 'No artifact', patch: { artifact: undefined } });
+      var rk = S.rankVariants(o, slot, arts, { runs: 40, objective: enemyCfg().objective });
+      var none = rk.filter(function (x) { return x.label === 'No artifact'; })[0];
+      $('arts').innerHTML = rk.slice(0, 12).map(function (x, i) {
+        var d = none && none.score ? (x.score - none.score) / Math.abs(none.score) : 0;
+        var a = S.artifactByName(x.label);
+        return '<div class="li"><span class="rk">' + (i + 1) + '</span><span></span><span class="t"><b>' + esc(x.label) + '</b><small>' + (a ? esc(a.r + ' · ' + a.spell) : 'baseline') + '</small></span><span class="delta ' + (d > 0.01 ? 'up' : d < -0.01 ? 'down' : 'same') + '">' + (x.label === 'No artifact' ? '—' : (d > 0 ? '+' : '') + pct(d, 1)) + '</span></div>';
+      }).join('');
+      btn.disabled = false; btn.textContent = 'Rank stats and artifacts';
+    });
+  });
+
+  // ---------- model
+  var RULE_LABEL = { energyRegen: 'Ultimate energy per second', energyPerBasic: 'Energy per basic attack', energyPerHitTaken: 'Energy per hit taken', battleCd: 'Battle skill cooldown (s)', battleFirst: 'First battle skill at (s)',
+    castBattle: 'Battle skill animation (s)', castUlt: 'Ultimate animation (s)', basicMult: 'Basic attack (x ATK)', defK: 'DEF curve constant', resScale: 'Resistance scale', tier1: 'Tier I buff value', tier2: 'Tier II buff value', tier3: 'Tier III buff value',
+    frostAtkSpd: 'Frost attack-speed slow', poisonPerStack: 'Poison per stack (x ATK per s)', areaSize: 'Targets hit by area skills', bossControlMult: 'Control duration on bosses', ultMax: 'Ultimate energy bar' };
+  function renderRules() {
+    var info = S.RULE_INFO;
+    $('rules').innerHTML = Object.keys(RULE_LABEL).filter(function (k) { return info[k]; }).map(function (k) {
+      var r = info[k], v = state.rules[k] != null ? state.rules[k] : r.v, rg = r.range;
+      var slider = rg && rg[0] !== rg[1] ? '<input type="range" id="r-' + k + '" data-k="' + k + '" min="' + rg[0] + '" max="' + rg[1] + '" step="' + ((rg[1] - rg[0]) / 20) + '" value="' + v + '" aria-label="' + RULE_LABEL[k] + '">' : '';
+      return '<div class="rule"><span class="n">' + RULE_LABEL[k] + ' <span class="chip ' + r.conf + '">' + r.conf + '</span></span><span class="val" id="v-' + k + '">' + (+v).toFixed(v < 1 ? 2 : 1) + '</span><span class="d">' + esc(r.note) + '</span>' + slider + '</div>';
+    }).join('');
+    Array.prototype.forEach.call($('rules').querySelectorAll('input[type="range"]'), function (inp) {
+      inp.addEventListener('input', function () { state.rules[inp.dataset.k] = +inp.value; $('v-' + inp.dataset.k).textContent = (+inp.value).toFixed(+inp.value < 1 ? 2 : 1); });
+      inp.addEventListener('change', function () { save(); runSim(); });
+    });
+  }
+
+  function renderAll() {
+    renderTeam('team', -1, pickSlot);
+    renderTeam('team2', state.slot, swapPick);
+    renderTeam('team3', state.gearSlot, gearPick);
+    $('lvl').value = state.level; $('lvlv').textContent = state.level;
+    renderEnemy(); renderObj();
+    $('cap').innerHTML = state.team.map(function (n, i) { var c = S.captainFx(H(n)); return '<option value="' + i + '"' + (i === state.captain ? ' selected' : '') + '>' + esc(H(n).n) + ' · ' + esc(c ? c.text.replace(/^Increases all allies' /, '').replace(/\.$/, '') : 'no captain skill') + '</option>'; }).join('');
+  }
+  $('cap').addEventListener('change', function () { state.captain = +this.value; save(); renderAll(); runSim(); });
+  renderAll(); renderRules(); runSim();
+})();
+</script>
