@@ -2,19 +2,23 @@
 
 Features
 - Reminders posted to the announcements channel (Alliance Rally, Golden Wing, Sparkle Tournament, GvE), /reminder
-- Events and summon banners board (/event add, /event scan with a screenshot, /events)
+- Events and summon banners board: official Steam calendars read automatically, Beginner Season days (/event serverday),
+  officers' /event add and /event scan (screenshot); /events for everyone
 - Welcome post for new players with buttons to give Recruit/Member, /promote
 - /hero <name>   hero card: tier, element, school, best gear sets and artifacts
 - /school <name> best heroes of one school
 - /ask <question> Dragonheir questions answered by Claude, with per-user and server-wide daily limits
 """
+import asyncio
 import base64
 import datetime as dt
 import json
 import logging
 import os
+import re
 import sqlite3
 import sys
+import urllib.request
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -376,13 +380,35 @@ def find_channel(guild: discord.Guild, word: str):
 
 
 # ---------- events and summon banners ----------
-# Officers add what is live on our server (/event add, or /event scan with a screenshot of the in-game event page).
-# The bot keeps one "Active now" board in the events channel, removes things when they end and warns 24h before.
+# Three sources, all shown on one "Active now" board in the events channel:
+# 1. Official calendars posted on Steam (limited-time events and summon pools run on the same dates on every server).
+#    The bot checks Steam every hour and reads new calendar images with Claude.
+# 2. The Beginner Season calendar (events by server day), once an officer tells the bot the server day (/server day).
+# 3. Officers by hand: /event add, or /event scan with a screenshot from the game.
 EVENTS_CHANNEL = os.environ.get("EVENTS_CHANNEL", "events-and-banners")
 KINDS = {"banner": "🎰 Summon banners", "event": "🎉 Events"}
-db.execute("CREATE TABLE IF NOT EXISTS events (name TEXT PRIMARY KEY COLLATE NOCASE, kind TEXT, ends TEXT, note TEXT)")
+STEAM_NEWS = "https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=2203070&count=30&maxlength=0"
+STEAM_IMG = "https://clan.akamai.steamstatic.com/images"
+BEGINNER = json.loads((HERE / "beginner_calendar.json").read_text(encoding="utf-8"))
+db.execute("CREATE TABLE IF NOT EXISTS events (name TEXT PRIMARY KEY COLLATE NOCASE, kind TEXT, ends TEXT, note TEXT, "
+           "starts TEXT DEFAULT '', source TEXT DEFAULT 'officer')")
+for col in ("starts TEXT DEFAULT ''", "source TEXT DEFAULT 'officer'"):   # tables made by the first version
+    try:
+        db.execute(f"ALTER TABLE events ADD COLUMN {col}")
+    except sqlite3.OperationalError:
+        pass
 db.execute("CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT)")
 db.commit()
+
+
+def kv_get(key: str) -> str | None:
+    row = db.execute("SELECT value FROM kv WHERE key = ?", (key,)).fetchone()
+    return row[0] if row else None
+
+
+def kv_set(key: str, value: str) -> None:
+    db.execute("INSERT OR REPLACE INTO kv VALUES (?, ?)", (key, value))
+    db.commit()
 
 
 def parse_when(text: str) -> dt.datetime | None:
@@ -405,25 +431,73 @@ def parse_when(text: str) -> dt.datetime | None:
     return dt.datetime.now(TZ) + left if left and not number else None
 
 
-def save_event(kind: str, name: str, ends: dt.datetime, note: str = "") -> None:
-    db.execute("INSERT INTO events VALUES (?, ?, ?, ?) ON CONFLICT(name) DO UPDATE SET kind = excluded.kind, "
-               "ends = excluded.ends, note = excluded.note", (name.strip()[:80], kind, ends.isoformat(), note[:150]))
+def save_event(kind: str, name: str, ends: dt.datetime, note: str = "", starts: dt.datetime | None = None,
+               source: str = "officer") -> None:
+    db.execute("INSERT INTO events VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(name) DO UPDATE SET kind = excluded.kind, "
+               "ends = excluded.ends, note = excluded.note, starts = excluded.starts, source = excluded.source",
+               (name.strip()[:80], kind, ends.isoformat(), note[:150], starts.isoformat() if starts else "", source))
     db.commit()
 
 
-def active_events():
-    rows = db.execute("SELECT name, kind, ends, note FROM events ORDER BY ends").fetchall()
-    return [(n, k, dt.datetime.fromisoformat(e), note) for n, k, e, note in rows]
+# server day: Day 1 is the launch day, days turn over at 05:00 UTC
+def day_one() -> dt.datetime | None:
+    value = kv_get("day1")
+    return dt.datetime.fromisoformat(value) if value else None
+
+
+def server_day() -> int | None:
+    d1 = day_one()
+    return (dt.datetime.now(dt.timezone.utc) - d1).days + 1 if d1 else None
+
+
+def beginner_events():
+    d1 = day_one()
+    if not d1:
+        return []
+    out = []
+    for name, ranges in BEGINNER["events"]:
+        for first, last, part in ranges:
+            label = f"{name} {part}".strip()
+            out.append((label, "event", d1 + dt.timedelta(days=last), "",
+                        d1 + dt.timedelta(days=first - 1)))
+    return out
+
+
+def all_events():
+    """(name, kind, ends, note, starts) from every source, ended ones left out."""
+    now = dt.datetime.now(TZ)
+    rows = []
+    for name, kind, ends, note, starts, _ in db.execute("SELECT * FROM events").fetchall():
+        rows.append((name, kind, dt.datetime.fromisoformat(ends), note,
+                     dt.datetime.fromisoformat(starts) if starts else None))
+    rows += beginner_events()
+    return sorted((r for r in rows if r[2] > now), key=lambda r: r[2])
+
+
+def split_events():
+    now = dt.datetime.now(TZ)
+    live = [r for r in all_events() if r[4] is None or r[4] <= now]
+    soon = [r for r in all_events() if r[4] and now < r[4] <= now + dt.timedelta(days=7)]
+    return live, soon
+
+
+def ts(when: dt.datetime, style: str = "R") -> str:
+    return f"<t:{int(when.timestamp())}:{style}>"
 
 
 def board_embed() -> discord.Embed:
-    e = discord.Embed(title="🗓️ Active now on our server", color=0x9B59B6)
-    rows = active_events()
+    live, soon = split_events()
+    day = server_day()
+    e = discord.Embed(title="🗓️ Active now on our server", color=0x9B59B6,
+                      description=f"📆 **Server day {day}**" if day else None)
     for kind, label in KINDS.items():
-        lines = [f"**{n}** · ends <t:{int(end.timestamp())}:R>" + (f"\n└ {note}" if note else "")
-                 for n, k, end, note in rows if k == kind]
+        lines = [f"**{n}** · ends {ts(end)}" + (f"\n└ {note}" if note else "") for n, k, end, note, _ in live if k == kind]
         e.add_field(name=label, value="\n".join(lines)[:1024] or "Nothing right now.", inline=False)
-    e.set_footer(text="Officers update this with /event add or /event scan · times show in your own timezone")
+    if soon:
+        lines = [f"{'🎰' if k == 'banner' else '🎉'} **{n}** · starts {ts(start)}" for n, k, _, _, start in sorted(soon, key=lambda r: r[4])]
+        e.add_field(name="⏳ Coming this week", value="\n".join(lines)[:1024], inline=False)
+    e.set_footer(text="From the official calendars (Beginner Season by server day) and officers · "
+                       "times show in your own timezone")
     return e
 
 
@@ -437,10 +511,10 @@ async def refresh_board(guild: discord.Guild) -> None:
     if not ch:
         return
     key = f"board:{guild.id}"
-    old = db.execute("SELECT value FROM kv WHERE key = ?", (key,)).fetchone()
+    old = kv_get(key)
     if old:
         try:
-            await (await ch.fetch_message(int(old[0]))).delete()
+            await (await ch.fetch_message(int(old))).delete()
         except discord.HTTPException:
             pass
     msg = await ch.send(embed=board_embed())
@@ -448,8 +522,7 @@ async def refresh_board(guild: discord.Guild) -> None:
         await msg.pin()
     except discord.HTTPException:
         pass
-    db.execute("INSERT OR REPLACE INTO kv VALUES (?, ?)", (key, str(msg.id)))
-    db.commit()
+    kv_set(key, str(msg.id))
 
 
 async def refresh_all_boards() -> None:
@@ -457,25 +530,117 @@ async def refresh_all_boards() -> None:
         await refresh_board(guild)
 
 
+# ---- official calendars from Steam ----
+CAL_PROMPT = """These are official Dragonheir: Silent Gods event calendar images, posted on {posted}.
+Read ONLY calendars whose columns are calendar dates like 10/23 (for example "Limited-Time Event Calendar");
+skip calendars whose columns are DAY1, DAY2... For every bar give the name exactly as written, kind "banner" for
+anything under a summon pool heading or with Summon in the name, otherwise "event", and the first and last date
+column the bar covers as YYYY-MM-DD (the year of the post date, or the next year if the dates wrap past December).
+note: any short text in the image about that item (e.g. "runs up to 14 days per server"), otherwise empty."""
+
+CAL_SCHEMA = {
+    "type": "object",
+    "properties": {"items": {"type": "array", "items": {
+        "type": "object",
+        "properties": {"name": {"type": "string"}, "kind": {"type": "string", "enum": ["banner", "event"]},
+                       "first": {"type": "string"}, "last": {"type": "string"}, "note": {"type": "string"}},
+        "required": ["name", "kind", "first", "last", "note"], "additionalProperties": False}}},
+    "required": ["items"],
+    "additionalProperties": False,
+}
+
+
+async def http_get(url: str) -> bytes:
+    def fetch():
+        req = urllib.request.Request(url, headers={"User-Agent": "REGAL-Bot/1.0"})
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return r.read()
+    return await asyncio.to_thread(fetch)
+
+
+async def read_images(images: list[tuple[bytes, str]], prompt: str, schema: dict) -> list[dict]:
+    content = [{"type": "image", "source": {"type": "base64", "media_type": media,
+                                            "data": base64.b64encode(data).decode()}} for data, media in images]
+    response = await claude.messages.create(
+        model=MODEL,
+        max_tokens=4000,
+        output_config={"effort": "low", "format": {"type": "json_schema", "schema": schema}},
+        messages=[{"role": "user", "content": content + [{"type": "text", "text": prompt}]}],
+    )
+    text = next((b.text for b in response.content if b.type == "text"), "")
+    return json.loads(text).get("items", []) if response.stop_reason != "refusal" and text else []
+
+
+async def import_calendar(post: dict) -> list[str]:
+    """Read one Steam calendar post into the events table; returns the names it added."""
+    urls = re.findall(r'\{STEAM_CLAN_IMAGE\}(/[^"\]\s]+)', post["contents"])
+    images = []
+    for path in urls[:4]:
+        media = "image/png" if path.lower().endswith(".png") else "image/jpeg"
+        images.append((await http_get(STEAM_IMG + path), media))
+    if not images:
+        return []
+    posted = dt.datetime.fromtimestamp(post["date"], dt.timezone.utc)
+    items = await read_images(images, CAL_PROMPT.format(posted=f"{posted:%Y-%m-%d}"), CAL_SCHEMA)
+    added = []
+    for item in items:
+        try:
+            first = dt.datetime.strptime(item["first"], "%Y-%m-%d").replace(hour=5, tzinfo=dt.timezone.utc)
+            last = dt.datetime.strptime(item["last"], "%Y-%m-%d").replace(hour=5, tzinfo=dt.timezone.utc)
+        except ValueError:
+            continue
+        if item.get("name"):
+            save_event(item["kind"], item["name"], last + dt.timedelta(days=1), item.get("note", ""), first, "steam")
+            added.append(item["name"])
+    return added
+
+
+async def check_steam() -> None:
+    if claude is None:
+        return
+    posts = json.loads(await http_get(STEAM_NEWS))["appnews"]["newsitems"]
+    seen = int(kv_get("steam:last") or 0)
+    if not seen:   # first run: only the newest calendar from the last 30 days
+        seen = int(dt.datetime.now(dt.timezone.utc).timestamp()) - 30 * 86400
+    calendars = sorted((p for p in posts if p["date"] > seen and "calendar" in p["title"].lower()),
+                       key=lambda p: p["date"])
+    if not kv_get("steam:last"):
+        calendars = calendars[-1:]
+    for post in calendars:
+        added = await import_calendar(post)
+        log.info("Steam calendar %s: %d items", post["title"], len(added))
+        for guild in bot.guilds:
+            ch = events_channel(guild)
+            if ch and added:
+                await ch.send(f"📅 New official calendar: **{post['title']}**\n<{post['url']}>")
+    kv_set("steam:last", str(max([p["date"] for p in posts] + [seen])))
+    if calendars:
+        await refresh_all_boards()
+
+
 @tasks.loop(minutes=10)
 async def event_watch():
     now = dt.datetime.now(TZ)
-    changed = False
-    for name, kind, end, note in active_events():
-        if end <= now:
-            db.execute("DELETE FROM events WHERE name = ?", (name,))
-            changed = True
-        elif end - now <= dt.timedelta(hours=24):
-            mark = f"ending:{name}:{end.isoformat()}"
-            if not db.execute("SELECT 1 FROM sent WHERE key = ?", (mark,)).fetchone():
-                db.execute("INSERT INTO sent VALUES (?)", (mark,))
-                for guild in bot.guilds:
-                    ch = events_channel(guild)
-                    if ch:
-                        what = "banner" if kind == "banner" else "event"
-                        await ch.send(f"⏰ Last day: the **{name}** {what} ends <t:{int(end.timestamp())}:R>!")
+    if now.minute < 10 or not kv_get("steam:last"):   # Steam about once an hour
+        try:
+            await check_steam()
+        except Exception as exc:   # Steam or Claude down: try again next hour
+            log.warning("Steam check failed: %s", exc)
+    live, soon = split_events()
+    for name, kind, end, _, _ in live:
+        mark = f"ending:{name}:{end.isoformat()}"
+        if end - now <= dt.timedelta(hours=24) and not db.execute("SELECT 1 FROM sent WHERE key = ?", (mark,)).fetchone():
+            db.execute("INSERT INTO sent VALUES (?)", (mark,))
+            db.commit()
+            for guild in bot.guilds:
+                ch = events_channel(guild)
+                if ch:
+                    await ch.send(f"⏰ Last day: **{name}** ends {ts(end)}!")
+    db.execute("DELETE FROM events WHERE ends < ?", ((now - dt.timedelta(days=1)).isoformat(),))
     db.commit()
-    if changed:
+    signature = "|".join(sorted(f"{r[0]}@{r[2].isoformat()}" for r in live + soon)) + f"|{server_day()}"
+    if signature != kv_get("board:signature"):
+        kv_set("board:signature", signature)
         await refresh_all_boards()
 
 
@@ -502,20 +667,8 @@ SCAN_SCHEMA = {
 }
 
 
-async def read_screenshot(image: bytes, media_type: str) -> list[dict]:
-    now = dt.datetime.now(TZ)
-    response = await claude.messages.create(
-        model=MODEL,
-        max_tokens=2000,
-        output_config={"effort": "low", "format": {"type": "json_schema", "schema": SCAN_SCHEMA}},
-        messages=[{"role": "user", "content": [
-            {"type": "image", "source": {"type": "base64", "media_type": media_type,
-                                         "data": base64.b64encode(image).decode()}},
-            {"type": "text", "text": SCAN_PROMPT.format(now=f"{now:%Y-%m-%d %H:%M}", tz=TZ.key)},
-        ]}],
-    )
-    text = next((b.text for b in response.content if b.type == "text"), "")
-    return json.loads(text).get("items", []) if response.stop_reason != "refusal" and text else []
+def is_officer(member) -> bool:
+    return member.guild_permissions.manage_messages or any(r.name in ("Leader", "Officer") for r in member.roles)
 
 
 event_group = app_commands.Group(name="event", description="Events and summon banners (officers)",
@@ -524,7 +677,7 @@ KIND_CHOICES = [app_commands.Choice(name="Summon banner", value="banner"), app_c
 
 
 async def event_autocomplete(_: discord.Interaction, current: str):
-    names = [n for n, *_ in active_events() if current.lower() in n.lower()]
+    names = [n for n, in db.execute("SELECT name FROM events").fetchall() if current.lower() in n.lower()]
     return [app_commands.Choice(name=n, value=n) for n in names[:25]]
 
 
@@ -541,7 +694,7 @@ async def event_add(interaction: discord.Interaction, kind: app_commands.Choice[
                                                 ephemeral=True)
         return
     save_event(kind.value, name, end, note)
-    await interaction.response.send_message(f"✅ **{name}** added, ends <t:{int(end.timestamp())}:R>.", ephemeral=True)
+    await interaction.response.send_message(f"✅ **{name}** added, ends {ts(end)}.", ephemeral=True)
     await refresh_all_boards()
 
 
@@ -564,8 +717,10 @@ async def event_scan(interaction: discord.Interaction, screenshot: discord.Attac
         await interaction.response.send_message("Please attach a PNG or JPG screenshot.", ephemeral=True)
         return
     await interaction.response.defer(thinking=True, ephemeral=True)
+    now = dt.datetime.now(TZ)
     try:
-        items = await read_screenshot(await screenshot.read(), media)
+        items = await read_images([(await screenshot.read(), media)],
+                                  SCAN_PROMPT.format(now=f"{now:%Y-%m-%d %H:%M}", tz=TZ.key), SCAN_SCHEMA)
     except (anthropic.APIError, json.JSONDecodeError) as exc:
         log.warning("Scan failed: %s", exc)
         await interaction.followup.send("I couldn't read that screenshot, try again in a minute.", ephemeral=True)
@@ -573,9 +728,9 @@ async def event_scan(interaction: discord.Interaction, screenshot: discord.Attac
     added, skipped = [], []
     for item in items:
         end = parse_when(item.get("ends", ""))
-        if end and end > dt.datetime.now(TZ) and item.get("name"):
+        if end and end > now and item.get("name"):
             save_event(item["kind"], item["name"], end, item.get("note", ""))
-            added.append(f"✅ **{item['name']}** · ends <t:{int(end.timestamp())}:R>")
+            added.append(f"✅ **{item['name']}** · ends {ts(end)}")
         elif item.get("name"):
             skipped.append(f"⚠️ **{item['name']}** (no end time, add it with /event add)")
     if added:
@@ -584,13 +739,27 @@ async def event_scan(interaction: discord.Interaction, screenshot: discord.Attac
                                     ephemeral=True)
 
 
+@event_group.command(name="serverday", description="Tell the bot today's server day (Timesand Trail in the game)")
+@app_commands.describe(today_is_day="The server day today, e.g. 34")
+async def event_serverday(interaction: discord.Interaction, today_is_day: app_commands.Range[int, 1, 400]):
+    now = dt.datetime.now(dt.timezone.utc)
+    reset = now.replace(hour=5, minute=0, second=0, microsecond=0)
+    if now < reset:
+        reset -= dt.timedelta(days=1)
+    d1 = reset - dt.timedelta(days=today_is_day - 1)
+    kv_set("day1", d1.isoformat())
+    await interaction.response.send_message(
+        f"✅ Server day {today_is_day}: Day 1 was **{d1:%d %b %Y}**. Beginner Season events are on the board now.",
+        ephemeral=True)
+    await refresh_all_boards()
+
+
 bot.tree.add_command(event_group)
 
 
 @bot.tree.command(name="events", description="What events and summon banners are live right now")
 async def events_cmd(interaction: discord.Interaction):
     await interaction.response.send_message(embed=board_embed())
-
 
 
 @bot.event

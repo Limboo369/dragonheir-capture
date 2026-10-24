@@ -1,6 +1,15 @@
 [
-  {"do": "channel", "name": "🎰・events-and-banners", "category": "GUILD", "access": "guild",
-   "topic": "What's live on our server right now, and who is summoning. Officers: /event scan with a screenshot."},
-  {"do": "post", "channel": "events-and-banners", "title": "🎰 Events & Banners",
-   "text": "The bot keeps an **Active now** board at the bottom of this room with every live event and summon banner and how long it lasts.\n\n💬 **Chat here**: who is summoning, who got what, is the banner worth it.\n⏰ The bot warns here when something has **less than 24 hours left**.\n📋 Type `/events` in any room to see the list.\n\n**Officers** keep the board up to date:\n• `/event scan` + a screenshot of the in-game event list or a banner: the bot reads it\n• `/event add` to type one in by hand, `/event remove` to take one off"}
+ {
+  "do": "channel",
+  "name": "🎰・events-and-banners",
+  "category": "GUILD",
+  "access": "guild",
+  "topic": "What's live on our server right now, and who is summoning. The bot updates the board by itself."
+ },
+ {
+  "do": "post",
+  "channel": "events-and-banners",
+  "title": "🎰 Events & Banners",
+  "text": "The bot keeps an **Active now** board at the bottom of this room with every live event and summon banner and how long it lasts. It updates **by itself** from the official Dragonheir calendars.\n\n💬 **Chat here**: who is summoning, who got what, is the banner worth it.\n⏰ The bot warns here when something has **less than 24 hours left**.\n📋 Type `/events` in any room to see the list.\n\n**Officers** can fix anything the calendar misses:\n• `/event scan` + a screenshot from the game: the bot reads it\n• `/event add` / `/event remove` by hand\n• `/event serverday` to set today's server day (from Timesand Trail)"
+ }
 ]

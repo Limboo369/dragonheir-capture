@@ -1,0 +1,16 @@
+{
+  "source": "Official Beginner Season Event Calendars I-III (Steam news, Apr 7 / Apr 29 / May 19, 2026). Day 1 = the server's launch day, days start 05:00 UTC.",
+  "events": [
+    ["Meander Speedrunning", [[2, 6, "Stage 1-80"], [6, 13, "Stage 81-180"], [13, 66, "Stage 181-300"]]],
+    ["Hard Training", [[1, 7, "I"], [8, 14, "II"], [15, 21, "III"], [22, 28, "IV"], [29, 35, "V"], [36, 42, "VI"], [43, 49, "VII"], [50, 56, "VIII"], [57, 63, "IX"]]],
+    ["Dungeon Speedrunning", [[1, 5, "I"], [6, 12, "II"], [13, 21, "III"]]],
+    ["Thunder's Rumble", [[8, 22, ""]]],
+    ["7-Day Login", [[1, 14, ""]]],
+    ["Season Journey", [[1, 21, ""]]],
+    ["Piece of Treasury", [[15, 29, ""]]],
+    ["Walker's Trails", [[1, 21, "I"], [22, 42, "II"], [43, 63, "III"]]],
+    ["Imperial Shadow Recast", [[22, 42, ""]]],
+    ["Universe Expedition", [[37, 50, ""]]],
+    ["Otherworld Exploration", [[43, 63, ""]]]
+  ]
+}
