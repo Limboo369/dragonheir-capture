@@ -16,7 +16,7 @@
 })(typeof window !== 'undefined' ? window : globalThis, function () {
   'use strict';
 
-  var VERSION = '0.1.0';
+  var VERSION = '0.2.0';
 
   // ---------------------------------------------------------------- rules --
   // conf: verified = official text or table; estimated = derived from data;
@@ -24,35 +24,53 @@
   var RULE_INFO = {
     dt: { v: 0.05, conf: 'model', note: 'Simulation time step in seconds.' },
     maxTime: { v: 90, conf: 'assumed', note: 'Fight length cap (s) when the mode sets none.' },
-    ultMax: { v: 100, conf: 'estimated', note: 'Ultimate energy bar. Vinyara and Gardrus texts move energy in steps of 25/100.', range: [100, 100] },
-    energyRegen: { v: 4, conf: 'assumed', note: 'Ultimate energy gained per second.', range: [2, 6] },
-    energyPerBasic: { v: 8, conf: 'assumed', note: 'Ultimate energy per basic attack.', range: [4, 12] },
-    energyPerHitTaken: { v: 1, conf: 'assumed', note: 'Ultimate energy per hit taken.', range: [0, 3] },
-    battleCd: { v: 10, conf: 'assumed', note: 'Battle skill cooldown (s) when the kit gives none.', range: [8, 14] },
-    battleFirst: { v: 2, conf: 'assumed', note: 'Time (s) after battle start when the battle skill is first ready.', range: [0, 4] },
+    ultMax: { v: 100, conf: 'estimated', note: 'Ultimate energy bar. Skill texts move energy in steps up to 100 (Vinyara drains 100), so the bar is read as 100.', range: [100, 100] },
+    ultFull: { v: 20, conf: 'reported', note: 'Full ultimate charge time (s) at 0 Skill Haste. Most heroes show 20 or 23 s in game (CN guide 2025-04-18, HellHades 2025-07-30).', range: [18, 24] },
+    ultFirst: { v: 12, conf: 'reported', note: 'First ultimate ready at (s). In-game examples 10.9, 17 and 18 s.', range: [9, 18] },
+    energyRegen: { v: null, conf: 'model', note: 'Override for energy per second; empty = ultMax / ultFull.' },
+    energyPerBasic: { v: 0, conf: 'estimated', note: 'Ultimate energy per basic attack. The game shows fixed charge times, so energy is read as time-based only.', range: [0, 4] },
+    energyPerHitTaken: { v: 0, conf: 'estimated', note: 'Ultimate energy per hit taken (same reasoning).', range: [0, 1] },
+    battleCd: { v: 10, conf: 'reported', note: 'Battle skill recharge (s) when the kit gives none. In-game examples 10 and 12 s.', range: [8, 14] },
+    battleFirst: { v: 5, conf: 'reported', note: 'First battle skill ready at (s). In-game examples 5 and 7 s.', range: [3, 7] },
+    heroTiming: { v: true, conf: 'reported', note: 'Use per-hero charge times from the CN wiki (2023-09, 187 heroes; Vinyara/Thia from a 2025 report). Off = the defaults above for everyone.' },
+    scrolls: { v: 'max', conf: 'assumed', note: "Skill scroll upgrades: 'max' (matches the max-level skill numbers the kits use) or 'none' (unscrolled charge times, about 2-3 s slower)." },
     castBattle: { v: 0.8, conf: 'assumed', note: 'Animation lock after a battle skill (s).', range: [0.5, 1.2] },
     castUlt: { v: 1.5, conf: 'assumed', note: 'Animation lock after an ultimate (s).', range: [1, 2.5] },
     basicMult: { v: 1.0, conf: 'assumed', note: 'Basic attack = this x ATK.', range: [0.8, 1.2] },
-    attackFreqMeaning: { v: 'perSecond', conf: 'assumed', note: 'attack_frequency from the official table read as basic attacks per second.' },
-    hasteMode: { v: 'div', conf: 'assumed', note: 'Skill Haste: cooldown / (1 + haste/100).' },
-    defK: { v: 1200, conf: 'assumed', note: 'DEF mitigation = DEF / (DEF + defK).', range: [600, 2400] },
+    attackFreqMeaning: { v: 'perSecond', conf: 'verified', note: 'attack_frequency = basic attacks per second (0.4 = one every 2.5 s, official wiki article 103).' },
+    hastePerPoint: { v: 0.002, conf: 'verified', note: 'Recharge speed = 1 + Skill Haste x this (5 haste = +1%, official wiki article 103; a 2025 CN guide implies 0.0018). Applies to battle skill and ultimate.', range: [0.0015, 0.0025] },
+    defK: { v: 1200, conf: 'assumed', note: 'DEF mitigation = DEF / (DEF + defK). No source publishes the DEF formula; calibrate in game.', range: [600, 2400] },
     dmgRedCap: { v: 0.8, conf: 'assumed', note: 'Cap on summed Damage Reduction.' },
-    resScale: { v: 100, conf: 'assumed', note: 'Debuff land chance = base x resScale / (resScale + max(0, RES - ACC)).', range: [50, 200] },
-    tier1: { v: 0.15, conf: 'assumed', note: 'Value of a tier I stat buff/debuff (ATK Up I, DEF Penalty I...).', range: [0.1, 0.2] },
-    tier2: { v: 0.30, conf: 'assumed', note: 'Tier II value.', range: [0.2, 0.4] },
-    tier3: { v: 0.45, conf: 'assumed', note: 'Tier III value.', range: [0.3, 0.6] },
-    flatTier: { v: 40, conf: 'assumed', note: 'Accuracy/Resistance Up or Penalty per tier (flat points).' },
-    frostAtkSpd: { v: 0.2, conf: 'assumed', note: 'Frost slows the target attack speed by this fraction.', range: [0, 0.3] },
-    poisonPerStack: { v: 0.08, conf: 'assumed', note: 'Poison: each stack deals this x caster ATK per second (Poison damage, no crit).', range: [0.04, 0.15] },
+    accShift: { v: 0, conf: 'verified', note: 'Debuff land chance by ACC minus RES: developer Q&A 2025-12-09 (0 to +50 = 90-95%, +200 = 97%) and the official S1 test (-30 = 76%, -50 = 16%). This shifts the curve in points.', range: [-15, 15] },
+    landCap: { v: 0.97, conf: 'reported', note: 'At least 3% of hostile effects are always resisted (CS reply 2023-10-19).', range: [0.95, 1] },
+    tierScale: { v: 1, conf: 'verified', note: 'Buff/debuff tier values come from the official S1 table (Defense Up 30/60%, penalties 25/50%, Crit Rate Up 20%, Crit Damage Up 30%, Damage Reduction 30%). They may have changed after the 2025 relaunch; this scales them all.', range: [0.75, 1.25] },
+    flatTier: { v: 50, conf: 'reported', note: 'Flat Accuracy/Resistance Up or Penalty per tier (CN tooltip: +50).' },
+    frozenDmgTaken: { v: 0.3, conf: 'verified', note: 'Frozen units take 30% less damage (official S1 table).' },
+    frostAtkSpd: { v: 0, conf: 'assumed', note: 'Frost slow on attack speed. No source states one, so off.', range: [0, 0.2] },
+    poisonPerStack: { v: 0.065, conf: 'estimated', note: 'Poison: each stack deals this x caster ATK per second as Derivative damage (x Enlightenment bonus). Not published for the current game; S1 capped a 5 s tick at 30% ATK (6%/s) and a current hero text implies a 20% ATK cap per tick (about 6.7%/s at 3 s ticks).', range: [0.04, 0.1] },
     poisonMaxStacks: { v: 20, conf: 'assumed', note: 'Max Poison stacks per target.' },
     burnPerStack: { v: 0.1, conf: 'assumed', note: 'Burn per stack per second x caster ATK.' },
-    dotCanCrit: { v: false, conf: 'assumed', note: 'DoT and Derivative damage cannot crit.' },
-    derivativeIgnoresDef: { v: false, conf: 'assumed', note: 'Derivative damage still reduced by DEF.' },
+    derivEnch: { v: 200, conf: 'verified', note: 'Derivative damage (DoT) x (1 + Enlightenment / this) and cannot crit (official wiki article 103).' },
+    dotCanCrit: { v: false, conf: 'verified', note: 'Derivative damage cannot crit (official wiki article 103).' },
+    derivativeIgnoresDef: { v: false, conf: 'reported', note: 'Derivative damage is still reduced by enemy DEF and level (Reddit test 2023-05-30).' },
     areaSize: { v: 3, conf: 'assumed', note: 'Enemies hit by an "enemies within range" skill when more are alive.', range: [2, 5] },
-    bossControlMult: { v: 0.5, conf: 'assumed', note: 'Control duration on bosses is multiplied by this.', range: [0, 1] },
-    rechargePenalty: { v: 0.5, conf: 'assumed', note: 'Recharging Speed Penalty multiplies energy gain.' },
-    bondFrost: { v: 0, conf: 'assumed', note: 'Frost bond bonus: not modelled until its numbers are found.' }
+    bossControlMult: { v: 0, conf: 'verified', note: 'Bosses are immune to control (official boss pages). Set above 0 to test partial control.', range: [0, 0.5] },
+    rechargePenalty: { v: 0.7, conf: 'verified', note: 'Recharging Speed Penalty: recharge speed x 0.7 (official S1 table: -30%).' },
+    bonds: { v: true, conf: 'verified', note: 'School bonds with published numbers (Support: 30 s shield of 10%/15% max HP). Frost, Poison and other bond numbers are not published, so those bonds are not modelled.' }
   };
+  // [ACC - RES, land chance], linear between points, 0 below, landCap above.
+  // Above 0: developer Q&A 2025-12-09 (dragonheir.info #1693): 0..50 fails
+  // 5-10%, +200 or more fails about 3%. Below 0: official S1 test table (wiki
+  // article 103) and the CS reply of 2023-10-19 (-40 = 50%, -100 = 5%).
+  var ACC_CURVE = [[-107, 0], [-100, 0.03], [-70, 0.10], [-50, 0.17], [-40, 0.5], [-30, 0.76], [0, 0.9], [50, 0.95], [200, 0.97]];
+  function accCurve(diff, cap) {
+    if (diff <= ACC_CURVE[0][0]) return 0;
+    for (var i = 1; i < ACC_CURVE.length; i++) {
+      var a = ACC_CURVE[i - 1], b = ACC_CURVE[i];
+      if (diff <= b[0]) return Math.min(cap, a[1] + (b[1] - a[1]) * (diff - a[0]) / (b[0] - a[0]));
+    }
+    return cap;
+  }
   function defaultRules() {
     var r = {};
     for (var k in RULE_INFO) r[k] = RULE_INFO[k].v;
@@ -210,21 +228,28 @@
   }
 
   // ------------------------------------------------------------- statuses --
-  // Names follow the game ("Defense Up II", "Attack Penalty II"). Tier values
-  // come from RULES.tier1..3 until the real numbers are known.
-  // [stat, sign, 'pct' | 'flat']; pct uses RULES.tierN, flat uses RULES.flatTier x tier.
+  // Names follow the game ("Defense Up II", "Attack Penalty II").
+  // [stat, sign, kind, tier values I/II/III]; kind 'pct' adds the value,
+  // 'pctStat' adds value x the unit's own base stat, 'flat' adds RULES.flatTier x tier.
+  // Values from the official S1 status table (wiki article 103); 'Attack Up'
+  // is always written with its own % in skill texts, 20% is only a fallback.
   var STAT_STATUS = {
-    'Attack Up': ['atkP', 1, 'pct'], 'Attack Penalty': ['atkP', -1, 'pct'],
-    'Defense Up': ['defP', 1, 'pct'], 'Defense Penalty': ['defP', -1, 'pct'],
-    'Accuracy Up': ['acc', 1, 'flat'], 'Accuracy Penalty': ['acc', -1, 'flat'],
+    'Attack Up': ['atkP', 1, 'pct', [0.2, 0.4, 0.6]], 'Attack Penalty': ['atkP', -1, 'pct', [0.25, 0.5, 0.75]],
+    'Defense Up': ['defP', 1, 'pct', [0.3, 0.6, 0.9]], 'Defense Penalty': ['defP', -1, 'pct', [0.25, 0.5, 0.75]],
+    'Accuracy Up': ['acc', 1, 'pctStat', [0.25, 0.5, 0.75]], 'Accuracy Penalty': ['acc', -1, 'pctStat', [0.25, 0.5, 0.75]],
     'Resistance Up': ['res', 1, 'flat'], 'Resistance Penalty': ['res', -1, 'flat'],
-    'Attack Speed Up': ['atkSpd', 1, 'pct'], 'Attack Speed Penalty': ['atkSpd', -1, 'pct'],
-    'Crit Rate Up': ['critRate', 1, 'pct'], 'Crit Damage Up': ['critDmg', 1, 'pct'],
-    'Received Healing Up': ['healRecv', 1, 'pct'], 'Healing Penalty': ['healRecv', -1, 'pct'],
-    'Damage Reduction': ['dmgRed', 1, 'pct']
+    'Attack Speed Up': ['atkSpd', 1, 'pct', [0.25, 0.5, 0.75]], 'Attack Speed Penalty': ['atkSpd', -1, 'pct', [0.25, 0.5, 0.75]],
+    'Crit Rate Up': ['critRate', 1, 'pct', [0.2, 0.2, 0.2]], 'Crit Damage Up': ['critDmg', 1, 'pct', [0.3, 0.3, 0.3]],
+    'Enlightenment Up': ['ench', 1, 'pctStat', [0.2, 0.2, 0.2]],
+    'Received Healing Up': ['healRecv', 1, 'pct', [0.3, 0.3, 0.3]], 'Healing Penalty': ['healRecv', -1, 'pct', [0.5, 0.5, 0.5]],
+    'Healing Reduction': ['healRecv', -1, 'pct', [0.5, 0.5, 0.5]],
+    'Damage Reduction': ['dmgRed', 1, 'pct', [0.3, 0.3, 0.3]]
   };
-  var CONTROL = { 'Frozen': 1, 'Stunned': 1, 'Knocked Up': 1, 'Silenced': 0, 'Taunt': 0, 'Sleep': 1, 'Petrified': 1, 'Fear': 1 };
-  var DEBUFF_OTHER = { 'Frost': 1, 'Poison': 1, 'Burn': 1, 'Bleeding': 1, 'Buff Prohibition': 1, 'Recharging Speed Penalty': 1, 'Healing Prohibition': 1, 'Vulnerable': 1, 'Static': 1 };
+  // 1 = cannot act, 0 = control that still lets the unit act.
+  var CONTROL = { 'Frozen': 1, 'Stunned': 1, 'Knocked Up': 1, 'Silenced': 0, 'Taunt': 0, 'Sleep': 1, 'Petrified': 1, 'Fear': 1, 'Charmed': 1 };
+  // Controls during which the unit gains no ultimate energy (official S1 status table).
+  var NO_ENERGY = { 'Frozen': 1, 'Stunned': 1, 'Knocked Up': 1, 'Sleep': 1, 'Petrified': 1 };
+  var DEBUFF_OTHER = { 'Frost': 1, 'Poison': 1, 'Burn': 1, 'Bleeding': 1, 'Buff Prohibition': 1, 'Recharging Speed Penalty': 1, 'Healing Prohibition': 1, 'Healing Reduction': 1, 'Vulnerable': 1, 'Static': 1, 'Blind': 1 };
   var STACKING = { 'Poison': 'poisonMaxStacks', 'Burn': 20, 'Bleeding': 10, 'Static': 10 };
   function parseStatus(name) {
     var m = /^(.*?)\s+(I{1,3})$/.exec(name);
@@ -289,6 +314,11 @@
     u.hp = fs.hp;
     u.kit = spec.kit || KITS[u.heroId] || autoKit(u.h);
     u.notes = built.notes;
+    // Energy is time-based: start so the first ultimate comes at ultFirst (0 haste).
+    var full = this.ultFull(u), first = u.kit.ultFirst != null ? u.kit.ultFirst : this.timing(u, 'uf') || this.R.ultFirst;
+    u.energy = this.R.ultMax * clamp(1 - first / full, 0, 1);
+    var bf = u.kit.battleFirst != null ? u.kit.battleFirst : this.timing(u, 'bf');
+    if (bf != null) u.cdBattle = bf;
     this.units.push(u);
     return u;
   };
@@ -301,11 +331,19 @@
       if (st.mods && st.mods[key] != null) v += st.mods[key] * (st.stacks ? st.stacks.length : 1);
       var ss = STAT_STATUS[st.base];
       if (ss && ss[0] === key) {
-        var val = st.value != null ? st.value : ss[2] === 'flat' ? R.flatTier * (st.tier || 1) : R['tier' + (st.tier || 1)];
+        var val = st.value != null ? st.value : this.tierValue(st.base, st.tier);
+        if (ss[2] === 'pctStat' && st.value == null) val *= u.s[key] || 0;
         v += ss[1] * val;
       }
     }
     return v;
+  };
+  // Value of an untyped tier of a stat status (no % written in the text).
+  B.tierValue = function (base, tier) {
+    var ss = STAT_STATUS[base], t = clamp(tier || 1, 1, 3);
+    if (!ss) return 0;
+    if (ss[2] === 'flat') return this.R.flatTier * t;
+    return ss[3][t - 1] * this.R.tierScale;
   };
   B.atk = function (u) { return Math.max(0, u.s.atkB * (1 + u.s.atkP + this.mod(u, 'atkP')) + u.s.atkF + this.mod(u, 'atkF')); };
   B.def = function (u) { return Math.max(0, u.s.defB * (1 + u.s.defP + this.mod(u, 'defP')) + u.s.defF + this.mod(u, 'defF')); };
@@ -402,9 +440,11 @@
       critRate: this.stat(src, 'critRate') + (o.critRate || 0), critDmg: this.stat(src, 'critDmg'), vuln: this.stat(tgt, 'vuln'), raw: raw };
     this.emit('modifyDamage', ctx);
     if (this.has(tgt, 'Invincibility')) { this.emit('hit', { src: src, tgt: tgt, o: o, amount: 0, crit: false }); return { amount: 0 }; }
-    var isDot = o.tag === 'dot' || o.el === 'Derivative';
+    var isDot = o.tag === 'dot' || o.el === 'Derivative' || o.derivative;
     var crit = !o.noCrit && (!isDot || R.dotCanCrit) && this.rand() < ctx.critRate;
     var m = (1 + ctx.bonus) * (1 + ctx.vuln) * (1 - clamp(this.stat(tgt, 'dmgRed'), 0, R.dmgRedCap));
+    if (isDot && !o.trueDmg) m *= 1 + Math.max(0, this.stat(src, 'ench')) / R.derivEnch;
+    if (this.has(tgt, 'Frozen')) m *= 1 - R.frozenDmgTaken;
     if (crit) m *= 1 + ctx.critDmg * (1 - this.stat(tgt, 'critDmgTakenRed'));
     if (!o.trueDmg && !(o.el === 'Derivative' && R.derivativeIgnoresDef)) {
       var d = this.def(tgt) * (1 - clamp(ctx.defIgnore, 0, 1));
@@ -415,7 +455,7 @@
     var tag = o.tag || 'skill';
     src.rec.dmg += dealt;
     src.rec.by[tag] = (src.rec.by[tag] || 0) + dealt;
-    tgt.energy = Math.min(R.ultMax, tgt.energy + R.energyPerHitTaken * this.energyMult(tgt));
+    if (R.energyPerHitTaken && !this.noEnergy(tgt)) tgt.energy = Math.min(R.ultMax, tgt.energy + R.energyPerHitTaken * this.energyMult(tgt));
     var ev = { src: src, tgt: tgt, o: o, amount: dealt, crit: crit };
     if (!o.quiet) this.emit('hit', ev);
     if (crit && !o.quiet) this.emit('crit', ev);
@@ -481,7 +521,31 @@
     this.emit('shielded', { src: src, tgt: tgt, amount: amt, o: o });
     return amt;
   };
+  // Recharge speed: Skill Haste, then Recharging Speed Penalty / Up statuses.
   B.energyMult = function (u) { return this.has(u, 'Recharging Speed Penalty') ? this.R.rechargePenalty : 1; };
+  B.rechargeRate = function (u) {
+    return (1 + Math.max(0, this.stat(u, 'haste')) * this.R.hastePerPoint) * this.energyMult(u) * (1 + this.stat(u, 'rechargeUp'));
+  };
+  B.noEnergy = function (u) {
+    for (var i = 0; i < u.sts.length; i++) if (NO_ENERGY[u.sts[i].base]) return true;
+    return false;
+  };
+  // Per-hero charge time: kit, then the hero timing table, then the default rule.
+  B.timing = function (u, key) {
+    var tm = this.R.heroTiming && u.h && u.h.tm;
+    if (!tm) return null;
+    var v = this.R.scrolls === 'none' ? tm[key + 'B'] : tm[key];
+    return v == null ? tm[key] == null ? null : tm[key] : v;
+  };
+  B.ultFull = function (u) { return (u.kit && u.kit.ultFull) || this.timing(u, 'uc') || this.R.ultFull; };
+  // Final chance that a hostile status lands: skill chance (+ additive chance
+  // bonuses, capped at 100%) x the ACC vs RES curve.
+  B.landChance = function (src, tgt, chance, skill, noRes) {
+    var c = Math.min(1, (chance == null ? 1 : chance) + this.stat(src, 'statusChance') + (skill ? this.stat(src, 'statusChance_' + skill) : 0));
+    if (noRes) return c;
+    var diff = this.stat(src, 'acc') - this.stat(tgt, 'res') * (1 - clamp(this.stat(src, 'resIgnore'), 0, 1));
+    return c * accCurve(diff + this.R.accShift, this.R.landCap);
+  };
   B.energy = function (u, v) { u.energy = clamp(u.energy + (v > 0 ? v * this.energyMult(u) : v), 0, this.R.ultMax); };
 
   // ---- statuses
@@ -494,19 +558,14 @@
     if (hostile) {
       if (tgt.side === src.side) return false;
       if (this.has(tgt, 'Debuff Immunity') || (p.kind === 'control' && (this.has(tgt, 'Control Immunity') || tgt.controlImmune))) return false;
-      var c = (chance == null ? 1 : chance) * (1 + this.stat(src, 'statusChance') + (extra.skill ? this.stat(src, 'statusChance_' + extra.skill) : 0));
-      if (!extra.ignoreRes) {
-        var gap = this.stat(tgt, 'res') * (1 - this.stat(src, 'resIgnore')) - this.stat(src, 'acc');
-        c *= R.resScale / (R.resScale + Math.max(0, gap));
-      }
-      if (!this.chance(Math.min(1, c))) return false;
+      if (!this.chance(this.landChance(src, tgt, chance, extra.skill, extra.ignoreRes))) return false;
       var dctx = { src: src, tgt: tgt, name: name, base: p.base, dur: dur };
       this.emit('debuffDuration', dctx);
       dur = dctx.dur;
-      if (p.kind === 'control' && tgt.isBoss) dur *= R.bossControlMult;
+      if (p.kind === 'control' && tgt.isBoss) { dur *= R.bossControlMult; if (dur <= 0) return false; }
     } else {
       if (this.has(tgt, 'Buff Prohibition')) return false;
-      if (chance != null && chance < 1 && !this.chance(chance * (1 + this.stat(src, 'statusChance')))) return false;
+      if (chance != null && chance < 1 && !this.chance(Math.min(1, chance + this.stat(src, 'statusChance')))) return false;
     }
     if (dur <= 0) return false;
     var until = this.t + dur, ex = this.has(tgt, p.base);
@@ -591,11 +650,8 @@
     var spd = 1 + this.stat(u, 'atkSpd') - (this.has(u, 'Frost') ? this.R.frostAtkSpd : 0);
     return 1 / (af * Math.max(0.2, spd));
   };
-  B.battleCd = function (u) {
-    var base = (u.kit && u.kit.battleCd) || this.R.battleCd;
-    var h = Math.max(0, this.stat(u, 'haste'));
-    return this.R.hasteMode === 'div' ? base / (1 + h / 100) : base * Math.max(0.2, 1 - h / 100);
-  };
+  // Base recharge of the battle skill; the countdown runs at rechargeRate(u).
+  B.battleCd = function (u) { return (u.kit && u.kit.battleCd) || this.timing(u, 'bc') || this.R.battleCd; };
 
   B.act = function (u) {
     var R = this.R, k = u.kit;
@@ -625,7 +681,7 @@
       if (!tgt) return;
       u.basicT = this.basicInterval(u);
       u.rec.basics++;
-      this.energy(u, R.energyPerBasic);
+      if (R.energyPerBasic) this.energy(u, R.energyPerBasic);
       if (k.basic) k.basic(u, this, tgt);
       else this.hit(u, tgt, { atk: R.basicMult }, { el: u.h ? u.h.el : null, tag: 'basic' });
       this.emit('basic', { src: u, tgt: tgt });
@@ -654,9 +710,11 @@
       for (var i = 0; i < this.units.length; i++) {
         var u = this.units[i];
         if (!u.alive) continue;
-        u.cdBattle -= R.dt;
+        var rate = this.rechargeRate(u);
+        // Battle skill recharge does not run during cast animations (reported, Reddit 2024-04-13).
+        if (this.t >= u.castUntil) u.cdBattle -= R.dt * rate;
         u.basicT -= R.dt;
-        this.energy(u, R.energyRegen * R.dt);
+        if (!this.noEnergy(u)) u.energy = Math.min(R.ultMax, u.energy + (R.energyRegen != null ? R.energyRegen : R.ultMax / this.ultFull(u)) * rate * R.dt);
         this.act(u);
       }
       if (this.tlStep && this.t >= nextTl) {
@@ -730,8 +788,19 @@
   }
 
   // ---------------------------------------------------------------- bonds --
-  // Bonds need 2+ heroes of one school. Effects are hooks; numbers unknown.
+  // Bonds need 2+ heroes of one school: fx(b, schoolUnits, allUnits, count).
+  // Only bonds with published numbers are coded (Steam overhaul preview
+  // 2025-05-12 and the CN official post); Frost, Poison, Wild, Rally, Summon and
+  // Dauntless bonds also need numbers that are not published.
   var BONDS = {};
+  // Support: all allies get a 30 s shield of 10% [2] / 15% [3] of their max HP at battle start.
+  BONDS.Support = function (b, mine, all, n) {
+    if (!b.R.bonds) return;
+    var pct = n >= 3 ? 0.15 : 0.1;
+    b.on(null, 'battleStart', function () {
+      all.forEach(function (u) { if (u.alive) b.shield(mine[0], u, pct * b.maxHp(u), 30, { tag: 'bond' }); });
+    });
+  };
 
   // ----------------------------------------------------------- the runner --
   function prepareSide(b, side, team, opts) {
@@ -853,7 +922,7 @@
       confidence: {
         level: autoKits.length ? 'low' : 'medium',
         assumedRules: assumed, autoKits: autoKits,
-        note: 'Hero stats and skill multipliers are official data; timing (cooldowns, energy), DEF curve, buff tiers and statuses are assumptions (see RULE_INFO). Compare results, do not read them as exact in-game numbers.'
+        note: 'Hero stats and skill numbers are official data. Charge times, Skill Haste, Accuracy vs Resistance and status values come from sourced game rules (some from 2023-2024). The DEF curve, gear, cast times and boss stats are assumptions (see RULE_INFO). Use results to compare options, not as exact in-game numbers.'
       },
       notes: [].concat.apply([], first.units.map(function (u) { return u.notes || []; }))
     };

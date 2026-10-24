@@ -3,6 +3,8 @@ var S = require('./sim.js');
 globalThis.DHSim = S;
 S.setData(require('./data/sim-data.js'));
 require('./kits.js');
+require('./kits/extra-ice.js');
+require('./kits/extra-poison.js');
 require('./items.js');
 require('./enemies.js');
 module.exports = S;

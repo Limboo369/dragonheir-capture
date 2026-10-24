@@ -1,0 +1,1077 @@
+{
+ "_meta": {
+  "game": "Dragonheir: Silent Gods (SGRA Studio; CN: 龍息：神寂 / 龙息：神寂; JP: ドラゴンエア)",
+  "generated": "2026-10-24",
+  "confidenceLegend": {
+   "verified": "official text (game/wiki/CS) or two independent sources agree",
+   "reported": "one community source",
+   "estimated": "derived by us from data; derivation given in notes"
+  },
+  "eraWarning": "Many official numbers come from the S1-era (Oct 2023) wiki article 103. The game was relaunched ('Reborn') in mid-2025 with a combat rework (bonds, Soul Level, talents). Values marked era:'S1-2023' may have changed; re-verify in game where possible.",
+  "termMap": {
+   "Accuracy": "專注/专注 (CN), 'Focus'",
+   "Resistance": "豁免 (CN), 'saving throw'",
+   "Enlightenment": "領悟/领悟 (CN) (stat key 'mastery')",
+   "Ultimate skill": "威能技",
+   "Battle skill": "戰技",
+   "Crit": "重擊",
+   "Derivative Damage": "衍生傷害",
+   "Corrosion Intensity": "腐蝕強度",
+   "True Damage": "真實傷害",
+   "Shadow Energy": "暗影能量"
+  }
+ },
+ "damage": {
+  "variance": {
+   "value": "none: identical hits deal identical damage",
+   "source": "https://www.reddit.com/r/Dragonheir_SilentGods/comments/13vzu0l/",
+   "sourceDate": "2023-05-30",
+   "confidence": "reported",
+   "notes": "Tester on training dummy: 'There is no damage variance, damage was consistent and predictable on every hit.' Simulator can be deterministic apart from crit/proc rolls."
+  },
+  "skillMultiplier": {
+   "value": "skill text '[+300%Attack]' = 3.00 x ATK (also '[+X%Max HP]', '[+X%Defense]', '[+X%Enlightenment]' scalings exist)",
+   "source": "/mnt/project-files/dragonheir/knowledge/raw-official/heroes-2025.json",
+   "sourceDate": "2025-2026 (official data)",
+   "confidence": "verified",
+   "notes": "Reddit test (2023): ult '~6x' gave 2032 vs 338 per basic hit at 791 ATK after level mitigation; ratios between skills of one hero match their multipliers (no variance)."
+  },
+  "critExpectedValue": {
+   "value": "E[dmg] = base x (1 + min(critRate,1) x critDamage)",
+   "source": "https://www.reddit.com/r/Dragonheir_SilentGods/comments/18fhasz/",
+   "sourceDate": "2023-12-11",
+   "confidence": "reported",
+   "notes": "Community formula; hero JSON has crit_bonus*bpct = 0.5 (base crit damage +50%) and crit_chance*bpct (base crit rate, e.g. 0.1). A crit multiplies the hit by (1 + critDamage). Consistent with in-game tooltip 'Crit Damage: extra damage dealt by a critical hit'."
+  },
+  "critBase": {
+   "value": {
+    "crit_bonus": 0.5,
+    "crit_chance": "hero-specific (often 0.1)"
+   },
+   "source": "/mnt/project-files/dragonheir/knowledge/raw-official/heroes-2025.json",
+   "sourceDate": "official data",
+   "confidence": "verified"
+  },
+  "derivativeDamageCannotCrit": {
+   "value": true,
+   "source": "https://www.dragonheir.info/article/103",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values)",
+   "confidence": "verified",
+   "notes": "Official: 'Derivative Damage cannot be Crit Damage'. Also stated on Bahamut snA=110 (2023-06-12)."
+  },
+  "derivativeDamageNotTrue": {
+   "value": "Derivative damage is reduced by enemy level/defense like normal damage (it is NOT true damage)",
+   "source": "https://www.reddit.com/r/Dragonheir_SilentGods/comments/13vzu0l/",
+   "sourceDate": "2023-05-30",
+   "confidence": "reported",
+   "notes": "Tester raised dummy level and saw both normal and derivative damage fall."
+  },
+  "trueDamage": {
+   "value": "Ignores DEF; not affected by ordinary damage-increase / damage-reduction effects; CAN crit and is boosted by Crit Damage",
+   "source": "https://www.dragonheir.info/article/1747",
+   "sourceDate": "2025-12-15",
+   "confidence": "verified",
+   "notes": "Official Corrosion-school mechanics card (TW): '真實傷害具備無視防禦、不受一般增減傷影響的特性，但可觸發重擊，並受重擊傷害屬性增幅'. Hero text also excludes True Damage from some bonuses: 'damage is increased by an additional 5% (excluding True Damage)'."
+  },
+  "elementalTypes": {
+   "value": "Every hit a hero deals carries that hero's element (Fire, Cold/Ice, Lightning, Poison, Necrotic, Radiant). No per-element resistance stat exists; only specific effects (boss modifiers, food, affinity, bonds) reference elements.",
+   "source": "https://www.reddit.com/r/Dragonheir_SilentGods/comments/191ihvz/ ; https://www.reddit.com/r/Dragonheir_SilentGods/comments/1htpdgf/",
+   "sourceDate": "2024-01-08 / 2025-01-04",
+   "confidence": "reported",
+   "notes": "Resistance stat only affects debuff landing (Reddit 191ihvz). Example boss modifier (Bahamut snA=1736 screenshot): 'enemy units take 90% less Lightning and Poison damage, damage to Lightning/Poison heroes +90%'."
+  },
+  "elementalAffinityBonus": {
+   "value": "Elemental Affinity column 5: 'Elemental damage bonus +15%' applies to all damage of the matching team",
+   "source": "https://www.reddit.com/r/Dragonheir_SilentGods/comments/1htpdgf/",
+   "sourceDate": "2025-01-04",
+   "confidence": "reported",
+   "notes": "Stacking with other modifiers unknown (commenter: 'we don't really know how all those modifiers stack')."
+  },
+  "frozenDamageTaken": {
+   "value": -0.3,
+   "source": "https://www.dragonheir.info/article/103",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values)",
+   "confidence": "verified",
+   "notes": "Frozen units take 30% less damage (S1-era table).",
+   "era": "S1-2023"
+  },
+  "damageReductionBuff": {
+   "value": -0.3,
+   "source": "https://www.dragonheir.info/article/103",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values)",
+   "confidence": "verified",
+   "notes": "'Damage Reduction: Takes 30% less damage.'",
+   "era": "S1-2023"
+  },
+  "bucketStructure": {
+   "value": null,
+   "source": null,
+   "sourceDate": null,
+   "confidence": "not-found",
+   "notes": "No public source found describing whether Damage Bonus / Damage Up / Elemental Damage Up / Damage Reduction are additive within a bucket and multiplicative across buckets. Recommended simulator default (estimated): ATK-side buffs additive with each other (ATK% gear + Attack Up), then multiplicative buckets: (1+sum DamageBonus) x (1+sum ElementalBonus) x crit x (1-DR_1)(1-DR_2)... x DEF factor. Mark as assumption."
+  },
+  "levelDifference": {
+   "value": "enemy level reduces damage (direction verified, size unknown)",
+   "source": "https://www.reddit.com/r/Dragonheir_SilentGods/comments/13vzu0l/",
+   "sourceDate": "2023-05-30",
+   "confidence": "reported",
+   "notes": "No numeric curve published. Post-relaunch the account uses a shared Soul Level; enemy level still shown on bosses (e.g. Lv 110)."
+  }
+ },
+ "defense": {
+  "formula": {
+   "value": null,
+   "source": null,
+   "sourceDate": null,
+   "confidence": "not-found",
+   "notes": "No official or community-published DEF->mitigation formula found (searched EN Reddit/HellHades/dragonheir.info, TW Bahamut 'snA=509 防禦減傷公式' (question unanswered, 2023-09-25), CN TapTap/Bilibili/NGA via search, JP/KR). The in-game tooltip only says 'The higher the defense, the higher the damage reduction'. Simulator must treat K as a calibratable parameter: mitigation = DEF/(DEF+K) is the most common mobile-RPG form, but this is an ASSUMPTION."
+  },
+  "defenseIgnore": {
+   "value": "Skills/artifacts use 'Ignores X% of the target's Defense' (e.g. 30% on crit) — implies DEF is applied after ignore: effectiveDEF = DEF x (1 - ignore)",
+   "source": "/mnt/project-files/dragonheir/knowledge/raw-official/equip-2025.json",
+   "sourceDate": "official data",
+   "confidence": "verified",
+   "notes": "Exact composition with Defense Penalty unknown; likely multiplicative: DEF x (1 - DefPenalty) x (1 - ignore) (estimated)."
+  }
+ },
+ "accuracy": {
+  "order": {
+   "value": "1) roll the skill's own chance ('X% chance to inflict'); 2) if it procs, roll ACC vs RES. Dispelling an ALLY's debuff/control never checks ACC/RES. Dispelling enemy shields/buffs DOES check.",
+   "source": "https://www.dragonheir.info/article/103",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values)",
+   "confidence": "verified"
+  },
+  "csOfficialPoints": {
+   "value": {
+    "ACC-RES=+20": 0.95,
+    "ACC-RES=-40": 0.5,
+    "ACC-RES=-100": 0.05,
+    "minimumResist": 0.03
+   },
+   "source": "https://forum.gamer.com.tw/C.php?bsn=77662&snA=1152",
+   "sourceDate": "2023-10-19 (CS reply) / thread 2023-10-22",
+   "confidence": "reported",
+   "notes": "Taiwan customer-service reply screenshot: 專注高於豁免20點95%成功，豁免高於專注40點50%成功，豁免高於專注100點5%成功；抵抗也會存在至少3%的固定抵抗. Points lie on one straight line: p = 0.80 + 0.0075 x (ACC - RES), capped at 0.97 (reached at diff ~ +22.7) and floored at 0 (diff <= -106.7)."
+  },
+  "linearModel": {
+   "value": "p_land = clamp(0.80 + 0.0075 x (ACC - RES), 0, 0.97) x skillChance",
+   "source": "https://forum.gamer.com.tw/C.php?bsn=77662&snA=1152",
+   "sourceDate": "2023-10-22",
+   "confidence": "estimated",
+   "notes": "Derived by fitting the three CS data points (exact line). Fits the official wiki test at diff>=0 (92-98% observed) but under-predicts diff -30 (57.5% vs 68-80% observed) and over-predicts diff -50/-70 (42.5/27.5% vs 16%/8-12%). Use the empirical table below for the -30..-70 region if preferred."
+  },
+  "officialEmpiricalTable": {
+   "value": {
+    "<=-100": 0.0,
+    "-70": 0.1,
+    "-50": 0.16,
+    "-30": 0.76,
+    "0": 0.92,
+    "+20": 0.94,
+    "+50": 0.98
+   },
+   "source": "https://www.dragonheir.info/article/103",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values)",
+   "confidence": "verified",
+   "notes": "Official wiki test, 25 attempts per cell (so +-~10% noise). Raw cells: RES30: ACC0 80%, ACC30 92%, ACC50 96%, ACC80 100%; RES80: ACC0 4%, 30 16%, 50 76%, 80 88%, 100 92%, 130 96%; RES150: 0 0%, 80 8%, 120 68%, 150 92%, 170 96%, 200 100%; RES250: 0 0%, 180 12%, 220 80%, 250 96%, 270 92%, 300 96%. Official summary: diff<=-50 -> <20%; diff~-30 -> ~75%; diff 0..+20 -> 90-95%; diff>=+50 -> ~100% but not guaranteed.",
+   "era": "S1-2023"
+  },
+  "recommendedMargin": {
+   "value": "ACC >= enemy RES + 20 (official dungeon tables list 'Recommended Accuracy' = enemy Resistance + 20)",
+   "source": "https://www.dragonheir.info/article/103",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values)",
+   "confidence": "verified",
+   "notes": "Official table: Elemental Domain RES 10/10/30/75/120 -> rec ACC 30/30/50/95/140; Graves/Ruins RES 10/10/30/50/80/80/150/150/200 -> 30/30/50/70/100/100/170/170/220; Weekly challenge RES 30/80/200/250 -> 50/100/220/270."
+  },
+  "tooltipResistance80": {
+   "value": "In-game Resistance tooltip: resist chance is notably higher when Resistance exceeds enemy Accuracy by 80",
+   "source": "https://forum.gamer.com.tw/C.php?bsn=77662&snA=1736 ; https://dragonheir.fandom.com/wiki/Stats",
+   "sourceDate": "2024-01-21 / 2024-05-07",
+   "confidence": "verified",
+   "notes": "Two independent copies of the in-game tooltip text (TW screenshot + EN fandom). With the linear model, diff -80 -> 20% land chance."
+  },
+  "devStatement2025": {
+   "value": {
+    "ACC-RES>=200": "failure ~3% (land ~97%)",
+    "ACC-RES in 0..50": "failure ~5-10% (land ~90-95%)"
+   },
+   "source": "https://www.dragonheir.info/article/1693",
+   "sourceDate": "2025-12-09",
+   "confidence": "verified",
+   "notes": "Official dev Q&A (Reborn era, S3): 'When Accuracy exceeds Resistance by 200 or more, the skill failure rate will approach 3%. If the value is between 0 and 50, the failure rate will be approximately 5%-10%.' Not to be changed short-term. This is the most recent official statement and implies the curve keeps rising slowly above +50 (not a hard 97% cap at +23 as the 2023 CS line suggests)."
+  },
+  "recommendedSimModel": {
+   "value": "p_land = skillChance x S(D), D = ACC - RES (after Accuracy/Resistance Up/Penalty). S(D) piecewise-linear through: D<=-100:0.02, -70:0.10, -50:0.18, -40:0.50*, -30:0.72, 0:0.90, +20:0.93, +50:0.95, +100:0.96, >=+200:0.97",
+   "source": "https://www.dragonheir.info/article/103 ; https://forum.gamer.com.tw/C.php?bsn=77662&snA=1152 ; https://www.dragonheir.info/article/1693",
+   "sourceDate": "2023-10 .. 2025-12",
+   "confidence": "estimated",
+   "notes": "Blend: official 2023 test table (-70..+50), CS point (-40 -> 50%, kept as an anchor between -50 and -30 although the test table suggests a steeper drop), 2025 dev statement (0..50 -> 90-95%, >=200 -> 97%). *Uncertain region -50..-30. Floor: official test shows 0% at <=-100 while CS says 5% at -100; use 0.02."
+  },
+  "pvpUltEnergyReduction": {
+   "value": 0.5,
+   "source": "https://www.dragonheir.info/article/46",
+   "sourceDate": "2023-10-18",
+   "confidence": "verified",
+   "notes": "Official PvP rules: 'Reduces the effect of Ultimate Energy Reduction by 50% in all Grand Gladiator Arena battles.' Also in Steam 'Global Launch Q&A' 2023-09-16 (per KB). Reborn status unknown."
+  },
+  "accuracyChanceArtifact": {
+   "value": "Some artifacts (e.g. Moonlit Harp 月暈豎琴) add +X% to the SKILL's base chance (7.5%..15% by refinement), not to ACC; useless if the skill is already 100%",
+   "source": "https://forum.gamer.com.tw/C.php?bsn=77662&snA=1152",
+   "sourceDate": "2023-10-22",
+   "confidence": "reported"
+  }
+ },
+ "enlightenment": {
+  "derivativeDamage": {
+   "value": "Derivative Damage x (1 + Enlightenment/200)",
+   "source": "https://www.dragonheir.info/article/103",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values)",
+   "confidence": "verified",
+   "notes": "Official: 'The Derivative Damage bonus equals Enlightenment divided by 200 ... 40 Enlightenment -> +20%'. Independently confirmed by Reddit test: 8 Enlightenment -> tooltip +4%, 169 -> 176 dmg (2023-05-30, https://www.reddit.com/r/Dragonheir_SilentGods/comments/13vzu0l/)."
+  },
+  "skillCoefficient": {
+   "value": "When a skill text says '[+X% Enlightenment]', the amount = X% x Enlightenment (Enlightenment is used directly as the scaling stat, like ATK in '[+X%Attack]')",
+   "source": "https://dragonheir.fandom.com/wiki/Stats ; /mnt/project-files/dragonheir/knowledge/raw-official/heroes-2025.json",
+   "sourceDate": "2024-05-07 / official data",
+   "confidence": "verified",
+   "notes": "Tooltip: 'Affects the value of Derivative Damage, or becomes the coefficient of some skills directly.' Mainly healing/shield skills (official article 103)."
+  },
+  "sources": {
+   "value": {
+    "mainStatHelmet_or_PositiveRune_ref8/12/16/20": [
+     30,
+     50,
+     80,
+     120
+    ],
+    "substat": "starts 9-15, +same amount per enhancement"
+   },
+   "source": "https://www.dragonheir.info/article/103",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values)",
+   "confidence": "verified",
+   "era": "S1-2023"
+  }
+ },
+ "timing": {
+  "attackInterval": {
+   "value": "interval = baseInterval / (1 + AttackSpeed%) ; attacks/s = attack_frequency x (1 + AttackSpeed%)",
+   "source": "https://www.dragonheir.info/article/103",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values)",
+   "confidence": "verified",
+   "notes": "Official example: 2.5 s interval (0.4/s) +25% Attack Speed -> 0.5/s -> 2.0 s."
+  },
+  "attackFrequencyMeaning": {
+   "value": "heroes-2025.json attack_frequency = basic attacks per second (base interval = 1/attack_frequency s: 0.38->2.63 s, 0.4->2.5 s, 0.5->2.0 s, 0.55->1.82 s)",
+   "source": "/mnt/project-files/dragonheir/knowledge/raw-official/heroes-2025.json ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "official data ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "estimated",
+   "notes": "Cross-check: for 105 heroes matched between GameKee pages ('攻击间隔 X秒') and the official config, X == 1/attack_frequency in every case (0 mismatches)."
+  },
+  "skillHaste": {
+   "value": "rechargeRate = 1 + SkillHaste x 0.002 (5 haste = 1%). Ultimate time = energyCost / rechargeRate (base 1 energy/s). Battle skill time = baseCD / rechargeRate - flat scroll reduction",
+   "source": "https://www.dragonheir.info/article/103 ; https://forum.gamer.com.tw/C.php?bsn=77662&snA=1035",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) / 2023-10-16",
+   "confidence": "verified",
+   "notes": "Official article: 'every 5 Skill Haste equals 1% recharging speed ... 100 haste -> 1.2 energy/s -> 20/1.2 = 16.67 s'. Bahamut regression (CS-confirmed) gives same 0.002 coefficient. Displayed gear haste is rounded; true values can be fractional."
+  },
+  "rechargeSpeedPenalty": {
+   "value": -0.3,
+   "source": "https://www.dragonheir.info/article/103 ; https://www.reddit.com/r/Dragonheir_SilentGods/comments/1drwlzx/",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) / 2024-06-30",
+   "confidence": "verified",
+   "notes": "Official table: reduces recharging speed by 30%. Reddit: a 10 s penalty delays an 18 s boss cycle to 21 s (10 x 0.3 = 3 s)."
+  },
+  "rechargeSpeedUp": {
+   "value": 0.05,
+   "source": "https://www.dragonheir.info/article/103",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values)",
+   "confidence": "verified",
+   "notes": "Official table text 'Increases recharging speed by 5%' (S1-era).",
+   "era": "S1-2023"
+  },
+  "energyPerSecond": {
+   "value": 1.0,
+   "source": "https://www.dragonheir.info/article/103",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values)",
+   "confidence": "verified"
+  }
+ },
+ "buffTiers": {
+  "Attack Up": {
+   "value": "varies by hero (stated per skill, e.g. 15%/20%/25%/40%)",
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "notes": "Official: 'Different Heroes have different amounts of Attack Up.' Use the % written in each skill.",
+   "era": "S1-2023"
+  },
+  "Defense Up I": {
+   "value": 0.3,
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "era": "S1-2023"
+  },
+  "Defense Up II": {
+   "value": 0.6,
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "era": "S1-2023"
+  },
+  "Attack Speed Up I": {
+   "value": 0.25,
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "era": "S1-2023"
+  },
+  "Attack Speed Up II": {
+   "value": 0.5,
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "era": "S1-2023"
+  },
+  "Accuracy Up I": {
+   "value": 0.25,
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "notes": "+25% Accuracy (percentage of stat)",
+   "era": "S1-2023"
+  },
+  "Accuracy Up II": {
+   "value": 0.5,
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "era": "S1-2023"
+  },
+  "Crit Rate Up": {
+   "value": 0.2,
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "notes": "'Crit Rate Bonus: Increases Crit Rate by 20%' (additive percentage points)",
+   "era": "S1-2023"
+  },
+  "Crit Damage Up": {
+   "value": 0.3,
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "era": "S1-2023"
+  },
+  "Damage Reduction": {
+   "value": -0.3,
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "notes": "takes 30% less damage",
+   "era": "S1-2023"
+  },
+  "Recharging Speed Up": {
+   "value": 0.05,
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "era": "S1-2023"
+  },
+  "Ally Protection": {
+   "value": 0.5,
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "notes": "absorbs 50% of the initial damage for the protected unit (works on summons)",
+   "era": "S1-2023"
+  },
+  "Resurrection at Death": {
+   "value": {
+    "hp": 0.3,
+    "ultimateEnergyKept": 0.75
+   },
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "era": "S1-2023"
+  },
+  "Attack Penalty I": {
+   "value": -0.25,
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "era": "S1-2023"
+  },
+  "Attack Penalty II": {
+   "value": -0.5,
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "era": "S1-2023"
+  },
+  "Defense Penalty I": {
+   "value": -0.25,
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "era": "S1-2023"
+  },
+  "Defense Penalty II": {
+   "value": -0.5,
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "era": "S1-2023"
+  },
+  "Accuracy Penalty I": {
+   "value": -0.25,
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "era": "S1-2023"
+  },
+  "Accuracy Penalty II": {
+   "value": -0.5,
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "era": "S1-2023"
+  },
+  "Healing Reduction": {
+   "value": -0.5,
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "era": "S1-2023"
+  },
+  "Healing Prohibition": {
+   "value": -1.0,
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "era": "S1-2023"
+  },
+  "Healing Reversal": {
+   "value": {
+    "damageOfHealing": 0.5,
+    "capPctAttackerMaxHP": 1.0
+   },
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "era": "S1-2023"
+  },
+  "Recharging Speed Penalty": {
+   "value": -0.3,
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "era": "S1-2023"
+  },
+  "Accuracy Up (flat variant)": {
+   "value": "+50 Accuracy",
+   "source": "https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "reported",
+   "notes": "Some effects grant a flat amount instead of the tier: CN tooltip '专注增加：增加50.0专注' / '豁免增加：增加50.0豁免' (Resistance Up +50).",
+   "era": "S1-2023"
+  },
+  "Enlightenment Up": {
+   "value": 0.2,
+   "source": "https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "reported",
+   "notes": "CN tooltip '领悟增加：增加20%的领悟' (one hero-specific variant gives +1%).",
+   "era": "S1-2023"
+  },
+  "Damage Up (generic buff icon)": {
+   "value": 0.3,
+   "source": "https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "reported",
+   "notes": "CN tooltip '伤害增加：造成的伤害增加30%'. Most Reborn skills state their own % ('20% Damage Bonus'); use the skill text value when given.",
+   "era": "S1-2023"
+  },
+  "Attack Up (examples)": {
+   "value": [
+    0.15,
+    0.2,
+    0.25,
+    0.3,
+    0.4
+   ],
+   "source": "https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html) ; https://www.dragonheir.info/article/103",
+   "sourceDate": "2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "notes": "CN tooltips list separate keywords '15%攻击增加', '20%攻击增加', '25%攻击增加', '30%攻击增加', '40%攻击增加' -> Attack Up is always written with its own percentage.",
+   "era": "S1-2023"
+  }
+ },
+ "statuses": {
+  "Stunned": {
+   "value": {
+    "canAct": false,
+    "gainsUltEnergy": false
+   },
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "era": "S1-2023"
+  },
+  "Frozen": {
+   "value": {
+    "canAct": false,
+    "gainsUltEnergy": false,
+    "damageTaken": -0.3
+   },
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "era": "S1-2023"
+  },
+  "Fear": {
+   "value": {
+    "canAct": false,
+    "gainsUltEnergy": true
+   },
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "era": "S1-2023"
+  },
+  "Silenced": {
+   "value": {
+    "basicAttack": true,
+    "battleSkill": false,
+    "ultimate": false,
+    "gainsUltEnergy": true
+   },
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "era": "S1-2023"
+  },
+  "Taunt": {
+   "value": {
+    "forcedBasicAttacksOnTaunter": true,
+    "gainsUltEnergy": true,
+    "canCastUlt": false
+   },
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "era": "S1-2023"
+  },
+  "Charmed": {
+   "value": {
+    "attacksAllies": true,
+    "gainsUltEnergy": true,
+    "castsUlt": false
+   },
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "era": "S1-2023"
+  },
+  "Knocked Up": {
+   "value": {
+    "canAct": false,
+    "duration": "temporary (animation), not a sustained control"
+   },
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "era": "S1-2023"
+  },
+  "Blind": {
+   "value": {
+    "basicAttacksMiss": true
+   },
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "era": "S1-2023"
+  },
+  "Immortality": {
+   "value": {
+    "preventsDeath": true,
+    "canStillBeDebuffed": true
+   },
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "era": "S1-2023"
+  },
+  "Invincibility": {
+   "value": {
+    "immuneToAllDamage": true,
+    "canStillBeDebuffed": true
+   },
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "era": "S1-2023"
+  },
+  "Invisibility": {
+   "value": {
+    "untargetableBySingleTarget": true,
+    "takesAoE": true
+   },
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "era": "S1-2023"
+  },
+  "Hit Recovery": {
+   "value": {
+    "healOnHit": "scales with the hero's Defense",
+    "noHealIfBlockedByShield": true
+   },
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "era": "S1-2023"
+  },
+  "Recovery Over Time": {
+   "value": {
+    "tick": "1/s",
+    "scaling": "attacker's (caster's) Max HP"
+   },
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "era": "S1-2023"
+  },
+  "Debuff Immunity": {
+   "value": {
+    "immuneToDebuffs": true
+   },
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "era": "S1-2023"
+  },
+  "Control Immunity": {
+   "value": {
+    "immuneToControl": true
+   },
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "era": "S1-2023"
+  },
+  "Dispel": {
+   "value": {
+    "checksAccRes": "only when removing enemy buffs/shields; never when cleansing allies"
+   },
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "era": "S1-2023"
+  },
+  "Buff Prohibition": {
+   "value": {
+    "cannotGainBuffs": true
+   },
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "era": "S1-2023"
+  },
+  "Resurrection Blocked": {
+   "value": {
+    "cannotBeRevived": true
+   },
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "era": "S1-2023"
+  },
+  "Shield": {
+   "value": {
+    "countsAsBuff": false
+   },
+   "source": "https://forum.gamer.com.tw/C.php?bsn=77662&snA=728",
+   "sourceDate": "2023-10-03",
+   "confidence": "reported",
+   "notes": "Bahamut snA=728 (2023-10-03): shields are not buffs (no buff icon) - not removed by buff-dispel, only by 'Dispel Shield'/'ignore shield' effects.",
+   "era": "S1-2023"
+  },
+  "Poisoned (S1)": {
+   "value": {
+    "tickEvery_s": 5,
+    "tickDamage": "0.5% of target Max HP as Poison Derivative Damage",
+    "capPerTick": "30% of attacker's ATK",
+    "landingChecksAccRes": true
+   },
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "notes": "S1-era definition; post-relaunch poison is a stacking school (see bonds.Poison/Toxin). Derivative => scaled by Enlightenment/200, cannot crit.",
+   "era": "S1-2023"
+  },
+  "Poison Explosion": {
+   "value": {
+    "effect": "instantly triggers all remaining Poison ticks on the unit"
+   },
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "era": "S1-2023"
+  },
+  "Frost (S1)": {
+   "value": {
+    "effect": "some skills are enhanced vs Frost targets",
+    "landingChecksAccRes": true
+   },
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "era": "S1-2023"
+  },
+  "Burning (S2 school)": {
+   "value": {
+    "tickEvery_s": 6,
+    "effect": "AoE damage around the burning target",
+    "maxStacks": 10
+   },
+   "source": "https://www.dragonheir.info/article/206",
+   "sourceDate": "2024-02-02 (S2, Dec 2023)",
+   "confidence": "verified",
+   "notes": "Official S2 guide: 'Deals AOE damage around the target every 6 seconds, stacking up to 10 times.' Reborn heroes can raise the cap (Bahamut snA=2406, 2026-02-03: Paixton raises Burn stacks cap to 20).",
+   "era": "S2-2023"
+  },
+  "Ice Crystal (Ice Blast school)": {
+   "value": {
+    "maxStacks": 5,
+    "effect": "when a unit with Ice Crystals casts a battle skill it can immediately cast another by consuming 1 Ice Crystal"
+   },
+   "source": "https://www.dragonheir.info/article/206",
+   "sourceDate": "2024-02-02 (S2, Dec 2023)",
+   "confidence": "verified",
+   "era": "S2-2023"
+  },
+  "Electrocuted (Thunderbolt school)": {
+   "value": {
+    "tickEvery_s": 3,
+    "targets": "the target + up to 4 nearby enemies that are also Electrocuted",
+    "Thunderbolt": "triggers the Electrocuted damage once immediately"
+   },
+   "source": "https://www.dragonheir.info/article/206",
+   "sourceDate": "2024-02-02 (S2, Dec 2023)",
+   "confidence": "verified",
+   "era": "S2-2023"
+  },
+  "Frost (Reborn)": {
+   "value": {
+    "stacksTo": 5,
+    "atMaxStacks": "deals one extra (Cold) damage instance; with the Frost bond active, 5 stacks -> Frozen",
+    "isDamageDebuff": true
+   },
+   "source": "https://www.taptap.cn/moment/630842520921704794 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2025-01-21",
+   "confidence": "reported",
+   "notes": "CN official bond post (2025-01-21, CN test build): '寒霜作为一种负面状态...在叠满5层时能对敌人造成一次额外伤害'. CN tooltip lists Frost among 'damage-type debuffs (寒霜, 毒伤)'. Slow/attack-speed effect of Frost: not stated anywhere found.",
+   "era": "Reborn"
+  },
+  "Wild roll (Reborn dice)": {
+   "value": {
+    "die": "d6",
+    "damageBonusPerPip": 0.05,
+    "range": "+5%..+30% to that skill's damage"
+   },
+   "source": "https://www.taptap.cn/moment/630842520921704794",
+   "sourceDate": "2025-01-21",
+   "confidence": "verified",
+   "notes": "CN official post screenshot of keyword '狂野: 技能释放时掷6面骰，掷骰结果为此次技能提供伤害加成（每1点提升5%）'. Replaced the S1 rule (30% chance -> skill damage 120%).",
+   "era": "Reborn"
+  },
+  "Wild (S1)": {
+   "value": {
+    "procChance": 0.3,
+    "skillDamageOnProc": 1.2
+   },
+   "source": "https://www.dragonheir.info/article/103 ; https://www.gamekee.com/dragon/ (CN/TW fan wiki; hero pages copy in-game keyword tooltips, e.g. https://www.gamekee.com/dragon/600375.html)",
+   "sourceDate": "2024-02-02 (images dated 2023-10-31; S1-era values) ; 2023-09-21..2023-10-26 (190 hero pages)",
+   "confidence": "verified",
+   "notes": "S1 keyword: 30% base chance on skill use; success sets that skill's damage to 120%.",
+   "era": "S1-2023"
+  },
+  "Poison (Reborn stacks)": {
+   "value": {
+    "stacking": "multiple stacks per application (e.g. 'inflicting 2 stacks of Poison for 15.0s'); durations typically 15 s",
+    "heroModifiers": [
+     "'Each stack of Poison increases the damage by 100% (up to 40% of the hero's Attack each stack)' (heroes[111])",
+     "'Poison Damage dealt by allies has its interval reduced by 2s' (heroes[138]; moqi: 'Toxin damage ... reduced by 2s')",
+     "'the target's 1% Defense is ignored for every stack of Poison they have' (heroes[259])"
+    ]
+   },
+   "source": "/mnt/project-files/dragonheir/knowledge/raw-official/heroes-2025.json ; /mnt/project-files/dragonheir/knowledge/raw-official/moqi-2026.json",
+   "sourceDate": "official data 2025/2026",
+   "confidence": "verified",
+   "notes": "Hero/skill texts in official config. Base Reborn Poison tick interval and per-stack tick damage are NOT stated in any found keyword text; S1 value (5 s, 0.5% Max HP capped at 30% ATK) is the only official number.",
+   "era": "Reborn"
+  },
+  "Ignite / Burn / Blast (Reborn Burn school)": {
+   "value": {
+    "ignite": "percentage meter inflicted by Fire skills ('inflicts 20% Ignite'); converts into Burn (texts: 'inflicting 100% Ignite ... This Ignite effect is converted into Burn') -> conversion at 100% Ignite (estimated from wording)",
+    "burnStackCap": "10 (S2 rule; Paixton +10)",
+    "blast": "consumes Burn stacks for burst damage ('triggering Blast (rounded down) for half of their Burn stacks')",
+    "heroModifiers": [
+     "'Damage dealt to enemies inflicted with Burn is increased by 4% for each stack of Burn' (heroes[202], also an equipment set effect)",
+     "'inflicts 1% Ignite for each stack of Burn they possess' (heroes[95])",
+     "'Enemies with Burn take an additional [+180%Attack]Derivative (damage increases by 10% for each stack of Burn)' (heroes[62])"
+    ]
+   },
+   "source": "/mnt/project-files/dragonheir/knowledge/raw-official/heroes-2025.json ; https://www.dragonheir.info/article/206 ; https://www.dragonheir.info/article/1005",
+   "sourceDate": "official data ; 2024-02-02 ; 2025-09-24",
+   "confidence": "reported",
+   "notes": "Burn tick damage/interval in Reborn not found as a number (S2 2023: AoE every 6 s, 10 stacks). Official teaser article 1005 (2025-09-24) mentions 'up to 9 stacks' for one lineup.",
+   "era": "Reborn"
+  },
+  "Ice Crystal cap modifier": {
+   "value": {
+    "capIncrease": 2,
+    "autoGain": "1 stack every 5 s (that hero)"
+   },
+   "source": "/mnt/project-files/dragonheir/knowledge/raw-official/heroes-2025.json ; /mnt/project-files/dragonheir/knowledge/raw-official/moqi-2026.json",
+   "sourceDate": "official data",
+   "confidence": "verified",
+   "notes": "'While the hero is on the field, all Ice Blast allies' Ice Crystal stack cap increases by 2. The hero automatically gains 1 stack of Ice Crystal every 5s.' (heroes[10]) -> cap 5 -> 7.",
+   "era": "Reborn"
+  },
+  "Static (hero mechanic, Gatekeeper-type)": {
+   "value": {
+    "gain": "basic/battle/ultimate = 1/2/3 stacks",
+    "trigger": "at 4 stacks consume 4 -> [+100%Attack] lightning damage to nearest enemy (75% chance to inflict a debuff)",
+    "inspirationVariant": "after each trigger the stacks consumed increase by only 1"
+   },
+   "source": "/mnt/project-files/dragonheir/knowledge/raw-official/heroes-2025.json",
+   "sourceDate": "official data",
+   "confidence": "verified",
+   "notes": "Hero-specific passive (heroes[0]), not a global status.",
+   "era": "Reborn"
+  },
+  "Bleed": {
+   "value": null,
+   "source": "/mnt/project-files/dragonheir/knowledge/raw-official/heroes-2025.json ; /mnt/project-files/dragonheir/knowledge/raw-official/equip-2025.json ; /mnt/project-files/dragonheir/knowledge/raw-official/moqi-2026.json",
+   "sourceDate": "official data",
+   "confidence": "verified",
+   "notes": "No 'Bleed' status exists in the official 2025/2026 hero/equipment texts (only in story text). Do not simulate unless a later source adds it.",
+   "era": "Reborn"
+  },
+  "True Damage": {
+   "value": {
+    "ignoresDEF": true,
+    "ignoresNormalDamageUpDown": true,
+    "canCrit": true,
+    "usesCritDamage": true
+   },
+   "source": "https://www.dragonheir.info/article/1747",
+   "sourceDate": "2025-12-15",
+   "confidence": "verified",
+   "notes": "Official Corrosion card (TW).",
+   "era": "Reborn"
+  }
+ },
+ "captainAura": {
+  "onlyOneActive": {
+   "value": "If several deployed heroes have a Captain Aura, the player selects ONE as the active Aura Skill for the battle (auras do not stack)",
+   "source": "https://www.dragonheir.info/article/39",
+   "sourceDate": "2023-10-18",
+   "confidence": "verified",
+   "notes": "Official 'Combat System Introduction': 'If several of the deployed Heroes have a Captain Aura, the players must access the Aura Details page ... and select one of them to be the active Aura Skill for this round.' Aura values are in each hero's aura text (raw-official heroes json). Reborn-era status of captain auras not re-checked.",
+   "era": "S1-2023"
+  }
+ },
+ "bonds": {
+  "_rule": {
+   "value": "A school bond activates with 2 or more heroes of the same school (comp) on the team; tiers shown as [2]/[3]",
+   "source": "https://hellhades.com/dragonheir-silent-gods-combat-update/ ; https://www.dragonheir.info/article/1773",
+   "sourceDate": "2025-05-12 / 2025-12-17",
+   "confidence": "verified"
+  },
+  "Shadow": {
+   "value": {
+    "2": {
+     "extra3x3AoETriggers": 1
+    },
+    "3": {
+     "extra3x3AoETriggers": 2
+    },
+    "shadowEnergyPerBasicAttack": 10
+   },
+   "source": "https://www.dragonheir.info/article/1719",
+   "sourceDate": "2025-12-12",
+   "confidence": "verified",
+   "notes": "Official TW card: when an ally's skill/status that CONSUMES Shadow Energy deals damage, it additionally triggers 3x3 area damage: [2] once, [3] twice. Shadow Energy is gained from basic attacks (10 each) and battle-skill damage; it is NOT affected by ultimate-energy increase/decrease effects; gain rate depends on Attack Speed and Skill Haste. Size of the extra AoE hit not stated."
+  },
+  "Corrosion": {
+   "value": {
+    "2": {
+     "corrosionIntensity": 0.03
+    },
+    "3": {
+     "corrosionIntensity": 0.05
+    }
+   },
+   "source": "https://www.dragonheir.info/article/1747",
+   "sourceDate": "2025-12-15",
+   "confidence": "verified",
+   "notes": "Official TW card: all ally Corrosion heroes gain Corrosion Intensity when dealing Poison damage: [2] 3%, [3] 5%. Mechanic: battle/ultimate damage converts part of the damage (by Corrosion Intensity) into Corrosion value on the enemy; once 'fully corroded', subsequent attacks deal full damage; some skills consume Corrosion for True Damage (ignores DEF, can crit)."
+  },
+  "Wild": {
+   "value": {
+    "base": "Wild dice rolls recharge the team's Exclusive Skill; at 100 it can be released to grant Burst to allies for 12 s",
+    "2": "during Burst, ally Wild dice rolls +2",
+    "3": "during Burst, ally Wild dice rolls are guaranteed to be the max value (6)"
+   },
+   "source": "https://store.steampowered.com/news/app/2203070/view/1799088287951195 ; https://www.taptap.cn/moment/630842520921704794",
+   "sourceDate": "2025-05-12 ; 2025-01-21",
+   "confidence": "verified",
+   "notes": "Wild keyword (same source): roll a d6 when casting a spell, +5% damage per pip (=> +5..+30%, mean +17.5%; Burst [2]: pips+2 => +15..+40% (cap at 6 unknown), [3]: always +30%)."
+  },
+  "Frost": {
+   "value": {
+    "base": "When Frost reaches 5 stacks and deals damage, additionally inflicts Cold on the target",
+    "2": "Frozen lasts 5 s",
+    "3": "Cold lasts 5 s; inflict Cold for 5 s on 1 target at battle start"
+   },
+   "source": "https://store.steampowered.com/news/app/2203070/view/1799088287951195 ; https://www.taptap.cn/moment/630842520921704794",
+   "sourceDate": "2025-05-12 ; 2025-01-21",
+   "confidence": "verified",
+   "notes": "Frost keyword (same source): 'Debuff, at 5 stacks deals [+3% Max HP] cold damage (extra damage scaled with the Frost hero's attack)'. CN post: with the bond, 5-stack Frost -> Frozen; [3] freezes one enemy at battle start. Card wording mixes 'Cold' and 'Frozen' (translation); Cold appears to be the bond-applied hard control. Whether the 5 stacks are consumed on trigger: not stated."
+  },
+  "Rally": {
+   "value": {
+    "base": "At the start of battle, all Rally allies gain 1 stack of Rally",
+    "2": "re-triggers every 30 s afterwards",
+    "3": "re-triggers every 20 s afterwards",
+    "rallyKeyword": "stackable buff; all stacks are consumed when the carrier casts its ultimate to enhance that cast, up to 3 stacks"
+   },
+   "source": "https://store.steampowered.com/news/app/2203070/view/1799088287951195",
+   "sourceDate": "2025-05-12",
+   "confidence": "verified",
+   "notes": "CN 2025-01 test build instead described debuff cleanse / control immunity on gaining Rally ([3]); the EN 2025-05 card is newer."
+  },
+  "Support": {
+   "value": {
+    "base": "All allies gain a 30 s shield at battle start",
+    "2": {
+     "shieldPctMaxHP": 0.1
+    },
+    "3": {
+     "shieldPctMaxHP": 0.15
+    },
+    "duration_s": 30
+   },
+   "source": "https://store.steampowered.com/news/app/2203070/view/1799088287951195 ; https://www.taptap.cn/moment/630842520921704794",
+   "sourceDate": "2025-05-12 ; 2025-01-21",
+   "confidence": "verified",
+   "notes": "Shield % is of each ally's own Max HP (assumed; card says '10% Max HP Shield'). Former Defense-role heroes count as Support."
+  },
+  "Summon": {
+   "value": {
+    "base": "A powerful undead summoned unit (Darkflame Phoenix) appears on your side; its attributes scale with current Resonance Level",
+    "2": "summons Darkflame Phoenix",
+    "3": "summons a stronger Darkflame Phoenix"
+   },
+   "source": "https://store.steampowered.com/news/app/2203070/view/1799088287951195 ; https://www.taptap.cn/moment/630842520921704794",
+   "sourceDate": "2025-05-12 ; 2025-01-21",
+   "confidence": "verified",
+   "notes": "Phoenix stats not published (CN post: it can control, tank and deal damage; official article 1336: it has healing)."
+  },
+  "Dauntless": {
+   "value": {
+    "base": "Ally Dauntless heroes' basic attacks have a chance to make the Thundercloud perform a coordinated attack; Thundercloud strength scales with Resonance Level and with coordination-attack frequency",
+    "2": {
+     "coordinatedAttackChance": 0.4
+    },
+    "3": {
+     "coordinatedAttackChance": 0.5
+    }
+   },
+   "source": "https://store.steampowered.com/news/app/2203070/view/1799088287951195 ; https://www.taptap.cn/moment/630842520921704794",
+   "sourceDate": "2025-05-12 ; 2025-01-21",
+   "confidence": "verified",
+   "notes": "Damage of one Thundercloud hit not published. Official dragonheir.info 1298 (2025-10-27): a Dauntless change on 2025-10-23 unintentionally affected Continental Challenge damage (so values were re-tuned in S2)."
+  },
+  "Poison": {
+   "value": {
+    "base": "When the Poison debuff is triggered (Poison Explosion), a poison pool forms under the target, continuously dealing Poison damage to nearby enemies",
+    "2": {
+     "poisonPoolChance": 0.3
+    },
+    "3": {
+     "poisonPoolChance": 0.6
+    }
+   },
+   "source": "https://store.steampowered.com/news/app/2203070/view/1799088287951195",
+   "sourceDate": "2025-05-12",
+   "confidence": "verified",
+   "notes": "Pool damage/duration not published. CN 2025-01 test text was different (poison damage partly converted to healing; [3] shorter tick interval) -> changed before global Reborn launch. Later renamed 'Toxin' school (2026)."
+  },
+  "Aura": {
+   "value": {
+    "2": {
+     "auraEnergyAtStart": 10,
+     "maxHP": 0.1
+    },
+    "3": {
+     "auraEnergyAtStart": 20,
+     "maxHP": 0.15
+    }
+   },
+   "source": "https://www.dragonheir.info/article/1773",
+   "sourceDate": "2025-12-17",
+   "confidence": "verified",
+   "notes": "Official card: 'At the start of battle, all ally Aura heroes gain initial Aura Energy and increase their Max HP. [2]: 10 Aura Energy and 10% Max HP; [3]: 20 Aura Energy and 15% Max HP'. Aura heroes deal direct damage that can crit; some Aura skills scale on ATK and Max HP."
+  },
+  "_cnOfficial2025": {
+   "value": {
+    "Wild": "rolls accumulate; every 100 total pips -> Berserk mode: each Wild roll +2 pips; [3] bond: every roll is the maximum",
+    "Dauntless": "creates a Thundercloud; Dauntless heroes' basic attacks have a chance to trigger a co-attack; repeated triggers in a short time upgrade the cloud",
+    "Summon": "with 2+ Summon heroes, an extra Flame Sparrow / Darkflame Phoenix (tank + control + damage) is deployed in the preparation phase",
+    "Frost": "with the bond, enemies at 5 Frost stacks become Frozen; [3] bond: one enemy is Frozen at battle start without stacking",
+    "Poison": "when Poison damage triggers, part of it is converted into healing; [3] bond: Poison tick interval is further shortened",
+    "Rally": "Rally heroes remove all debuffs when they gain Rally; [3] bond: also gain Control Immunity",
+    "Support": "all allies get a shield at battle start"
+   },
+   "source": "https://www.taptap.cn/moment/630842520921704794",
+   "sourceDate": "2025-01-21",
+   "confidence": "verified",
+   "notes": "Official CN account (埃达西亚的龙宝) post on the bond system, CN 'immortal test' build ('以下羁绊信息源于不朽测试，具体请以当下游戏实际为准'). Qualitatively identical to HellHades' EN preview of 2025-05-12 -> two independent sources for the mechanics; numbers (shield size, heal %, interval reduction) are not given."
+  },
+  "Burn": {
+   "value": {
+    "summary": "S2 school (Reborn S2, 2025-09): Ignite/Burn/Blast stacking AoE",
+    "numbers": null
+   },
+   "source": "https://www.dragonheir.info/article/817 ; /article/863 ; /article/875",
+   "sourceDate": "2025-09-10..12",
+   "confidence": "reported",
+   "notes": "Bond tier numbers for the S2 schools not found yet."
+  },
+  "Ice Blast": {
+   "value": {
+    "summary": "S2 school: create/consume Ice Crystals for extra battle-skill casts and crits",
+    "numbers": null
+   },
+   "source": "https://www.dragonheir.info/article/817 ; /article/863 ; /article/875",
+   "sourceDate": "2025-09-10..12",
+   "confidence": "reported",
+   "notes": "Bond tier numbers for the S2 schools not found yet."
+  },
+  "Thunderbolt": {
+   "value": {
+    "summary": "S2 school: Electrocuted + Lightning Chains + Thunderbolt Energy",
+    "numbers": null
+   },
+   "source": "https://www.dragonheir.info/article/817 ; /article/863 ; /article/875",
+   "sourceDate": "2025-09-10..12",
+   "confidence": "reported",
+   "notes": "Bond tier numbers for the S2 schools not found yet."
+  }
+ }
+}

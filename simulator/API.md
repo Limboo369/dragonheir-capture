@@ -1,6 +1,6 @@
-# DHSim API (v0.1)
+# DHSim API (v0.2)
 
-One file for the browser: `dist/dhsim.js` (about 650 KB, no dependencies, no build step at runtime).
+One file for the browser: `dist/dhsim.js` (about 770 KB, no dependencies, no build step at runtime). 58 heroes have hand-written kits; every other hero gets an auto kit read from its skill text.
 It defines `window.DHSim` with the official data already loaded.
 In Node: `const S = require('./node-loader.js')`.
 
@@ -32,7 +32,7 @@ In Node: `const S = require('./node-loader.js')`.
 | `DHSim.sensitivity(a, b, {objective})` | re-runs a comparison across every assumed rule range; `robust: true` if the winner never flips |
 | `DHSim.buildStats(spec)` / `DHSim.nakedStats(hero, level, stars)` | stat sheets |
 
-- `enemy`: `{preset: 'dummy' | 'dummy5' | 'boss' | 'waves', level, hpX, atkX, defX, res}` or `{team: [specs]}` for team vs team (arena).
+- `enemy`: `{preset: 'dummy' | 'dummy5' | 'boss' | 'bossHard' | 'waves', level, hpX, atkX, defX, res}` or `{team: [specs]}` for team vs team (arena).
 - `mode`: decides which captain auras apply: `'arena'`, `'grave_of_venom'` (any `grave`/`goblin`/`ruins`/`battlefield` = dungeon), `'fey_meander'`, `'trial'`, anything else = only "all battles" auras.
 - `captain`: team index of the captain (default 0).
 - `objective`: `'dps'` (default), `'clear'` (win fast, else progress), `'ttk'`, `'win'`, `'survival'`.
@@ -41,5 +41,7 @@ In Node: `const S = require('./node-loader.js')`.
 ## Confidence
 
 Every result has `confidence`: `level` ('medium' when all heroes have hand-written kits, 'low' if any use the auto kit), `assumedRules`, `autoKits`.
-Rules live in `DHSim.RULE_INFO` (value, `conf`, note, plausible range). Override per call with `rules: {defK: 900, battleCd: 12}`.
-Hero base stats, growth, skill multipliers, artifact and set numbers come from the official tables. Cooldowns, energy, DEF curve, buff tier values and status rules are assumptions until calibrated (see MODEL.md).
+Rules live in `DHSim.RULE_INFO` (value, `conf`: verified / reported / estimated / assumed, note with source, plausible range). Override per call with `rules: {defK: 900, scrolls: 'none'}`.
+Hero stats, skill numbers, artifacts and sets come from the official tables; charge times per hero, Skill Haste, Accuracy vs Resistance and status values from sourced rules; the DEF curve, gear profiles, animation locks and enemy stats are assumptions. See MODEL.md for every source, and CALIBRATION.md for the in-game tests that replace the guesses.
+
+Useful battle helpers for kits: `b.landChance(src, tgt, chance, skill, noRes)`, `b.tierValue('Defense Up', 2)`, `b.rechargeRate(u)`, `b.ultFull(u)`, `b.timing(u, 'uc')`.

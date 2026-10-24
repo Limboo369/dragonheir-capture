@@ -1,6 +1,6 @@
 """Bundle DHSim into one browser script: dist/dhsim.js.
 
-Order: slim data, engine, setData bootstrap, kits, items, enemies.
+Order: slim data, engine, setData bootstrap, kits (kits.js, then kits/*.js), items, enemies.
 Skill description texts are dropped from the bundle (the parsed auto-kit
 fields stay), which keeps it small enough to inline in an artifact.
 
@@ -24,7 +24,8 @@ def main():
     for f in ('sim.js',):
         parts.append(open(os.path.join(ROOT, f), encoding='utf-8').read())
     parts.append('(function(r){r.DHSim.setData(r.DHSIM_DATA);})(typeof window!=="undefined"?window:globalThis);')
-    for f in ('kits.js', 'items.js', 'enemies.js'):
+    extra = sorted('kits/' + f for f in os.listdir(os.path.join(ROOT, 'kits')) if f.endswith('.js'))
+    for f in ['kits.js'] + extra + ['items.js', 'enemies.js']:
         parts.append(open(os.path.join(ROOT, f), encoding='utf-8').read())
     out = os.path.join(ROOT, 'dist', 'dhsim.js')
     os.makedirs(os.path.dirname(out), exist_ok=True)

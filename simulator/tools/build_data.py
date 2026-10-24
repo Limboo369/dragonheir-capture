@@ -1,7 +1,8 @@
 """Build the compact simulator data file from the official Dragonheir tables.
 
 Input: the JSON tables dragonheir.info loads from i.dmzgame.com (heroes, equip,
-heroLevelBase), saved in /mnt/project-files/dragonheir/knowledge/raw-official/.
+heroLevelBase), saved in /mnt/project-files/dragonheir/knowledge/raw-official/,
+plus research/timing.json (skill charge times per hero from the CN wiki).
 Output: simulator/data/sim-data.js (window.DHSIM_DATA = {...}) and sim-data.json.
 
 Usage: python3 simulator/tools/build_data.py [raw_dir] [out_dir]
@@ -32,6 +33,12 @@ ABT_NAMES = {
     'Attack Speed': 'atkSpd', 'Healing Effect': 'healPct', 'Healing Bonus': 'healPct',
 }
 COMBAT_TYPES = {1000: 'all', 1001: 'dungeon', 1002: 'arena', 1003: 'fey_trial'}
+TIMING = os.path.join(os.path.dirname(__file__), '..', 'research', 'timing.json')
+# Newer reports that replace the 2023 wiki timings (fully scrolled, seconds).
+TIMING_OVERRIDES = {
+    '20770': {'uf': 12, 'uc': 18, 'src': 'reddit comment 2025-08-08: Vinyara/Thia ~12/18 s fully scrolled'},
+    '21050': {'uf': 12, 'uc': 18, 'src': 'reddit comment 2025-08-08: Vinyara/Thia ~12/18 s fully scrolled'},
+}
 
 
 def r4(x):
@@ -101,7 +108,30 @@ def parse_skill(text):
     return {'parts': parts, 'hits': hits, 'ticks': ticks, 'tgt': tgt}
 
 
+def load_timing():
+    """Charge times per hero id: fully scrolled (bf, bc, uf, uc) and unscrolled (*B)."""
+    if not os.path.exists(TIMING):
+        return {}
+    raw = json.load(open(TIMING, encoding='utf-8')).get('heroes', {})
+    out = {}
+    for hid, t in raw.items():
+        rec = {}
+        for k, src in (('bf', 'battleInitial'), ('bc', 'battleCd'), ('uf', 'ultInitial'), ('uc', 'ultCd'),
+                       ('bfB', 'battleInitialBase'), ('bcB', 'battleCdBase'), ('ufB', 'ultInitialBase'), ('ucB', 'ultCdBase')):
+            if t.get(src):
+                rec[k] = r4(t[src])
+        if rec:
+            rec['src'] = (t.get('sourceDate') or '')[:10]
+            if t.get('gamekeeAtkInterval') and t.get('currentAtkInterval') and abs(t['gamekeeAtkInterval'] - t['currentAtkInterval']) > 0.05:
+                rec['stale'] = 1  # kit reworked since the wiki snapshot
+            out[hid] = rec
+    for hid, o in TIMING_OVERRIDES.items():
+        out.setdefault(hid, {}).update(o)
+    return out
+
+
 def main():
+    timing = load_timing()
     heroes_raw = json.load(open(os.path.join(RAW, 'heroes-2025.json'), encoding='utf-8'))
     equip_raw = json.load(open(os.path.join(RAW, 'equip-2025.json'), encoding='utf-8'))
     lvl = json.load(open(os.path.join(RAW, 'heroLevelBase.json'), encoding='utf-8'))
@@ -133,7 +163,7 @@ def main():
             'sc': h.get('orientation'), 'cl': h.get('hero_career'), 'race': h.get('hero_race'),
             'melee': h.get('atk_type') == 'Melee', 'af': r4(h['attack_frequency']),
             'season': h.get('season'), 'b': stat_block(h), 'g': stat_block(h['lv_up_base']),
-            'insp': insp, 'sk': skills,
+            'insp': insp, 'sk': skills, 'tm': timing.get(str(h['id'])),
             'cap': {'t': h.get('captain_slot'), 'mode': COMBAT_TYPES.get(h.get('captain_enable_combat_types'))}
                    if h.get('captain_slot') else None,
         }
@@ -174,7 +204,7 @@ def main():
 
     data = {
         'version': time.strftime('%Y-%m-%d'),
-        'source': 'Official tables loaded by dragonheir.info from i.dmzgame.com (heroes-2025, equip-2025, heroLevelBase)',
+        'source': 'Official tables loaded by dragonheir.info from i.dmzgame.com (heroes-2025, equip-2025, heroLevelBase); skill charge times from the CN GameKee wiki (2023-09) and later reports',
         'levelMult': level_mult, 'starUp': star_up,
         'heroes': heroes, 'artifacts': artifacts, 'sets': sets,
     }

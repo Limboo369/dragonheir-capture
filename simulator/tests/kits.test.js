@@ -5,7 +5,7 @@
 var assert = require('assert');
 var S = require('../node-loader.js');
 
-var NO_DEF = { defK: 1e15, energyRegen: 0, energyPerBasic: 0, energyPerHitTaken: 0, battleFirst: 0.5, battleCd: 1000 };
+var NO_DEF = { defK: 1e15, energyRegen: 0, energyPerBasic: 0, energyPerHitTaken: 0, battleFirst: 0.5, battleCd: 1000, bossControlMult: 1, landCap: 1, accShift: 300, ultFirst: 1000, heroTiming: false };
 
 function probe(hero, extra) {
   extra = extra || {};
@@ -88,7 +88,7 @@ check('Twitch battle skill: arrows = 1 + Enlightenment/60, max 4', function () {
 });
 
 check('Lothair battle skill: 250% ATK (no Poison yet, so no bonus)', function () {
-  var p = probe('Lothair', { rules: { resScale: 1e-9 } });
+  var p = probe('Lothair', { rules: { accShift: -300 } });
   assert.ok(p.u.rec.by.battle >= 2.5 * p.atk * 0.99);
 });
 

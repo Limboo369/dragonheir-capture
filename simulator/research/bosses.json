@@ -1,0 +1,2065 @@
+{
+ "meta": {
+  "generated": "2026-10-24",
+  "scope": "PvE enemy presets for the Dragonheir: Silent Gods battle simulator; player on a new server in the Season 1 beginner season (Reborn version), account level ~59.",
+  "confidenceScale": {
+   "verified": "official source (dragonheir.info official wiki/articles incl. in-game screenshots) or two independent sources",
+   "reported": "one community source",
+   "estimated": "derived by us; the derivation is explained next to the value"
+  },
+  "versionWarning": "Dragonheir relaunched as the 'Reborn' version in mid-2025. Articles dated 2023-10..2024-08 describe the LEGACY game (graves had difficulty 1-9). Reborn graves go to difficulty 15/20 and boss kits changed. Every value carries 'version': 'reborn' or 'legacy'. Prefer reborn values; legacy values are only fallbacks.",
+  "biggestGap": "No source anywhere (official, HellHades, Reddit, CN/JP/KR, YouTube titles) publishes boss HP, ATK or DEF numbers for any PvE mode. Those fields are null everywhere. What IS published: boss level, recommended Accuracy/Resistance, enemy Resistance per difficulty (legacy), skill names, skill cast timelines, exact % numbers for Continental Challenge bosses, and mechanic descriptions. HP/ATK/DEF must be calibrated from the user's own battle results (see calibrationPlan).",
+  "articleApi": "Official article bodies can be fetched as JSON: https://apih5.dmzgame.com/api/wz/getwz_id.php?id=<articleId> (fields: title, time, wztext HTML). Many details are inside images in wztext."
+ },
+ "global": {
+  "accuracyVsResistance": {
+   "rule": "Debuff/control/shield-dispel/buff-dispel success depends on (attacker Accuracy - target Resistance). First the skill's own chance is rolled, then Accuracy vs Resistance. Dispelling from your own allies ignores Accuracy/Resistance.",
+   "curve_avgSuccessByDiff": [
+    {
+     "diff": -100,
+     "rate": 0.0
+    },
+    {
+     "diff": -70,
+     "rate": 0.1
+    },
+    {
+     "diff": -50,
+     "rate": 0.16
+    },
+    {
+     "diff": -30,
+     "rate": 0.76
+    },
+    {
+     "diff": 0,
+     "rate": 0.92
+    },
+    {
+     "diff": 20,
+     "rate": 0.94,
+     "note": "official recommended margin"
+    },
+    {
+     "diff": 50,
+     "rate": 0.98
+    }
+   ],
+   "rawSamples_25trialsEach": [
+    {
+     "enemyRes": 30,
+     "acc_rate": [
+      [
+       0,
+       0.8
+      ],
+      [
+       30,
+       0.92
+      ],
+      [
+       50,
+       0.96
+      ],
+      [
+       80,
+       1.0
+      ]
+     ]
+    },
+    {
+     "enemyRes": 80,
+     "acc_rate": [
+      [
+       0,
+       0.04
+      ],
+      [
+       30,
+       0.16
+      ],
+      [
+       50,
+       0.76
+      ],
+      [
+       80,
+       0.88
+      ],
+      [
+       100,
+       0.92
+      ],
+      [
+       130,
+       0.96
+      ]
+     ]
+    },
+    {
+     "enemyRes": 150,
+     "acc_rate": [
+      [
+       0,
+       0.0
+      ],
+      [
+       80,
+       0.08
+      ],
+      [
+       120,
+       0.68
+      ],
+      [
+       150,
+       0.92
+      ],
+      [
+       170,
+       0.96
+      ],
+      [
+       200,
+       1.0
+      ]
+     ]
+    },
+    {
+     "enemyRes": 250,
+     "acc_rate": [
+      [
+       0,
+       0.0
+      ],
+      [
+       180,
+       0.12
+      ],
+      [
+       220,
+       0.8
+      ],
+      [
+       250,
+       0.96
+      ],
+      [
+       270,
+       0.92
+      ],
+      [
+       300,
+       0.96
+      ]
+     ]
+    }
+   ],
+   "simHint": "estimated: piecewise-linear interpolation of curve_avgSuccessByDiff is a reasonable model; samples are 25-trial tests so +-10% noise.",
+   "source": {
+    "url": "https://www.dragonheir.info/article/103",
+    "date": "2024-02-02",
+    "note": "How Hero Attributes & Conditions Work; tables are images dated 2023-10-31"
+   },
+   "version": "legacy (mechanic believed unchanged in Reborn: Reborn boss intel still shows 'Recommended Accuracy')",
+   "confidence": "verified"
+  },
+  "enemyResistanceByDifficulty_legacy": {
+   "gravesAndRuins": {
+    "difficulty": [
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9
+    ],
+    "enemyResistance": [
+     10,
+     10,
+     30,
+     50,
+     80,
+     80,
+     150,
+     150,
+     200
+    ],
+    "recommendedAccuracy": [
+     30,
+     30,
+     50,
+     70,
+     100,
+     100,
+     170,
+     170,
+     220
+    ]
+   },
+   "elementalDomains": {
+    "difficulty": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "enemyResistance": [
+     10,
+     10,
+     30,
+     75,
+     120
+    ],
+    "recommendedAccuracy": [
+     30,
+     30,
+     50,
+     95,
+     140
+    ]
+   },
+   "weeklyChallengeReunion": {
+    "difficulty": [
+     1,
+     2,
+     3,
+     4
+    ],
+    "enemyResistance": [
+     30,
+     80,
+     200,
+     250
+    ],
+    "recommendedAccuracy": [
+     50,
+     100,
+     220,
+     270
+    ]
+   },
+   "source": {
+    "url": "https://www.dragonheir.info/article/103",
+    "date": "2024-02-02",
+    "note": "image 'Dungeon Monster Statistics'"
+   },
+   "corroboration": [
+    {
+     "url": "https://www.dragonheir.info/article/236",
+     "date": "2024-02-02",
+     "note": "S2 Grave of Venom: 'enemies have 200 Resistance ... at least 220 Accuracy' at difficulty 9"
+    },
+    {
+     "url": "https://www.dragonheir.info/article/95",
+     "date": "2024-02-02",
+     "note": "highest difficulty graves/ruins: ~220 Accuracy; domains ~140"
+    }
+   ],
+   "version": "legacy",
+   "confidence": "verified",
+   "rebornNote": "Reborn graves have more difficulty levels (bands 1-8, 9-14, 15+, videos show stage 20). A Reborn Deadly Harpy intel screen (level shown '110') recommends Accuracy 100, so the Reborn table is NOT the same as this legacy table. Reborn per-difficulty Resistance is not published."
+  },
+  "energyAndHaste": {
+   "energyPerSecond": 1.0,
+   "skillHastePerPercent": 5,
+   "formula": "recharge_time = base_energy_cost / (1 * (1 + SkillHaste/500)); e.g. 20s skill with 100 Skill Haste -> 16.67s",
+   "attackSpeed": "attacks/sec = (1/baseInterval) * (1 + AttackSpeed%); e.g. 2.5s interval +25% -> 2.0s",
+   "enlightenment": "Derivative Damage bonus = Enlightenment/200 (40 Enl = +20%); Derivative Damage cannot crit",
+   "source": {
+    "url": "https://www.dragonheir.info/article/103",
+    "date": "2024-02-02"
+   },
+   "version": "legacy (still referenced by Reborn guides)",
+   "confidence": "verified"
+  },
+  "enemyAI": {
+   "rule": "In non-PvP battles enemies use their ultimate skill immediately when it finishes recharging. Board is usually 5x8; allies start left, enemies right.",
+   "source": {
+    "url": "https://www.dragonheir.info/article/39",
+    "date": "2023-10-18",
+    "note": "Combat System Introduction"
+   },
+   "confidence": "verified"
+  },
+  "bossFlags": {
+   "items": [
+    "Bosses are immune to Execution effects (e.g. execute-below-15%-HP skills); some skills deal a bonus instead (one hero skill: +600% Attack Derivative vs bosses).",
+    "Max-HP-reduction effects from gear (e.g. 'Life Clipping') cannot trigger on bosses; some hero Max-HP reductions are 'invalid for Bosses'.",
+    "Almost all dungeon/CC bosses carry 'Control Immunity: Immune to control effects.'"
+   ],
+   "source": [
+    {
+     "url": "/mnt/project-files/dragonheir/knowledge/raw-official/equip-2025.json",
+     "date": "2025",
+     "note": "official wiki JSON, item spell_tips"
+    },
+    {
+     "url": "/mnt/project-files/dragonheir/knowledge/raw-official/heroes-2025.json",
+     "date": "2025",
+     "note": "official wiki JSON, hero skill text"
+    },
+    {
+     "url": "https://www.dragonheir.info/article/584",
+     "date": "2025-06-26",
+     "note": "Deadly Harpy intel: Control Immunity"
+    }
+   ],
+   "confidence": "verified"
+  }
+ },
+ "modes": {
+  "grave_of_venom": {
+   "boss": "Deadly Harpy (+ Wisps / 'Poisonous will-o-wisps')",
+   "drops": "Weapons and Helmets",
+   "bossTraits": [
+    "AOE Boss",
+    "Multi-hit Damage",
+    "AOE Damage",
+    "Grants Shield",
+    "Control Immunity"
+   ],
+   "waves": "Reborn: boss + Wisps; 'right at the start, four minions will focus fire on your tank' (584). Legacy S4: boss appears in the 3rd wave (424).",
+   "stages": [
+    {
+     "stage": 8,
+     "level": 100,
+     "staminaCost": 15,
+     "hp": null,
+     "atk": null,
+     "def": null,
+     "recPower": null,
+     "timeLimit": null,
+     "source": {
+      "url": "https://www.dragonheir.info/article/584",
+      "date": "2025-06-26",
+      "note": "screenshot 'Challenge Difficulty 8, Deadly Harpy Level 100, 15 stamina'"
+     },
+     "version": "reborn",
+     "confidence": "verified"
+    },
+    {
+     "stage": 9,
+     "level": 100,
+     "hp": null,
+     "atk": null,
+     "def": null,
+     "recPower": null,
+     "timeLimit": null,
+     "source": {
+      "url": "https://www.dragonheir.info/article/584",
+      "date": "2025-06-26",
+      "note": "screenshot difficulty 9"
+     },
+     "version": "reborn",
+     "confidence": "verified"
+    },
+    {
+     "stage": "unknown (intel screen)",
+     "level": 110,
+     "recAccuracy": 100,
+     "skillTimeline_s": [
+      6,
+      12,
+      18
+     ],
+     "source": {
+      "url": "https://www.dragonheir.info/article/584",
+      "date": "2025-06-26",
+      "note": "Boss Info screen '110 Deadly Harpy', Recommended Accuracy 100, timeline ticks 6s/12s/18s"
+     },
+     "version": "reborn",
+     "confidence": "verified",
+     "note": "difficulty for this screen not shown; 110 is read as level"
+    },
+    {
+     "stage": "Challenge Mode (S2+)",
+     "level": 300,
+     "wispLevel": 300,
+     "wispCount": 4,
+     "source": {
+      "url": "https://www.dragonheir.info/article/1119",
+      "date": "2025-10-10",
+      "note": "Challenge Mode infographic"
+     },
+     "version": "reborn S2+",
+     "confidence": "verified"
+    },
+    {
+     "stage": 9,
+     "enemyResistance": 200,
+     "recAccuracy": 220,
+     "tankTarget": {
+      "hp": ">70,000-80,000",
+      "def": ">2,000-3,000"
+     },
+     "teamLevel": 90,
+     "source": [
+      {
+       "url": "https://www.dragonheir.info/article/236",
+       "date": "2024-02-02"
+      },
+      {
+       "url": "https://www.dragonheir.info/article/364",
+       "date": "2024-05-20"
+      },
+      {
+       "url": "https://www.dragonheir.info/article/424",
+       "date": "2024-07-15"
+      }
+     ],
+     "version": "legacy",
+     "confidence": "verified"
+    },
+    {
+     "stage": 9,
+     "level": 170,
+     "adds": "4x 'Lv.170 Flame of Element - Poison' (wisps)",
+     "source": {
+      "url": "https://www.dragonheir.info/article/236",
+      "date": "2024-02-02",
+      "note": "battle screenshot labels 'Lv.170 <boss>'"
+     },
+     "version": "legacy S2",
+     "confidence": "verified"
+    }
+   ],
+   "difficultyBands": {
+    "1-8": "low survival pressure; event squad can clear",
+    "9-14": "pressure rises; AoE Attack Penalty on boss recommended; 2 DPS + double heal or DR+heal",
+    "15+": "consider Ancestral Protection on healers",
+    "source": {
+     "url": "https://www.dragonheir.info/article/585",
+     "date": "2025-06-26"
+    },
+    "confidence": "verified"
+   },
+   "mechanics": [
+    {
+     "name": "Shadow Poison (passive)",
+     "effect": "On boss single-target attack, chance to increase Wisp damage and command Wisps to assist; chance decreases as debuffs on Wisps increase. A Wisp dying deals damage (True Damage per 584) to the boss.",
+     "numbers": null,
+     "source": {
+      "url": "https://www.dragonheir.info/article/851",
+      "date": "2025-09-10"
+     },
+     "confidence": "verified"
+    },
+    {
+     "name": "Poisonous Fletching",
+     "effect": "AOE damage, dispels 1 buff, summons up to 2 new Wisps.",
+     "numbers": {
+      "buffsDispelled": 1,
+      "wispsSummonedMax": 2
+     },
+     "source": {
+      "url": "https://www.dragonheir.info/article/851",
+      "date": "2025-09-10"
+     },
+     "confidence": "verified"
+    },
+    {
+     "name": "Harpy's Wrath",
+     "effect": "Global damage to all player heroes and grants a shield to all boss-side units (shield-dispel heroes speed up runs from difficulty 9).",
+     "numbers": null,
+     "source": {
+      "url": "https://www.dragonheir.info/article/851",
+      "date": "2025-09-10"
+     },
+     "confidence": "verified"
+    },
+    {
+     "name": "Harpy's Breath",
+     "effect": "Series of high-damage single-target hits (tank killer). Mitigate with Attack Penalty / Damage Reduction before it lands.",
+     "numbers": null,
+     "source": {
+      "url": "https://www.dragonheir.info/article/851",
+      "date": "2025-09-10"
+     },
+     "confidence": "verified"
+    },
+    {
+     "name": "Skill cadence",
+     "effect": "Boss intel timeline shows skill casts at 6s, 12s, 18s (3-skill rotation, ~6s apart, 18s cycle).",
+     "numbers": {
+      "castTimes_s": [
+       6,
+       12,
+       18
+      ]
+     },
+     "source": {
+      "url": "https://www.dragonheir.info/article/584",
+      "date": "2025-06-26"
+     },
+     "confidence": "verified"
+    },
+    {
+     "name": "Challenge Mode affixes (S2+ only, rotating)",
+     "effect": "Harpy's Breath inflicts 50% Defense Penalty for 20s; defeated Wisp spreads its debuffs to enemies, each debuff spreads 4 times; while boss has a shield Wisps take 75% less damage; Wisps +40% Attack and +40% Defense; Poisonous Fletching +50% damage.",
+     "numbers": {
+      "defPenalty": 0.5,
+      "defPenaltyDur_s": 20,
+      "debuffSpreadCount": 4,
+      "wispDRwhileBossShielded": 0.75,
+      "wispAtkDefBonus": 0.4,
+      "fletchingDmgBonus": 0.5
+     },
+     "source": {
+      "url": "https://www.dragonheir.info/article/1119",
+      "date": "2025-10-10",
+      "note": "Traveler's Tactics Challenge Mode Vol.2 infographic"
+     },
+     "confidence": "verified",
+     "appliesToS1": false
+    },
+    {
+     "name": "Legacy S3 boss table",
+     "effect": "If a target has fewer than 2 debuffs, the boss hits random enemies 3 times with high single-target damage; 4 wisps assist the boss.",
+     "numbers": {
+      "hits": 3,
+      "debuffThreshold": 2,
+      "wisps": 4
+     },
+     "source": {
+      "url": "https://www.dragonheir.info/article/364",
+      "date": "2024-05-20"
+     },
+     "version": "legacy",
+     "confidence": "verified"
+    }
+   ],
+   "whatKillsTeams": "Harpy's Breath burst on the tank (multi-hit), especially with Wisps assisting; AoE on grouped formations.",
+   "counters": [
+    "Attack Penalty",
+    "Damage Reduction",
+    "Hit Recovery",
+    "shield dispel (Shook, Brody, Khrysos)",
+    "Frost/Poison AoE to debuff and kill Wisps"
+   ],
+   "source": {
+    "url": "https://www.dragonheir.info/article/851",
+    "date": "2025-09-10"
+   },
+   "sourceDate": "2025-09-10",
+   "confidence": "verified (mechanics, levels); HP/ATK/DEF not found"
+  },
+  "grave_of_curse": {
+   "boss": "Blood Prince Xenos",
+   "drops": "Armor",
+   "bossTraits": [
+    "Single Target Boss",
+    "Attack Buff",
+    "Grants Shield",
+    "AOE Damage"
+   ],
+   "stages": [
+    {
+     "stage": 9,
+     "level": 100,
+     "hp": null,
+     "atk": null,
+     "def": null,
+     "recPower": null,
+     "timeLimit": null,
+     "source": {
+      "url": "https://www.dragonheir.info/article/584",
+      "date": "2025-06-26",
+      "note": "screenshot difficulty 9 'Blood Prince Xenos Level 100'"
+     },
+     "version": "reborn",
+     "confidence": "verified"
+    },
+    {
+     "stage": 14,
+     "clearTimeReference_s": 21,
+     "note": "HellHades main account speed-farm (endgame account, glass-cannon team)",
+     "source": {
+      "url": "https://hellhades.com/speed-farming-teams-for-stage-14-challenge-2/",
+      "date": "2025-09-25"
+     },
+     "version": "reborn",
+     "confidence": "reported"
+    },
+    {
+     "stage": 9,
+     "enemyResistance": 200,
+     "recAccuracy": 220,
+     "source": [
+      {
+       "url": "https://www.dragonheir.info/article/103",
+       "date": "2024-02-02"
+      },
+      {
+       "url": "https://www.dragonheir.info/article/95",
+       "date": "2024-02-02"
+      }
+     ],
+     "version": "legacy",
+     "confidence": "verified"
+    },
+    {
+     "stage": 9,
+     "level": 170,
+     "source": {
+      "url": "https://www.dragonheir.info/article/239",
+      "date": "2024-02-02",
+      "note": "battle screenshot labels 'Lv.170 <boss>'"
+     },
+     "version": "legacy S2",
+     "confidence": "verified"
+    }
+   ],
+   "mechanics": [
+    {
+     "name": "Blood Gush (passive)",
+     "effect": "When the boss deals HP damage it steals HP and reduces the target's Max HP. Shields block it.",
+     "numbers": null,
+     "source": {
+      "url": "https://www.dragonheir.info/article/855",
+      "date": "2025-09-10"
+     },
+     "confidence": "verified"
+    },
+    {
+     "name": "Rage of Blood",
+     "effect": "Boss gains a damage-boosting buff (dispel / Buff Prohibition).",
+     "numbers": null,
+     "source": {
+      "url": "https://www.dragonheir.info/article/855",
+      "date": "2025-09-10"
+     },
+     "confidence": "verified"
+    },
+    {
+     "name": "Vampiric Shield",
+     "effect": "High single-target damage; damage dealt is converted into a shield on the boss.",
+     "numbers": null,
+     "source": {
+      "url": "https://www.dragonheir.info/article/855",
+      "date": "2025-09-10"
+     },
+     "confidence": "verified"
+    },
+    {
+     "name": "Punishment of Blood",
+     "effect": "Dispels 1 buff from every player hero and attacks them; much higher damage to targets without buffs. The extra damage vs unbuffed targets applies at difficulty 9+.",
+     "numbers": {
+      "buffsDispelledPerTarget": 1,
+      "extraDmgFromDifficulty": 9
+     },
+     "source": {
+      "url": "https://www.dragonheir.info/article/855",
+      "date": "2025-09-10"
+     },
+     "confidence": "verified"
+    },
+    {
+     "name": "Skill cadence (legacy)",
+     "effect": "The boss finishes its three skills in 18 seconds.",
+     "numbers": {
+      "rotation_s": 18
+     },
+     "source": {
+      "url": "https://www.dragonheir.info/article/369",
+      "date": "2024-05-21"
+     },
+     "version": "legacy",
+     "confidence": "verified"
+    },
+    {
+     "name": "Challenge Mode (S2+)",
+     "effect": "Faster recharge, stronger buffs; damage escalates each rotation.",
+     "numbers": null,
+     "source": {
+      "url": "https://www.dragonheir.info/article/1118",
+      "date": "2025-10-10"
+     },
+     "confidence": "verified",
+     "appliesToS1": false
+    },
+    {
+     "name": "Legacy S3 boss table",
+     "effect": "While buffed the boss ignores Immortality/Invincibility; removes shields before dealing damage.",
+     "numbers": null,
+     "source": {
+      "url": "https://www.dragonheir.info/article/369",
+      "date": "2024-05-21"
+     },
+     "version": "legacy",
+     "confidence": "verified"
+    }
+   ],
+   "whatKillsTeams": "Snowballing Max-HP loss in long fights; unbuffed heroes hit by Punishment of Blood at diff 9+; undispelled Rage of Blood.",
+   "counters": [
+    "AOE shields (Adolphus, Felosia, Khrysos)",
+    "Buff dispel/prohibition right after Rage of Blood",
+    "multi-buff supports",
+    "Attack Penalty / Damage Reduction"
+   ],
+   "source": {
+    "url": "https://www.dragonheir.info/article/855",
+    "date": "2025-09-10"
+   },
+   "sourceDate": "2025-09-10",
+   "confidence": "verified (mechanics); HP/ATK/DEF not found"
+  },
+  "grave_of_rot": {
+   "boss": "Colossal Scavenger",
+   "drops": "Gloves",
+   "bossTraits": [
+    "Single Target Boss",
+    "AOE Debuffs",
+    "Devours Front Row",
+    "Strengthens When Debuffed"
+   ],
+   "stages": [
+    {
+     "stage": 9,
+     "level": 100,
+     "hp": null,
+     "atk": null,
+     "def": null,
+     "recPower": null,
+     "timeLimit": null,
+     "source": {
+      "url": "https://www.dragonheir.info/article/584",
+      "date": "2025-06-26",
+      "note": "screenshot difficulty 9"
+     },
+     "version": "reborn",
+     "confidence": "verified"
+    },
+    {
+     "stage": "high (exact difficulty not shown)",
+     "level": 300,
+     "source": {
+      "url": "https://www.dragonheir.info/article/836",
+      "date": "2025-09-10",
+      "note": "battle screenshot 'Lv.300 Colossal Scavenger' vs Lv.100 heroes"
+     },
+     "version": "reborn",
+     "confidence": "verified"
+    },
+    {
+     "stage": 14,
+     "clearTimeReference_s": [
+      35,
+      40
+     ],
+     "note": "HellHades endgame speed-farm",
+     "source": {
+      "url": "https://hellhades.com/speed-farming-teams-for-stage-14-challenge-2/",
+      "date": "2025-09-25"
+     },
+     "confidence": "reported"
+    },
+    {
+     "stage": 15,
+     "special": "From difficulty 15 the boss is under an undispellable Attack Penalty (official wording).",
+     "source": {
+      "url": "https://www.dragonheir.info/article/836",
+      "date": "2025-09-10"
+     },
+     "confidence": "verified"
+    },
+    {
+     "stage": 9,
+     "level": 170,
+     "source": {
+      "url": "https://www.dragonheir.info/article/243",
+      "date": "2024-02-02",
+      "note": "battle screenshot labels 'Lv.170 <boss>'"
+     },
+     "version": "legacy S2",
+     "confidence": "verified"
+    }
+   ],
+   "mechanics": [
+    {
+     "name": "Source of Filth (passive)",
+     "effect": "Basic attacks have a chance to inflict Poison. Boss is always under Attack Penalty. Each debuff gives the boss Corruption stacks (more debuffs -> stronger skills).",
+     "numbers": null,
+     "source": {
+      "url": "https://www.dragonheir.info/article/836",
+      "date": "2025-09-10"
+     },
+     "confidence": "verified"
+    },
+    {
+     "name": "Putrid Breath",
+     "effect": "Global attack; inflicts Poison and Recharge Speed Penalty; Poison stacks scale with Corruption.",
+     "numbers": null,
+     "source": {
+      "url": "https://www.dragonheir.info/article/836",
+      "date": "2025-09-10"
+     },
+     "confidence": "verified"
+    },
+    {
+     "name": "Rotting Assault",
+     "effect": "Puts 2 of the boss's debuffs on a random target and deals AOE damage centered on it; target count grows with Corruption.",
+     "numbers": {
+      "debuffsTransferred": 2
+     },
+     "source": {
+      "url": "https://www.dragonheir.info/article/836",
+      "date": "2025-09-10"
+     },
+     "confidence": "verified"
+    },
+    {
+     "name": "Greedy Hunt",
+     "effect": "Devours current target: damage over time and boss heals based on damage dealt (more Poison stacks on target -> more healing). Ends after the boss takes a certain amount of damage. Invisibility (Thia) makes it lose the target.",
+     "numbers": null,
+     "source": {
+      "url": "https://www.dragonheir.info/article/836",
+      "date": "2025-09-10"
+     },
+     "confidence": "verified"
+    },
+    {
+     "name": "Legacy S3 boss table",
+     "effect": "Reduces Max HP; deals more damage per debuff on the target; inflicts Healing Prohibition.",
+     "numbers": null,
+     "source": {
+      "url": "https://www.dragonheir.info/article/367",
+      "date": "2024-05-20"
+     },
+     "version": "legacy",
+     "confidence": "verified"
+    }
+   ],
+   "whatKillsTeams": "Stacked Poison + Greedy Hunt healing the boss; boss has high HP and restoration so low DPS teams time out.",
+   "counters": [
+    "2 sources of Debuff Dispel/Immunity",
+    "spread formation",
+    "single-target DPS (Dauntless, Wild)",
+    "avoid applying many debuffs"
+   ],
+   "source": {
+    "url": "https://www.dragonheir.info/article/836",
+    "date": "2025-09-10"
+   },
+   "sourceDate": "2025-09-10",
+   "confidence": "verified (mechanics); HP/ATK/DEF not found"
+  },
+  "heretical_ruins": {
+   "boss": "Dead Phoenix - Fyre (+ Phoenix eggs / Dead Phoenix Nestlings)",
+   "drops": "Positive Runes",
+   "bossTraits": [
+    "AOE Boss",
+    "Burn Status",
+    "Resurrects Minions",
+    "Continuous Recovery"
+   ],
+   "stages": [
+    {
+     "stage": 7,
+     "level": 145,
+     "hp": null,
+     "atk": null,
+     "def": null,
+     "recPower": null,
+     "timeLimit": null,
+     "source": {
+      "url": "https://www.dragonheir.info/article/584",
+      "date": "2025-06-26",
+      "note": "screenshot difficulty 7 'Dead Phoenix - Fyre Level 145'"
+     },
+     "version": "reborn",
+     "confidence": "verified"
+    },
+    {
+     "stage": 9,
+     "level": 170,
+     "adds": "Corrupted Phoenix Eggs",
+     "source": {
+      "url": "https://www.dragonheir.info/article/251",
+      "date": "2024-02-02",
+      "note": "battle screenshot labels 'Lv.170 <boss>'"
+     },
+     "version": "legacy S2",
+     "confidence": "verified"
+    }
+   ],
+   "difficultyBands": {
+    "1-6": "lower pressure; kill summoned minions fast",
+    "7-9": "harder",
+    "source": {
+     "url": "https://www.dragonheir.info/article/585",
+     "date": "2025-06-26"
+    },
+    "confidence": "verified"
+   },
+   "mechanics": [
+    {
+     "name": "Scorch",
+     "effect": "Single-target attack that splashes to all targets with Burn.",
+     "numbers": null,
+     "source": {
+      "url": "https://www.dragonheir.info/article/846",
+      "date": "2025-09-10"
+     },
+     "confidence": "verified"
+    },
+    {
+     "name": "Nirvana",
+     "effect": "Boss becomes Invisible when phoenix eggs are reborn; the eggs' skill heals the boss and grants it a Total Damage Bonus. Minions heal the boss over time while alive.",
+     "numbers": null,
+     "source": [
+      {
+       "url": "https://www.dragonheir.info/article/846",
+       "date": "2025-09-10"
+      },
+      {
+       "url": "https://www.dragonheir.info/article/585",
+       "date": "2025-06-26"
+      }
+     ],
+     "confidence": "verified"
+    },
+    {
+     "name": "Fire of Dead Phoenix",
+     "effect": "High damage to all player heroes + Burn on all.",
+     "numbers": null,
+     "source": {
+      "url": "https://www.dragonheir.info/article/846",
+      "date": "2025-09-10"
+     },
+     "confidence": "verified"
+    },
+    {
+     "name": "Nestling damage reduction",
+     "effect": "Boss takes reduced damage while Phoenix Nestlings are alive (stated for Challenge Mode guide).",
+     "numbers": null,
+     "source": {
+      "url": "https://www.dragonheir.info/article/1122",
+      "date": "2025-10-10"
+     },
+     "confidence": "verified",
+     "appliesToS1": "unclear"
+    },
+    {
+     "name": "Legacy S3 boss table",
+     "effect": "2 eggs; if all nestlings are alive when the boss tries to resurrect them, the boss gains damage reduction.",
+     "numbers": {
+      "eggs": 2
+     },
+     "source": {
+      "url": "https://www.dragonheir.info/article/362",
+      "date": "2024-05-17"
+     },
+     "version": "legacy",
+     "confidence": "verified"
+    }
+   ],
+   "whatKillsTeams": "Fire of Dead Phoenix burst on the whole team (needs Immortality/Resurrection/Invincibility or stacked DR); Burn splash via Scorch; eggs healing/buffing the boss.",
+   "counters": [
+    "AoE DPS (Frost, Rally, Poison)",
+    "Debuff Dispel/Immunity vs Burn",
+    "Healing Reduction/Reversal",
+    "Stun to delay eggs",
+    "Invisibility dispel"
+   ],
+   "source": {
+    "url": "https://www.dragonheir.info/article/846",
+    "date": "2025-09-10"
+   },
+   "sourceDate": "2025-09-10",
+   "confidence": "verified (mechanics, one level); HP/ATK/DEF not found"
+  },
+  "ancient_battlefield": {
+   "boss": "Soul Devourer Gruentius",
+   "drops": "Negative Runes",
+   "bossTraits": [
+    "Single Target Boss",
+    "Controls Furthest Unit",
+    "Dispels Buffs"
+   ],
+   "stages": [
+    {
+     "stage": 7,
+     "level": 160,
+     "hp": null,
+     "atk": null,
+     "def": null,
+     "recPower": null,
+     "timeLimit": null,
+     "source": {
+      "url": "https://www.dragonheir.info/article/584",
+      "date": "2025-06-26",
+      "note": "screenshot difficulty 7 'Soul Devourer Gruentius Level 160'"
+     },
+     "version": "reborn",
+     "confidence": "verified"
+    },
+    {
+     "stage": 9,
+     "level": 170,
+     "source": {
+      "url": "https://www.dragonheir.info/article/252",
+      "date": "2024-02-02",
+      "note": "battle screenshot labels 'Lv.170 <boss>'"
+     },
+     "version": "legacy S2",
+     "confidence": "verified"
+    }
+   ],
+   "mechanics": [
+    {
+     "name": "Shield Warrior (passive)",
+     "effect": "Two forms. Shield Form: basic attacks deal Global Damage. Sword Form: basic attacks deal heavy single-target damage.",
+     "numbers": null,
+     "source": {
+      "url": "https://www.dragonheir.info/article/841",
+      "date": "2025-09-10"
+     },
+     "confidence": "verified"
+    },
+    {
+     "name": "Berserker's Wrath - Shield Form",
+     "effect": "Stuns the hero farthest from the boss. If the Stun fails or is dispelled the boss enters Backfire (deals less damage, takes more damage).",
+     "numbers": null,
+     "source": {
+      "url": "https://www.dragonheir.info/article/841",
+      "date": "2025-09-10"
+     },
+     "confidence": "verified"
+    },
+    {
+     "name": "Devouring Shadows - Shield Form",
+     "effect": "Switches to Sword Form and gains Attack Up.",
+     "numbers": null,
+     "source": {
+      "url": "https://www.dragonheir.info/article/841",
+      "date": "2025-09-10"
+     },
+     "confidence": "verified"
+    },
+    {
+     "name": "Berserker's Wrath - Sword Form",
+     "effect": "High damage to the single hero with the highest Attack.",
+     "numbers": null,
+     "source": {
+      "url": "https://www.dragonheir.info/article/841",
+      "date": "2025-09-10"
+     },
+     "confidence": "verified"
+    },
+    {
+     "name": "Devouring Shadows - Sword Form",
+     "effect": "Attacks all, dispels ALL their buffs, gains a permanent (undispellable) Total Damage Bonus per buff dispelled, switches back to Shield Form with Defense Up.",
+     "numbers": null,
+     "source": [
+      {
+       "url": "https://www.dragonheir.info/article/841",
+       "date": "2025-09-10"
+      },
+      {
+       "url": "https://www.dragonheir.info/article/584",
+       "date": "2025-06-26"
+      }
+     ],
+     "confidence": "verified"
+    },
+    {
+     "name": "Legacy S2 variant",
+     "effect": "Passive partly resists Ultimate Energy Reduction; boss stacks Damage Reduction as its HP drops.",
+     "numbers": null,
+     "source": {
+      "url": "https://www.dragonheir.info/article/252",
+      "date": "2024-02-02"
+     },
+     "version": "legacy",
+     "confidence": "verified"
+    },
+    {
+     "name": "Legacy S3 boss table",
+     "effect": "Converts 80% of basic-attack damage into a shield; receives only half of Ultimate (energy) Down effects; gains a stackable damage mitigation for every 35% HP missing.",
+     "numbers": {
+      "basicDmgToShield": 0.8,
+      "ultDownEffectiveness": 0.5,
+      "mitigationStepPerMissingHP": 0.35
+     },
+     "source": {
+      "url": "https://www.dragonheir.info/article/360",
+      "date": "2024-05-17"
+     },
+     "version": "legacy",
+     "confidence": "verified"
+    }
+   ],
+   "whatKillsTeams": "Constant Shield-Form global damage; snowballing permanent damage bonus from dispelled buffs; stun on the farthest backliner.",
+   "counters": [
+    "stack Resistance on farthest backliner / control immunity",
+    "Buff Prohibition before Sword Form",
+    "Attack Penalty",
+    "AOE shields + healing",
+    "few buffs before Devouring Shadows - Sword Form"
+   ],
+   "source": {
+    "url": "https://www.dragonheir.info/article/841",
+    "date": "2025-09-10"
+   },
+   "sourceDate": "2025-09-10",
+   "confidence": "verified (mechanics, one level); HP/ATK/DEF not found"
+  },
+  "goblin_lair": {
+   "boss": null,
+   "enemies": "Goblin minion waves (AOE minions spawning in waves); no boss-type mechanics; 'doesn't hit very hard'",
+   "waves": 6,
+   "stagesTotal": 12,
+   "stageBands": {
+    "1-6": "goblins have low attack power and HP",
+    "7-9": null,
+    "10-12": null
+   },
+   "stages": [
+    {
+     "stage": 9,
+     "level": 100,
+     "starThresholds": {
+      "3": "more than 50s left",
+      "2": "more than 25s left",
+      "1": "more than 0s left"
+     },
+     "hp": null,
+     "atk": null,
+     "def": null,
+     "recPower": null,
+     "timeLimit": null,
+     "source": {
+      "url": "https://www.dragonheir.info/article/584",
+      "date": "2025-06-26",
+      "note": "screenshot 'Challenge Difficulty 9, Level 100'"
+     },
+     "version": "reborn",
+     "confidence": "verified"
+    },
+    {
+     "stage": "5 (legacy, max stars)",
+     "teamLevel": 60,
+     "clearTime_s": 58,
+     "bestClearTime_s": 41,
+     "totalDamageDealt": 718268,
+     "damageDealtPerHero": [
+      136471,
+      74129,
+      180829,
+      263486,
+      63353
+     ],
+     "tankDamageTaken": 22574,
+     "source": {
+      "url": "https://www.dragonheir.info/article/208",
+      "date": "2024-02-02",
+      "note": "battle statistics screenshot"
+     },
+     "version": "legacy S2",
+     "confidence": "verified (screenshot numbers)"
+    },
+    {
+     "stage": "5 (legacy S4, max stars)",
+     "teamLevel": "~80",
+     "tankTarget": {
+      "hp": ">25,000",
+      "def": ">800"
+     },
+     "recAccuracy": 70,
+     "source": {
+      "url": "https://www.dragonheir.info/article/422",
+      "date": "2024-07-09"
+     },
+     "version": "legacy S4",
+     "confidence": "verified"
+    }
+   ],
+   "rules": [
+    {
+     "rule": "Rewards scale with clear speed (stars by time left); run 1 tank + 4 DPS or 5 DPS; AoE DPS recommended.",
+     "source": {
+      "url": "https://www.dragonheir.info/article/584",
+      "date": "2025-06-26"
+     },
+     "confidence": "verified"
+    },
+    {
+     "rule": "After Resonance Lv.100 the dungeon only drops Gold.",
+     "source": {
+      "url": "https://www.dragonheir.info/article/584",
+      "date": "2025-06-26"
+     },
+     "confidence": "verified"
+    },
+    {
+     "rule": "6 waves; official tip: clear wave 1 with 2 heroes' ultimates, wave 2 with the other 3, repeat.",
+     "source": {
+      "url": "https://www.dragonheir.info/article/587",
+      "date": "2025-06-26"
+     },
+     "confidence": "verified"
+    },
+    {
+     "rule": "Cannot push past Stage 6 in the first five days of a new account/server.",
+     "source": {
+      "url": "https://hellhades.com/dragonheir-ultimate-beginner-guide/",
+      "date": "2025-07-28"
+     },
+     "confidence": "reported"
+    },
+    {
+     "rule": "Next stage unlocks after claiming the 3rd-tier (3-star) reward of the previous stage.",
+     "source": {
+      "url": "https://www.dragonheir.info/article/584",
+      "date": "2025-06-26",
+      "note": "screenshot text"
+     },
+     "confidence": "verified"
+    }
+   ],
+   "timeLimit": {
+    "value": null,
+    "estimated_note": "Not published. Since 3 stars need >50s remaining, the limit is >50s; legacy stage videos/guides do not state it. Read it from the in-battle timer."
+   },
+   "source": {
+    "url": "https://www.dragonheir.info/article/587",
+    "date": "2025-06-26"
+   },
+   "sourceDate": "2025-06-26",
+   "confidence": "verified (structure); enemy stats not found"
+  },
+  "fey_meander": {
+   "aliases": [
+    "Fey Corridor",
+    "Fairy Corridor",
+    "Fey Meander"
+   ],
+   "structure": "Floor/stage ladder. Reborn: 300 floors (community guide 1162). Most stages are enemy HERO teams (5 heroes) that cast ultimates continuously; periodic boss stages. Daily rewards by stages cleared; clearing thresholds unlock the Labyrinth of Curiosities.",
+   "stages": [
+    {
+     "stage": "boss stages (Reborn S1)",
+     "mechanics": "Boss continuously applies Poison and gains a damage buff after successfully poisoning; its 2nd active skill stuns (stack Resistance on key supports).",
+     "source": {
+      "url": "https://www.dragonheir.info/article/805",
+      "date": "2025-09-09"
+     },
+     "confidence": "verified"
+    },
+    {
+     "stage": "floors > 140 (legacy S3)",
+     "bossResistance": 250,
+     "recAccuracy": 270,
+     "bossFloors": [
+      5,
+      10,
+      40,
+      70,
+      100,
+      130,
+      160
+     ],
+     "source": {
+      "url": "https://www.dragonheir.info/article/402",
+      "date": "2024-06-14"
+     },
+     "version": "legacy",
+     "confidence": "verified"
+    },
+    {
+     "stage": "130-165 (legacy S1)",
+     "recAccuracy": 270,
+     "boss": "Lady of Greeneries (gains Attack Bonus stacks via Poison; e.g. 70 stacks)",
+     "source": {
+      "url": "https://www.dragonheir.info/article/201",
+      "date": "2024-02-02"
+     },
+     "version": "legacy",
+     "confidence": "verified"
+    },
+    {
+     "stage": "Reborn S3 lineup article",
+     "resistanceTargets": {
+      "allHeroes": ">180",
+      "standUnitedTalent": ">350"
+     },
+     "accuracyTargets": ">250 for debuffers",
+     "source": {
+      "url": "https://www.dragonheir.info/article/1622",
+      "date": "2025-12-02"
+     },
+     "confidence": "verified",
+     "appliesToS1": "S3"
+    }
+   ],
+   "mechanics": [
+    {
+     "name": "Enemy hero teams",
+     "effect": "Regular stages = enemy hero lineups; pressure comes from enemies chaining ultimates; control teams (Holy Hunter stun set) or Frost AoE recommended.",
+     "numbers": null,
+     "source": {
+      "url": "https://www.dragonheir.info/article/805",
+      "date": "2025-09-09"
+     },
+     "confidence": "verified"
+    },
+    {
+     "name": "Accuracy gate",
+     "effect": "Each floor has a required Accuracy for debuff/control heroes (community guide: 'must have required accuracy for the floor').",
+     "numbers": null,
+     "source": {
+      "url": "https://www.dragonheir.info/article/1162",
+      "date": "2025-10-13",
+      "note": "Ossir community guide on official wiki"
+     },
+     "confidence": "reported"
+    }
+   ],
+   "source": {
+    "url": "https://www.dragonheir.info/article/805",
+    "date": "2025-09-09"
+   },
+   "sourceDate": "2025-09-09",
+   "confidence": "verified (structure); per-floor stats not found"
+  },
+  "trial_breakthrough": {
+   "aliases": [
+    "Breakthrough Trial",
+    "Lv.30 / Lv.50 Breakthrough Trials"
+   ],
+   "rules": [
+    {
+     "rule": "Breakthrough Trials exist at Lv.30 and Lv.50; if you fail once, the next run grants 3 buffs; healer-heavy teams recommended.",
+     "source": {
+      "url": "https://www.dragonheir.info/article/771",
+      "date": "2025-09-08"
+     },
+     "confidence": "verified"
+    }
+   ],
+   "stages": [],
+   "mechanics": [],
+   "source": {
+    "url": "https://www.dragonheir.info/article/771",
+    "date": "2025-09-08"
+   },
+   "sourceDate": "2025-09-08",
+   "confidence": "verified (only the rule above); enemy names/levels/stats NOT found"
+  },
+  "continental_challenge": {
+   "event": "Imperial Shadow Recast (S1 beginner-season Continental Challenge)",
+   "rules": [
+    {
+     "rule": "3 rounds, each 1 week; 6 bosses with different stage traits; each boss once per round; each hero once per round.",
+     "source": {
+      "url": "https://www.dragonheir.info/article/777",
+      "date": "2025-09-08"
+     },
+     "confidence": "verified"
+    },
+    {
+     "rule": "Attempts: 2 in round 1, +2 per round, max 6 in round 3.",
+     "source": [
+      {
+       "url": "https://www.dragonheir.info/article/777",
+       "date": "2025-09-08"
+      },
+      {
+       "url": "https://hellhades.com/easiest-continental-bosses-for-week-1-dragonheir-silent-gods/",
+       "date": "2025-08-13"
+      }
+     ],
+     "confidence": "verified"
+    },
+    {
+     "rule": "Starts at server day 22 on new servers.",
+     "source": {
+      "url": "https://www.dragonheir.info/article/777",
+      "date": "2025-09-08"
+     },
+     "confidence": "verified"
+    },
+    {
+     "rule": "Rating per boss battle by damage: S >= 22,000,000; A+ >= 11,000,000; A >= 7,000,000; B >= 3,500,000; C >= 200,000. Weekly ranking by total damage.",
+     "source": {
+      "url": "https://www.dragonheir.info/article/777",
+      "date": "2025-09-08"
+     },
+     "confidence": "verified"
+    },
+    {
+     "rule": "Fight length: legacy Continental Challenges were 5-minute (300 s) fights; Reborn guides only say 'within the time limit'.",
+     "value_s": 300,
+     "source": {
+      "url": "https://www.dragonheir.info/article/253",
+      "date": "2024-02-02"
+     },
+     "version": "legacy",
+     "confidence": "reported",
+     "note": "not confirmed for Imperial Shadow Recast; treat 300 s as default"
+    }
+   ],
+   "bossCommon": {
+    "level": 240,
+    "controlImmunity": true,
+    "damageFalloff": {
+     "thresholdDamage": 200000000,
+     "reductionAfter": 0.9,
+     "text": "After taking 200,000,000 cumulative damage in a single battle, subsequent damage taken is reduced by 90%."
+    },
+    "totalDamageBonus": {
+     "perStack": 2.0,
+     "gainOn": "after casting its ultimate skill",
+     "dispellable": false,
+     "duration": "indefinite",
+     "text": "Gains 1 stack of Damage Bonus after casting an ultimate skill. Each stack increases damage dealt by 200%. Cannot be blocked or dispelled. Lasts indefinitely."
+    },
+    "source": [
+     {
+      "url": "https://www.dragonheir.info/article/603",
+      "date": "2025-06-27",
+      "note": "in-game Boss Info screenshot, Khrysos"
+     },
+     {
+      "url": "https://www.dragonheir.info/article/602",
+      "date": "2025-06-27",
+      "note": "in-game Boss Info screenshot, Vasska"
+     }
+    ],
+    "confidence": "verified",
+    "note": "Both intel screens show identical traits; assumed to apply to all 6 bosses (estimated for Thelendor/Twitch/Vinyara/Tamar)."
+   },
+   "bosses": {
+    "thelendor": {
+     "level": 240,
+     "stageTraits": [
+      "Heroes' summoned unit with the highest Attack deals 240% more damage.",
+      "Heroes' allies receive 50% increased healing and shield effects."
+     ],
+     "numbers": {
+      "topSummonDmgBonus": 2.4,
+      "healShieldBonus": 0.5
+     },
+     "mechanics": [
+      {
+       "name": "Lunar Arrival",
+       "effect": "Strikes enemies within 2 tiles; keep back row >2 tiles away; boss deals high overall damage; boss skills attack random targets.",
+       "numbers": {
+        "rangeTiles": 2
+       }
+      }
+     ],
+     "recommendedSchools": [
+      "Summon",
+      "Necrosis"
+     ],
+     "source": [
+      {
+       "url": "https://www.dragonheir.info/article/777",
+       "date": "2025-09-08",
+       "note": "event screenshot"
+      },
+      {
+       "url": "https://www.dragonheir.info/article/2760",
+       "date": "2026-05-07"
+      },
+      {
+       "url": "https://www.dragonheir.info/article/2711",
+       "date": "2026-04-29"
+      }
+     ],
+     "damageReference": {
+      "value": "~212M (230M+ top) with Lelwanis necro core",
+      "source": {
+       "url": "https://hellhades.com/easiest-continental-bosses-for-week-1-dragonheir-silent-gods/",
+       "date": "2025-08-13"
+      },
+      "confidence": "reported",
+      "note": "endgame relaunch-server account; >200M is inside the 90% damage falloff"
+     },
+     "confidence": "verified"
+    },
+    "vasska": {
+     "level": 240,
+     "recAccuracy": 260,
+     "recResistance": 260,
+     "stageTraits": [
+      "Each time an ally's ultimate skill hits an enemy, the next cast of their ultimate deals 10% more damage.",
+      "When the boss is affected by Healing Reduction or Healing Reversal, it deals 30% less damage."
+     ],
+     "numbers": {
+      "ultDmgPerEnemyHit": 0.1,
+      "bossDmgReductionUnderHealRed": 0.3
+     },
+     "skillTimeline_s": [
+      6,
+      12,
+      18
+     ],
+     "skills": [
+      {
+       "name": "Restless Soul",
+       "recharge_s": 6.0,
+       "effect": "Summons 2 Spirits for 6s and grants 40% Attack Up and Attack Speed Up II to the boss and the Spirits for 6s."
+      },
+      {
+       "name": "Death Reaping",
+       "recharge_s": 6.0,
+       "damageType": "Necrotic",
+       "effect": "Necrotic Damage to all enemies and summons 1 Spirit near each target hit for 24s; up to 5 Spirits per cast."
+      }
+     ],
+     "mechanics": [
+      {
+       "name": "Summons count for score",
+       "effect": "Damage to the boss's summons counts toward total damage; boss buffs itself and its summons (bring buff dispel/prohibition)."
+      }
+     ],
+     "source": [
+      {
+       "url": "https://www.dragonheir.info/article/602",
+       "date": "2025-06-27",
+       "note": "Boss Info + skill tooltip screenshots"
+      },
+      {
+       "url": "https://www.dragonheir.info/article/2748",
+       "date": "2026-05-06",
+       "note": "zh-TW guide image"
+      }
+     ],
+     "damageReference": {
+      "value": "237M (no heal reduction, necro team)",
+      "source": {
+       "url": "https://hellhades.com/easiest-continental-bosses-for-week-1-dragonheir-silent-gods/",
+       "date": "2025-08-13"
+      },
+      "confidence": "reported"
+     },
+     "confidence": "verified"
+    },
+    "twitch": {
+     "level": 240,
+     "stageTraits": [
+      "Stage buff favours AoE schools (Corrosion, Rally, Thunderbolt).",
+      "Successfully resisting or dispelling debuffs triggers a stacking Damage Bonus from the Stage Buff."
+     ],
+     "mechanics": [
+      {
+       "name": "Toxin",
+       "effect": "Inflicts Toxin on multiple targets; his damage increases with the number of Toxin stacks. Counter: debuff dispel/immunity or high Resistance."
+      }
+     ],
+     "numbers": null,
+     "source": [
+      {
+       "url": "https://www.dragonheir.info/article/2760",
+       "date": "2026-05-07"
+      },
+      {
+       "url": "https://www.dragonheir.info/article/2711",
+       "date": "2026-04-29"
+      }
+     ],
+     "confidence": "verified (qualitative); numbers not found"
+    },
+    "vinyara": {
+     "level": 240,
+     "stageTraits": [
+      "Favours Ice Blast school (stage buff + affinity)."
+     ],
+     "mechanics": [
+      {
+       "name": "Skill interval",
+       "effect": "Boss casts skills on a 9-second interval.",
+       "numbers": {
+        "interval_s": 9
+       }
+      },
+      {
+       "name": "Shield -> Invincibility",
+       "effect": "If her Shield is not dispelled/broken quickly she enters an undispellable Invincibility. HellHades: gains a powerful shield plus increased Defense and Damage Reduction."
+      },
+      {
+       "name": "Counter",
+       "effect": "Vinyara (hero) drains her Ultimate Energy; Mimic familiar applies advanced Recharging Speed Penalty."
+      }
+     ],
+     "source": [
+      {
+       "url": "https://www.dragonheir.info/article/2760",
+       "date": "2026-05-07"
+      },
+      {
+       "url": "https://hellhades.com/easiest-continental-bosses-for-week-1-dragonheir-silent-gods/",
+       "date": "2025-08-13"
+      }
+     ],
+     "damageReference": {
+      "value": "250M+ (280-290M possible) with Brody shield-breaker core",
+      "source": {
+       "url": "https://hellhades.com/easiest-continental-bosses-for-week-1-dragonheir-silent-gods/",
+       "date": "2025-08-13"
+      },
+      "confidence": "reported"
+     },
+     "confidence": "verified"
+    },
+    "khrysos": {
+     "level": 240,
+     "recAccuracy": 260,
+     "stageTraits": [
+      "Heroes' basic attacks deal extra non-crit Physical Damage equal to 100% Attack.",
+      "When an ally breaks a boss's shield, that ally gains +50% Attack for 10s."
+     ],
+     "numbers": {
+      "basicAtkExtraPctAtk": 1.0,
+      "shieldBreakAtkBuff": 0.5,
+      "shieldBreakBuffDur_s": 10
+     },
+     "skillTimeline_s": [
+      9,
+      18
+     ],
+     "skills": [
+      {
+       "name": "Holy Fire Smite",
+       "recharge_s": 9.0,
+       "damageType": "Fire",
+       "effect": "3 Holy Fire attacks, each on a random enemy in range, 100% chance to dispel 1 buff; boss gains 20 stacks of layered shield for 10s."
+      },
+      {
+       "name": "Lunar Retribution",
+       "recharge_s": 9.0,
+       "damageType": "Fire",
+       "effect": "Fire Damage to all enemies, 100% chance of Attack Speed Penalty II for 20s; boss gains 40 stacks of layered shield for 20s."
+      }
+     ],
+     "mechanics": [
+      {
+       "name": "Layered Shield",
+       "effect": "Each hit removes one layer (multi-hit counters it); damage that breaks layers does not count as damage."
+      }
+     ],
+     "source": [
+      {
+       "url": "https://www.dragonheir.info/article/603",
+       "date": "2025-06-27",
+       "note": "Boss Info + skill tooltip screenshots"
+      },
+      {
+       "url": "https://www.dragonheir.info/article/2760",
+       "date": "2026-05-07"
+      }
+     ],
+     "confidence": "verified"
+    },
+    "tamar": {
+     "level": 240,
+     "stageTraits": [
+      "Boss takes more damage the more Debuff stacks she has (Toxin/Burn recommended)."
+     ],
+     "mechanics": [
+      {
+       "name": "Debuff/Control spam",
+       "effect": "Dispels buffs, frequently inflicts debuffs and control on multiple targets. ~180 Resistance makes heroes largely immune; a Stand United talent support needs >400 Resistance."
+      }
+     ],
+     "numbers": {
+      "resistanceTargetAll": 180,
+      "resistanceStandUnited": 400
+     },
+     "source": [
+      {
+       "url": "https://www.dragonheir.info/article/2760",
+       "date": "2026-05-07"
+      },
+      {
+       "url": "https://www.dragonheir.info/article/2711",
+       "date": "2026-04-29"
+      }
+     ],
+     "confidence": "verified (qualitative + resistance targets)"
+    }
+   },
+   "legacyReference": {
+    "text": "Legacy CC (Lunar Halo, 2024): bosses Lv.240 with 260 Resistance (280 Accuracy recommended, 220 found sufficient); bosses take 100% extra damage from their weak element; 2 universal traits: control immunity and a 200% universal damage buff after their ultimate, undispellable, until battle end.",
+    "source": {
+     "url": "https://www.dragonheir.info/article/254",
+     "date": "2024-02-02"
+    },
+    "version": "legacy",
+    "confidence": "verified"
+   },
+   "source": {
+    "url": "https://www.dragonheir.info/article/777",
+    "date": "2025-09-08"
+   },
+   "sourceDate": "2025-09-08",
+   "confidence": "verified (rules, traits, 2 full skill kits); HP/ATK/DEF not found (bosses are score bosses; Damage Falloff caps useful damage near 200M)"
+  },
+  "grand_gladiator_arena": {
+   "note": "PvP: enemies are other players' 5-hero defense teams. No PvE preset; build enemy presets from real hero data. Legacy note: a fully defensive team can win by not being killed 'within the time limit'.",
+   "source": {
+    "url": "https://www.dragonheir.info/article/46",
+    "date": "2023-10-18",
+    "note": "PVP System Introduction"
+   },
+   "confidence": "verified (no enemy data needed)"
+  },
+  "talent_dungeons_elemental_domains": {
+   "note": "Not in the user's list but on the same menu (Wildfire / Resplendence / Permafrost talent dungeons, legacy 'Flame/Tempest/Frost Domain').",
+   "bosses": {
+    "searing_lord_flame": "Counters Fire & Poison heroes (they deal less / take more). First two skills apply Burn; ultimate damage scales with all active Burn stacks.",
+    "lord_of_lightning_tempest": "Counters Lightning & Radiance. Ultimate self-damages then spawns 5 hatchlings; surviving minions boost boss damage by 50%. Any healing gives BOTH sides stackable skill acceleration.",
+    "lady_of_frostthorn_frost": "Counters Ice & Dark. Gains damage reduction each time she lands a debuff; 1st skill nerfs player-card attack; ultimate = AoE Stun for 5s."
+   },
+   "numbers": {
+    "tempestMinionDmgBonus": 0.5,
+    "tempestHatchlings": 5,
+    "frostUltStun_s": 5
+   },
+   "source": {
+    "url": "https://www.dragonheir.info/article/584",
+    "date": "2025-06-26"
+   },
+   "confidence": "verified"
+  }
+ },
+ "power": {
+  "summary": "The game shows a per-hero 'Power' number (seen by the capture tool in the hero list), but NO official or community formula was found. Official dungeon screens do not use recommended Power; they show enemy Level, Recommended Accuracy and (for some bosses) Recommended Resistance.",
+  "formula": null,
+  "powerToStageRecommendations": null,
+  "levelRecommendations": [
+   {
+    "text": "Legacy graves difficulty 9: team level 90+ (heroes Lv.90 breakthrough), tank HP >70-80k, DEF >2.0-3.0k, debuffers >220 Accuracy, average hero HP >35k.",
+    "source": [
+     {
+      "url": "https://www.dragonheir.info/article/236",
+      "date": "2024-02-02"
+     },
+     {
+      "url": "https://www.dragonheir.info/article/364",
+      "date": "2024-05-20"
+     },
+     {
+      "url": "https://www.dragonheir.info/article/424",
+      "date": "2024-07-15"
+     }
+    ],
+    "version": "legacy",
+    "confidence": "verified"
+   },
+   {
+    "text": "Continental Challenge screenshots show player heroes at Lv.100 vs Lv.240 bosses.",
+    "source": {
+     "url": "https://www.dragonheir.info/article/2760",
+     "date": "2026-05-07"
+    },
+    "confidence": "verified"
+   },
+   {
+    "text": "YouTube title (OddOneGaming, S8): 'Grave Of Venom 20 ... NO Mythic Gear Lvl 79 Team' - a level-79 team cleared Venom difficulty 20 in S8.",
+    "source": {
+     "url": "https://www.youtube.com/results?search_query=dragonheir+grave+of+venom+15",
+     "date": "2026-08 (title '2mo ago')"
+    },
+    "confidence": "reported"
+   }
+  ],
+  "heroLevelGrowthData": {
+   "text": "Official heroLevelBase.json gives per-level growth multipliers for HP/ATK/DEF (1.14 at Lv1-30, 1.22-1.41 at 36-46, 1.72-2.15 at 51-66, 2.62-3.27 at 71-86, 5.58 at 91, 7.74-9.67 at 96-99). These are HERO numbers; whether monsters share this curve is unknown.",
+   "source": {
+    "url": "/mnt/project-files/dragonheir/knowledge/raw-official/heroLevelBase.json",
+    "date": "2025"
+   },
+   "confidence": "verified (heroes only)"
+  },
+  "confidence": "verified that no formula is published"
+ },
+ "calibrationPlan": {
+  "why": "Boss HP/ATK/DEF are not published anywhere; they must be measured.",
+  "steps": [
+   "Boss HP: in Continental Challenge the score = damage dealt; for dungeons use the boss HP bar: record damage-dealt numbers from the battle stats screen on a kill (total damage to boss ~= boss HP + overheal/shields).",
+   "Boss ATK: record damage taken by a hero with known HP/DEF from one boss skill (battle statistics 'damage taken'), then solve the sim's damage formula for ATK*skill%.",
+   "Boss DEF: hit the boss with a known hero/skill once with and once without a Defense Penalty and compare.",
+   "Level scaling: data points available are Lv100 (grave diff 8-9, goblin diff 9), Lv110 (harpy intel), Lv145 (ruins diff 7), Lv160 (battlefield diff 7), Lv240 (CC), Lv300 (challenge mode / high rot). Fit stats-vs-level once 2-3 bosses are measured.",
+   "Legacy reference points (diff 9, Lv.170 bosses): total damage dealt 3.8M-5.9M per clear, see legacyBattleStatistics. Use only as a sanity check."
+  ]
+ },
+ "notFound": [
+  "Boss/enemy HP, ATK, DEF for every PvE mode and difficulty (no official, community, CN/JP/KR or datamine source found).",
+  "Reborn per-difficulty enemy Resistance table (only the legacy 1-9 table exists).",
+  "Fight time limits for Graves, Ruins, Battlefield, Goblin Lair, Fey Meander, Breakthrough Trials (only legacy CC = 5 min and legacy Pillar of Dark = 5 min per stage).",
+  "Monster level for most difficulties (Reborn: only Lv100 @ grave diff 8/9 & goblin diff 9, Lv145 @ ruins diff 7, Lv160 @ battlefield diff 7, Lv110 harpy intel, Lv240 CC, Lv300 challenge/high rot; legacy diff 9 = Lv170).",
+  "Whether bosses have Crit Rate/Crit Damage (no source mentions boss crits).",
+  "Hero/team Power formula and any power-to-stage recommendation.",
+  "Breakthrough Trial enemies (names, levels, stats).",
+  "Skill % coefficients for grave/ruins/battlefield boss skills (only CC Vasska/Khrysos tooltips found).",
+  "Exact number of waves in graves/ruins (legacy S4 Venom: boss in wave 3).",
+  "Reddit (search requires login, returned nothing), JP wikis (gamewith closed, wikiwiki 403), namu.wiki (403), YouTube transcripts (rate-limited)."
+ ],
+ "legacyBattleStatistics": {
+  "what": "End-of-battle Statistics screens published in official lineup guides (legacy 2024, difficulty 9, Lv.170 bosses). Damage dealt = all damage to all enemies (boss + adds + shields + boss self-healing), so it is an UPPER-BOUND proxy for total enemy effective HP, not boss HP. 'enemyDpsOnTeam' = gross damage taken / clear time.",
+  "confidence": "verified (numbers read from official screenshots); as an HP proxy: estimated",
+  "usableFor": "Order-of-magnitude sanity check of a simulator: legacy diff 9 (Lv.170 boss) needed ~3.8M-5.9M total team damage over 2:10-4:35; the team took ~1.0M-3.1M damage. Reborn S1 difficulties and levels differ, so do not use these as S1 values.",
+  "points": [
+   {
+    "mode": "Grave of Rot",
+    "difficulty": 9,
+    "clearTime_s": 206,
+    "bestClearTime_s": 157,
+    "heroLevels": [
+     91,
+     91,
+     91,
+     91,
+     91
+    ],
+    "damageDealtPerHero": [
+     489919,
+     356147,
+     198241,
+     2603141,
+     184914
+    ],
+    "damageTakenPerHero": [
+     200609,
+     350775,
+     246636,
+     299729,
+     141618
+    ],
+    "healingPerHero": [
+     0,
+     366444,
+     520055,
+     0,
+     607347
+    ],
+    "totals": {
+     "damageDealt": 3832362,
+     "damageTaken": 1239367,
+     "healing": 1493846
+    },
+    "teamDps": 18604,
+    "enemyDpsOnTeam": 6016,
+    "source": {
+     "url": "https://www.dragonheir.info/article/243",
+     "date": "2024-02-02",
+     "note": "end-of-battle Statistics screenshot (Attack / Damage Taken / Healing)"
+    },
+    "version": "legacy S2"
+   },
+   {
+    "mode": "Heretical Ruins",
+    "difficulty": 9,
+    "clearTime_s": 159,
+    "bestClearTime_s": 159,
+    "heroLevels": [
+     91,
+     91,
+     91,
+     91,
+     91
+    ],
+    "damageDealtPerHero": [
+     2615027,
+     2393970,
+     84652,
+     391988,
+     400638
+    ],
+    "damageTakenPerHero": [
+     348711,
+     182580,
+     100089,
+     351421,
+     315450
+    ],
+    "healingPerHero": [
+     0,
+     0,
+     809474,
+     605230,
+     0
+    ],
+    "totals": {
+     "damageDealt": 5886275,
+     "damageTaken": 1298251,
+     "healing": 1414704
+    },
+    "teamDps": 37021,
+    "enemyDpsOnTeam": 8165,
+    "source": {
+     "url": "https://www.dragonheir.info/article/251",
+     "date": "2024-02-02",
+     "note": "end-of-battle Statistics screenshot (Attack / Damage Taken / Healing)"
+    },
+    "version": "legacy S2"
+   },
+   {
+    "mode": "Ancient Battlefield",
+    "difficulty": 9,
+    "clearTime_s": 275,
+    "bestClearTime_s": 275,
+    "heroLevels": [
+     100,
+     100,
+     100,
+     100,
+     100
+    ],
+    "damageDealtPerHero": [
+     182551,
+     477450,
+     418153,
+     1424407,
+     1833047
+    ],
+    "damageTakenPerHero": [
+     928801,
+     425008,
+     475151,
+     521055,
+     745952
+    ],
+    "healingPerHero": [
+     1331898,
+     1051284,
+     1554667,
+     0,
+     576648
+    ],
+    "totals": {
+     "damageDealt": 4335608,
+     "damageTaken": 3095967,
+     "healing": 4514497
+    },
+    "teamDps": 15766,
+    "enemyDpsOnTeam": 11258,
+    "source": {
+     "url": "https://www.dragonheir.info/article/252",
+     "date": "2024-02-02",
+     "note": "end-of-battle Statistics screenshot (Attack / Damage Taken / Healing)"
+    },
+    "version": "legacy S2"
+   },
+   {
+    "mode": "Ancient Battlefield",
+    "difficulty": 9,
+    "clearTime_s": 165,
+    "bestClearTime_s": 165,
+    "heroLevels": [
+     100,
+     100,
+     100,
+     91,
+     100
+    ],
+    "damageDealtPerHero": [
+     295745,
+     228477,
+     335577,
+     261646,
+     3666195
+    ],
+    "damageTakenPerHero": [
+     344997,
+     435955,
+     411439,
+     300514,
+     607491
+    ],
+    "healingPerHero": [
+     206608,
+     1234007,
+     619380,
+     40400,
+     0
+    ],
+    "totals": {
+     "damageDealt": 4787640,
+     "damageTaken": 2100396,
+     "healing": 2100395
+    },
+    "teamDps": 29016,
+    "enemyDpsOnTeam": 12730,
+    "source": {
+     "url": "https://www.dragonheir.info/article/360",
+     "date": "2024-05-17",
+     "note": "end-of-battle Statistics screenshot (Attack / Damage Taken / Healing)"
+    },
+    "version": "legacy S3"
+   },
+   {
+    "mode": "Heretical Ruins",
+    "difficulty": 9,
+    "clearTime_s": 136,
+    "bestClearTime_s": 130,
+    "heroLevels": [
+     91,
+     91,
+     91,
+     91,
+     91
+    ],
+    "damageDealtPerHero": [
+     238015,
+     246986,
+     3268210,
+     579609,
+     1081889
+    ],
+    "damageTakenPerHero": [
+     167808,
+     295431,
+     181517,
+     136323,
+     199229
+    ],
+    "healingPerHero": [
+     499954,
+     612311,
+     0,
+     15723,
+     0
+    ],
+    "totals": {
+     "damageDealt": 5414709,
+     "damageTaken": 980308,
+     "healing": 1127988
+    },
+    "teamDps": 39814,
+    "enemyDpsOnTeam": 7208,
+    "source": {
+     "url": "https://www.dragonheir.info/article/362",
+     "date": "2024-05-17",
+     "note": "end-of-battle Statistics screenshot (Attack / Damage Taken / Healing)"
+    },
+    "version": "legacy S3"
+   },
+   {
+    "mode": "Goblin Lair",
+    "difficulty": 5,
+    "clearTime_s": 58,
+    "bestClearTime_s": 41,
+    "heroLevels": "~60",
+    "totals": {
+     "damageDealt": 718268
+    },
+    "tankDamageTaken": 22574,
+    "teamDps": 12384,
+    "source": {
+     "url": "https://www.dragonheir.info/article/208",
+     "date": "2024-02-02",
+     "note": "statistics screenshot"
+    },
+    "version": "legacy S2"
+   }
+  ]
+ }
+}

@@ -33,14 +33,25 @@
     };
   }
   var idle = { conf: 'preset', basic: function () {} };
-  // A generic boss: single-target hits on the front line, an area skill, and
-  // a team-wide ultimate.
+  // A generic dungeon boss. Real bosses run a fixed cycle: one skill every 6 s,
+  // three skills per 18 s cycle (Graves, Ancient Battlefield; Temporal Vortex
+  // 5 s / 20 s; HellHades 2025-07-30, official intel screens). The cycle runs on
+  // the boss's energy bar, so energy drain and Recharging Speed Penalty delay it,
+  // as in game. Skill sizes are guesses:
+  //   1) area hit on up to 3 heroes, 2) chain of 3 heavy hits on its target
+  //   (the "tank killer"), 3) a hit on every hero.
   function bossKit(o) {
+    var step = o.step || 6;
     return {
-      conf: 'preset', battleCd: o.skillCd || 12,
+      conf: 'preset', ultFull: step, ultFirst: step,
       basic: function (u, b, t) { b.hit(u, t, { atk: 1.0 }, { tag: 'basic' }); },
-      battle: function (u, b) { b.area(u, b.target(u), 3).forEach(function (t) { b.hit(u, t, { atk: o.skillMult || 2.2 }, { tag: 'battle' }); }); },
-      ult: function (u, b) { b.enemies(u).forEach(function (t) { b.hit(u, t, { atk: o.ultMult || 3.5 }, { tag: 'ult' }); }); },
+      ult: function (u, b) {
+        var k = (u.flags.bossSkill = ((u.flags.bossSkill || 0) % 3) + 1), t = b.target(u);
+        if (!t) return;
+        if (k === 1) b.area(u, t, 3).forEach(function (x) { b.hit(u, x, { atk: o.skillMult || 2.0 }, { tag: 'battle' }); });
+        else if (k === 2) for (var i = 0; i < 3; i++) b.hit(u, t, { atk: o.chainMult || 1.5 }, { tag: 'battle' });
+        else b.enemies(u).forEach(function (x) { b.hit(u, x, { atk: o.ultMult || 2.5 }, { tag: 'ult' }); });
+      },
       init: function (u, b) {
         if (o.enrageAt) b.after(o.enrageAt, function () { b.buff(u, u, 'Enrage', 999, { atkP: o.enrageAtk || 1.0 }); }, u);
       }
@@ -69,12 +80,19 @@
       return { units: list };
     }
   });
+  function makeBoss(d) {
+    return function (e) {
+      var st = scaled(e, d);
+      return { units: [unitSpec(e.name || 'Boss', st, { isBoss: true, controlImmune: true, kit: bossKit(e), res: e.res == null ? 30 : e.res, acc: e.acc || 30 })] };
+    };
+  }
   S.registerBoss('boss', {
-    name: 'Generic boss', conf: 'estimated', note: 'Single boss: 40x the HP of a level-matched hero, 1.6x ATK, area skill every 12s, team-wide ultimate. Multipliers are guesses.',
-    make: function (e) {
-      var st = scaled(e, { hpX: 40, atkX: 1.6, defX: 1.2 });
-      return { units: [unitSpec(e.name || 'Boss', st, { isBoss: true, kit: bossKit(e), res: e.res == null ? 30 : e.res, acc: e.acc || 30 })] };
-    }
+    name: 'Generic boss', conf: 'estimated', note: 'Single boss on an 18 s cycle (a skill every 6 s: area hit, 3-hit chain on its target, hit on all heroes), immune to control. 40x the HP of a level-matched hero and 2.2x its ATK, tuned so a level-matched team wins with HP to spare. No source publishes boss HP/ATK/DEF, so these are test-bench numbers.',
+    make: makeBoss({ hpX: 40, atkX: 2.2, defX: 1.2 })
+  });
+  S.registerBoss('bossHard', {
+    name: 'Hard boss', conf: 'estimated', note: 'The generic boss with 2.8x ATK: a level-matched team survives only some of the time, so healing, shields and damage cuts decide the fight.',
+    make: makeBoss({ hpX: 40, atkX: 2.8, defX: 1.2 })
   });
   S.registerBoss('waves', {
     name: 'Three waves', conf: 'estimated', note: 'Three waves of five mobs (4x hero HP, 0.6x ATK), the last led by an elite (20x HP). Stand-in for Goblin Lair style stages.',
@@ -84,7 +102,7 @@
       var mk = function (n, st, k) { var w = []; for (var i = 0; i < n; i++) w.push(unitSpec('Mob ' + (i + 1), st, { kit: k, res: e.res || 0 })); return w; };
       var mobKit = { conf: 'preset', basic: function (u, b, t) { b.hit(u, t, { atk: 1.0 }, { tag: 'basic' }); } };
       var w3 = mk(4, mob, mobKit);
-      w3.unshift(unitSpec('Elite', elite, { isBoss: true, kit: bossKit({ skillMult: 1.8, ultMult: 2.5 }), res: 30 }));
+      w3.unshift(unitSpec('Elite', elite, { isBoss: true, controlImmune: true, kit: bossKit({ skillMult: 1.6, chainMult: 1.2, ultMult: 2.0 }), res: 30 }));
       return { waves: [mk(5, mob, mobKit), mk(5, mob, mobKit), w3] };
     }
   });

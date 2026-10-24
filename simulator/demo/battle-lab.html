@@ -69,6 +69,7 @@ select, input[type="search"] { font: 15px var(--font); color: var(--fg); backgro
 .chip { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; white-space: nowrap; letter-spacing: 0.02em; }
 .chip.verified { background: rgba(31, 157, 85, 0.14); color: var(--good); }
 .chip.estimated { background: rgba(194, 116, 0, 0.14); color: var(--warn); }
+.chip.reported { background: var(--accent-soft); color: var(--accent); }
 .chip.assumed { background: rgba(214, 58, 58, 0.12); color: var(--bad); }
 .chip.model { background: var(--fill); color: var(--muted); }
 .chip.hand { background: var(--accent-soft); color: var(--accent); }
@@ -124,7 +125,7 @@ select, input[type="search"] { font: 15px var(--font); color: var(--fg); backgro
       <div class="card">
         <div class="team" id="team"></div>
         <div class="field"><label for="cap">Captain</label><select id="cap"></select></div>
-        <div class="field"><label for="lvl">Hero level <b id="lvlv">60</b></label><input id="lvl" type="range" min="20" max="80" step="1" value="60"></div>
+        <div class="field"><label for="lvl">Hero level <b id="lvlv">59</b></label><input id="lvl" type="range" min="20" max="100" step="1" value="59"></div>
       </div>
     </div>
     <div class="group">
@@ -188,7 +189,7 @@ select, input[type="search"] { font: 15px var(--font); color: var(--fg); backgro
     <div class="group">
       <div class="label"><span>What the numbers rest on</span></div>
       <div class="card">
-        <p class="note">Hero stats, level growth, skill multipliers, artifact and set values come from the official game tables. The game does not publish cooldowns, energy gain, the DEF curve or buff values, so these are assumptions. Move a slider and rerun: if a verdict holds across the whole range, it does not depend on the guess.</p>
+        <p class="note">Hero stats, skill numbers, artifacts and sets come from the official game tables. Charge times, Skill Haste, the Accuracy curve and buff values come from sourced game rules. The DEF curve, gear, animations and boss stats are guesses. Move a slider and rerun: if a verdict holds across the whole range, it does not depend on the guess.</p>
         <div class="rules" id="rules"></div>
       </div>
     </div>
@@ -209,19 +210,20 @@ select, input[type="search"] { font: 15px var(--font); color: var(--fg); backgro
   'use strict';
   var S = window.DHSim;
   var EL = { Ice: '#3aa7e8', Poison: '#2aa35a', Fire: '#e5602f', Lightning: '#8b5cf6', Necrosis: '#5f6675', Radiance: '#d8a019' };
-  // Darko's roster (owned) and heroes on the way.
-  var OWNED = ['Auster', 'Hvitar', 'Lossenia', 'Hochadir', 'Voresh', 'Ergander', 'Alphanarsy', 'Vinyara', 'Gardrus', 'Felosia', 'Eurion', 'Torrin', 'Durango', 'Oggok', 'Frurbath', 'Vicuc',
-    'Rowena', 'Horace', 'Brody', 'Liko', 'Irma', 'Thia', 'Martina', 'Zadok', 'Eches', 'Theodore', 'Garian', 'Sifris'];
+  // Darko's roster: owned Legendaries, every Season 1 Epic with a hand-written kit, and heroes on the way.
+  var OWNED = ['Auster', 'Hvitar', 'Lossenia', 'Hochadir', 'Ergander', 'Alphanarsy', 'Vinyara', 'Felosia', 'Eurion', 'Torrin', 'Durango', 'Oggok'].concat(
+    Object.keys(S.kits()).map(function (id) { return S.data().heroes[id]; }).filter(function (h) { return h && h.r === 'Epic' && h.season === 's1'; }).map(function (h) { return h.n; }).sort());
   var INCOMING = ['Twitch', 'Lothair'];
   var ENEMIES = [
     { id: 'dummy', label: 'Single boss', seconds: 60, objective: 'dps' },
     { id: 'dummy5', label: '5 targets', seconds: 60, objective: 'dps' },
     { id: 'boss', label: 'Boss fight', seconds: 120, objective: 'clear' },
+    { id: 'bossHard', label: 'Hard boss', seconds: 120, objective: 'clear' },
     { id: 'waves', label: '3 waves', seconds: 150, objective: 'clear' }
   ];
-  var state = { team: ['Lossenia', 'Auster', 'Hvitar', 'Voresh', 'Ergander'], captain: 0, level: 60, enemy: 'dummy', slot: 2, gearSlot: 1, rules: {}, objective: null };
-  try { var saved = JSON.parse(localStorage.getItem('dhlab1') || 'null'); if (saved && saved.team && saved.team.length === 5) Object.assign(state, saved); } catch (e) {}
-  function save() { try { localStorage.setItem('dhlab1', JSON.stringify({ team: state.team, captain: state.captain, level: state.level, enemy: state.enemy, rules: state.rules })); } catch (e) {} }
+  var state = { team: ['Lossenia', 'Auster', 'Hvitar', 'Voresh', 'Ergander'], captain: 0, level: 59, enemy: 'dummy', slot: 2, gearSlot: 1, rules: {}, objective: null };
+  try { var saved = JSON.parse(localStorage.getItem('dhlab2') || 'null'); if (saved && saved.team && saved.team.length === 5) Object.assign(state, saved); } catch (e) {}
+  function save() { try { localStorage.setItem('dhlab2', JSON.stringify({ team: state.team, captain: state.captain, level: state.level, enemy: state.enemy, rules: state.rules })); } catch (e) {} }
 
   var $ = function (id) { return document.getElementById(id); };
   function H(name) { return S.hero(name); }
@@ -380,18 +382,20 @@ select, input[type="search"] { font: 15px var(--font); color: var(--fg); backgro
   });
 
   // ---------- model
-  var RULE_LABEL = { energyRegen: 'Ultimate energy per second', energyPerBasic: 'Energy per basic attack', energyPerHitTaken: 'Energy per hit taken', battleCd: 'Battle skill cooldown (s)', battleFirst: 'First battle skill at (s)',
-    castBattle: 'Battle skill animation (s)', castUlt: 'Ultimate animation (s)', basicMult: 'Basic attack (x ATK)', defK: 'DEF curve constant', resScale: 'Resistance scale', tier1: 'Tier I buff value', tier2: 'Tier II buff value', tier3: 'Tier III buff value',
-    frostAtkSpd: 'Frost attack-speed slow', poisonPerStack: 'Poison per stack (x ATK per s)', areaSize: 'Targets hit by area skills', bossControlMult: 'Control duration on bosses', ultMax: 'Ultimate energy bar' };
+  var RULE_LABEL = { defK: 'DEF curve constant', poisonPerStack: 'Poison per stack (x ATK per s)', poisonInterval: 'Poison tick interval (s)', castBattle: 'Battle skill animation (s)', castUlt: 'Ultimate animation (s)',
+    ultFull: 'Ultimate charge (s), heroes without data', ultFirst: 'First ultimate (s), heroes without data', battleCd: 'Battle skill charge (s), heroes without data', battleFirst: 'First battle skill (s), heroes without data',
+    hastePerPoint: 'Recharge speed per Skill Haste', accShift: 'Accuracy curve shift (points)', tierScale: 'Buff and debuff value scale', energyPerBasic: 'Energy per basic attack',
+    basicMult: 'Basic attack (x ATK)', areaSize: 'Targets hit by area skills', frostAtkSpd: 'Frost attack-speed slow', bossControlMult: 'Control duration on bosses', landCap: 'Best debuff land chance' };
+  function num(v) { v = +v; return Math.abs(v) < 0.01 && v !== 0 ? v.toFixed(4) : Math.abs(v) < 1 ? v.toFixed(2) : v.toFixed(1); }
   function renderRules() {
     var info = S.RULE_INFO;
     $('rules').innerHTML = Object.keys(RULE_LABEL).filter(function (k) { return info[k]; }).map(function (k) {
       var r = info[k], v = state.rules[k] != null ? state.rules[k] : r.v, rg = r.range;
       var slider = rg && rg[0] !== rg[1] ? '<input type="range" id="r-' + k + '" data-k="' + k + '" min="' + rg[0] + '" max="' + rg[1] + '" step="' + ((rg[1] - rg[0]) / 20) + '" value="' + v + '" aria-label="' + RULE_LABEL[k] + '">' : '';
-      return '<div class="rule"><span class="n">' + RULE_LABEL[k] + ' <span class="chip ' + r.conf + '">' + r.conf + '</span></span><span class="val" id="v-' + k + '">' + (+v).toFixed(v < 1 ? 2 : 1) + '</span><span class="d">' + esc(r.note) + '</span>' + slider + '</div>';
+      return '<div class="rule"><span class="n">' + RULE_LABEL[k] + ' <span class="chip ' + r.conf + '">' + r.conf + '</span></span><span class="val" id="v-' + k + '">' + num(v) + '</span><span class="d">' + esc(r.note) + '</span>' + slider + '</div>';
     }).join('');
     Array.prototype.forEach.call($('rules').querySelectorAll('input[type="range"]'), function (inp) {
-      inp.addEventListener('input', function () { state.rules[inp.dataset.k] = +inp.value; $('v-' + inp.dataset.k).textContent = (+inp.value).toFixed(+inp.value < 1 ? 2 : 1); });
+      inp.addEventListener('input', function () { state.rules[inp.dataset.k] = +inp.value; $('v-' + inp.dataset.k).textContent = num(inp.value); });
       inp.addEventListener('change', function () { save(); runSim(); });
     });
   }
