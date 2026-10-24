@@ -22,7 +22,7 @@ def canonical(name, kind):
     k = _key(name)
     if k in idx:
         return idx[k]
-    hit = difflib.get_close_matches(k, idx.keys(), n=1, cutoff=0.88)
+    hit = difflib.get_close_matches(k, idx.keys(), n=1, cutoff=0.82)
     return idx[hit[0]] if hit else name
 
 

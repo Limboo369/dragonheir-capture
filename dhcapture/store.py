@@ -85,7 +85,7 @@ class Store:
             return 0
         data = normalize(data)
         # A hero's own screen (stats/skills or gear) counts as read in detail for the sweep.
-        detail = 1 if data.get("screen_type") in ("hero_detail", "hero_gear") else None
+        detail = 1 if data.get("screen_type") == "hero_detail" else None
         n = 0
         for h in data.get("heroes", []):
             if not h.get("name"):
@@ -106,9 +106,6 @@ class Store:
         owner = names[0] if len(names) == 1 else (
             self.last_hero[0] if time.time() - self.last_hero[1] < 180 else None)
         hero_screen = data.get("screen_type") in ("hero_detail", "hero_gear", "gear_detail")
-        if owner and data.get("screen_type") == "hero_gear" and not names:
-            # mark the owner as read in detail too
-            self._upsert("heroes", norm(owner), {"name": owner, "detailed": 1})
         for i, g in enumerate(data.get("gear", [])):
             g["hero"] = g.get("hero") or (owner if hero_screen else None)
             g["slot"] = g.get("slot") or (f"Slot {i + 1}" if data.get("screen_type") == "hero_gear" else None)
@@ -143,9 +140,9 @@ class Store:
         return n
 
     def sweep(self):
-        """(heroes read in detail, heroes known, names still to open)."""
-        rows = self.db.execute("SELECT name, detailed FROM heroes ORDER BY power DESC, name").fetchall()
-        todo = [r["name"] for r in rows if not r["detailed"]]
+        """(heroes done, heroes known, names still missing a step). Done = overview and gear read."""
+        rows = self.hero_status()
+        todo = [h["name"] for h in rows if not (h["detailed"] and h["gear"])]
         return len(rows) - len(todo), len(rows), todo
 
     def hero_status(self):
@@ -162,8 +159,13 @@ class Store:
             out.append({"name": r["name"], "level": r["level"], "power": r["power"],
                         "detailed": bool(r["detailed"]), "gear": gear.get(r["key"], 0),
                         "artifact": arts.get(r["key"])})
-        out.sort(key=lambda x: (x["detailed"], -(x["power"] or 0), x["name"]))
+        out.sort(key=lambda x: (bool(x["detailed"] and x["gear"]), -(x["power"] or 0), x["name"]))
         return out
+
+    def reset(self):
+        for t in ("heroes", "gear", "artifacts", "resources", "player"):
+            self.db.execute(f"DELETE FROM {t}")
+        self.db.commit()
 
     def counts(self):
         return {t: self.db.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]

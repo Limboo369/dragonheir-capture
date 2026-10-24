@@ -48,6 +48,7 @@ class Settings:
     # Read screens automatically every INTERVAL_SECONDS; the hotkey always works.
     auto: bool = _b("AUTO", True)
     hotkey: str = os.getenv("HOTKEY", "F8").strip().upper()
+    overlay: bool = _b("OVERLAY", True)  # the floating 📸 button over the game
     effort: str = os.getenv("EFFORT", "medium")
     interval_s: float = _f("INTERVAL_SECONDS", 5)
     # Hamming distance on a 256-bit perceptual hash: <= this means "same screen"

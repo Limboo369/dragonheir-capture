@@ -214,6 +214,11 @@ class App:
         if self.s.auto:
             self.auto.select()
         self.auto.pack(side="right")
+        self.ov_switch = ctk.CTkSwitch(row, text="📸", width=60, font=f(12, text=True), text_color=MUTED,
+                                       progress_color=BLUE, command=self._toggle_overlay)
+        if self.s.overlay:
+            self.ov_switch.select()
+        self.ov_switch.pack(side="right", padx=(0, 6))
 
         # Warning banner (hidden until needed)
         self.banner = ctk.CTkFrame(self.root, fg_color="#2a1d0a", corner_radius=14)
@@ -239,8 +244,8 @@ class App:
 
         foot = ctk.CTkFrame(self.root, fg_color="transparent")
         foot.pack(side="bottom", fill="x", padx=18, pady=(0, 16))
-        for label, cmd in (("Export", self.export_now), ("Open folder", self.open_folder)):
-            ctk.CTkButton(foot, text=label, height=30, corner_radius=15, fg_color=CARD, hover_color=CARD_HI,
+        for label, cmd in (("Export", self.export_now), ("Open folder", self.open_folder), ("Reset", self.reset_data)):
+            ctk.CTkButton(foot, text=label, height=30, width=96, corner_radius=15, fg_color=CARD, hover_color=CARD_HI,
                           font=f(12, text=True), command=cmd).pack(side="left", padx=(0, 8))
         self.spent_lbl = ctk.CTkLabel(foot, text="", font=f(11, text=True), text_color=MUTED)
         self.spent_lbl.pack(side="right")
@@ -268,27 +273,27 @@ class App:
         self.list.pack(fill="both", expand=True, padx=6, pady=(0, 10))
 
     def _hero_row(self, h):
-        row = ctk.CTkFrame(self.list, fg_color=CARD_HI if not h["detailed"] else "transparent", corner_radius=12)
+        done = h["detailed"] and h["gear"]
+        row = ctk.CTkFrame(self.list, fg_color="transparent" if done else CARD_HI, corner_radius=12)
         row.pack(fill="x", pady=2, padx=4)
         initial = (h["name"] or "?")[0].upper()
         ctk.CTkLabel(row, text=initial, width=32, height=32, corner_radius=16,
-                     fg_color=BLUE if h["detailed"] else LINE, text_color=FG, font=f(13, "bold")).pack(side="left", padx=8, pady=6)
+                     fg_color=BLUE if done else LINE, text_color=FG, font=f(13, "bold")).pack(side="left", padx=8, pady=6)
         mid = ctk.CTkFrame(row, fg_color="transparent")
         mid.pack(side="left", fill="x", expand=True)
         ctk.CTkLabel(mid, text=h["name"], font=f(13, "bold", text=True), text_color=FG, anchor="w").pack(anchor="w")
         sub = f"Lv {h['level']}" if h["level"] else "Lv –"
         sub += f"  ·  {short(h['power'])}"
-        if h["artifact"]:
-            sub += f"  ·  {h['artifact']}"
         ctk.CTkLabel(mid, text=sub, font=f(11, text=True), text_color=MUTED, anchor="w").pack(anchor="w")
         right = ctk.CTkFrame(row, fg_color="transparent")
         right.pack(side="right", padx=8)
-        if h["detailed"]:
-            gear = f"⚔ {h['gear']}" if h["gear"] else "⚔ –"
-            ctk.CTkLabel(right, text=gear, font=f(11, text=True), text_color=MUTED).pack(side="left", padx=(0, 8))
-            ctk.CTkLabel(right, text="✓", font=f(14, "bold"), text_color=GREEN).pack(side="left")
-        else:
-            ctk.CTkLabel(right, text="open", font=f(11, "bold", text=True), text_color=ORANGE).pack(side="left")
+        # One chip per screen to open: Overview, Gear tab, Artifact.
+        for label, ok, tip in (("Info", h["detailed"], None), ("Gear", h["gear"], h["gear"] or None),
+                               ("Art", h["artifact"], None)):
+            text = f"{label} {tip}" if tip else label
+            ctk.CTkLabel(right, text=("✓ " if ok else "") + text, corner_radius=9, height=20, padx=7,
+                         fg_color="#12361f" if ok else CARD, text_color=GREEN if ok else MUTED,
+                         font=f(10, "bold", text=True)).pack(side="left", padx=2)
 
     # --- actions ---------------------------------------------------------------
     def _log_hotkey(self):
@@ -355,11 +360,35 @@ class App:
         self.state.show("● Watching", GREEN)
         if self.overlay is None:
             self.overlay = Overlay(self.root, self.read_now, self.s.hotkey if self.hotkey_ok else "📸")
-        self.overlay.place_near(win.hwnd)
+            self.overlay.place_near(win.hwnd)
+        if not self.s.overlay:
+            self.overlay.withdraw()
         if game_is_elevated(win.hwnd):
             self._banner("The game runs as administrator, so Windows hides your key presses from this tool. "
                          "Restart it as admin to use the hotkey, or click 📸.", admin=True)
         return True
+
+    def _toggle_overlay(self):
+        self.s.overlay = bool(self.ov_switch.get())
+        save_env("OVERLAY", "true" if self.s.overlay else "false")
+        if self.overlay:
+            if self.s.overlay:
+                self.overlay.deiconify()
+            else:
+                self.overlay.withdraw()
+
+    def reset_data(self):
+        d = ctk.CTkInputDialog(title="Reset data", text="Delete everything read so far and start over?\nType RESET to confirm.")
+        if (d.get_input() or "").strip().upper() != "RESET":
+            return
+        w = self.worker or Worker(self.s, lambda _: None)
+        w.store.reset()
+        export.write(w.store, self.s.export_path)
+        self._last_rows = None
+        if self.worker:
+            self.worker._emit(last="Data reset · start with the hero list")
+        else:
+            self.activity.configure(text="Data reset · start with the hero list", text_color=MUTED)
 
     def read_now(self):
         if not (self.worker and self.worker.hwnd) and not self._start():
@@ -415,7 +444,7 @@ class App:
         if not sw["total"]:
             self.sweep_hint.configure(text=f"Open your hero list and press {self.s.hotkey}")
         elif sw["todo"]:
-            self.sweep_hint.configure(text=f"{len(sw['todo'])} left. Open each orange hero and press {self.s.hotkey}.")
+            self.sweep_hint.configure(text=f"{len(sw['todo'])} left. For each hero press {self.s.hotkey} on Overview, Gear and Artifact.")
         else:
             self.sweep_hint.configure(text="All heroes read. Auto keeps them up to date.")
         rows = [(h["name"], h["level"], h["power"], h["detailed"], h["gear"], h["artifact"]) for h in st["heroes"]]
