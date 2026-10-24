@@ -41,7 +41,13 @@ PRICES = {
 @dataclass
 class Settings:
     api_key: str = os.getenv("ANTHROPIC_API_KEY", "")
-    model: str = os.getenv("MODEL", "claude-opus-5-5")
+    model: str = os.getenv("MODEL", "claude-haiku-5-5")
+    # Cheap first look at a small image: is this a screen with account data?
+    precheck: bool = _b("PRECHECK", True)
+    precheck_model: str = os.getenv("PRECHECK_MODEL", "claude-haiku-5-5")
+    # Read screens automatically every INTERVAL_SECONDS; the hotkey always works.
+    auto: bool = _b("AUTO", True)
+    hotkey: str = os.getenv("HOTKEY", "F8").strip().upper()
     effort: str = os.getenv("EFFORT", "medium")
     interval_s: float = _f("INTERVAL_SECONDS", 5)
     # Hamming distance on a 64-bit perceptual hash: <= this means "same screen".
@@ -50,7 +56,7 @@ class Settings:
     # (filters out battles and animations, which change every frame).
     stable_frames: int = int(_f("STABLE_FRAMES", 2))
     max_calls_per_hour: int = int(_f("MAX_CALLS_PER_HOUR", 120))
-    daily_budget_usd: float = _f("DAILY_BUDGET_USD", 3.0)
+    daily_budget_usd: float = _f("DAILY_BUDGET_USD", 1.0)
     max_image_edge: int = int(_f("MAX_IMAGE_EDGE", 1568))
     # False (default): a screenshot lives only in memory and is gone once Claude has
     # read it; only the extracted text is kept. Screens that failed to be read wait
@@ -78,5 +84,5 @@ class Settings:
     def export_path(self) -> Path:
         return self.data_dir / "dragonheir-account.json"
 
-    def price(self):
-        return PRICES.get(self.model, PRICES["claude-opus-5-5"])
+    def price(self, model=None):
+        return PRICES.get(model or self.model, PRICES["claude-opus-5-5"])

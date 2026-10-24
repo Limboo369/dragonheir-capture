@@ -9,12 +9,13 @@ Program samo gleda sliku prozora, kao screenshot. Ne čita memoriju igre, ne dir
 1. Izabereš prozor igre sa liste otvorenih prozora i klikneš **Start**.
 2. Svakih 5 s program uslika prozor (radi i kad je igra iza drugih prozora, bez krađe fokusa).
 3. Šalje Claude-u samo **nove i mirne** ekrane: ekran se mora držati bar 10 s (borbe i animacije se preskaču) i mora se razlikovati od već pročitanih (perceptual hash).
-4. Claude pročita ekran i vrati podatke; program ih spoji sa bazom (noviji podatak pobjeđuje).
-5. Slika se **briše čim je pročitana**. U bazi ostaje samo tekst. Ako čitanje ne uspije (npr. nema interneta), slika čeka kao mali JPEG u `data\pending` i briše se nakon uspješnog ponovnog pokušaja.
+4. **Brza provjera**: mala verzija slike ide Haiku-u samo da kaže tip ekrana. Samo ekrani sa podacima (heroji, oprema, artefakti, inventar, resursi, tim, profil) idu na puno čitanje.
+5. Claude pročita ekran i vrati podatke; program ih spoji sa bazom (noviji podatak pobjeđuje).
+6. Slika se **briše čim je pročitana**. U bazi ostaje samo tekst. Ako čitanje ne uspije (npr. nema interneta), slika čeka kao mali JPEG u `data\pending` i briše se nakon uspješnog ponovnog pokušaja.
 
 ## Instalacija (bez programiranja)
 
-**Opcija A: gotov .exe** (kad ga napravim i stavim na GitHub, pod *Releases*)
+**Opcija A: gotov .exe** (GitHub → *Releases* → `DragonheirCapture.exe`)
 1. Skini `DragonheirCapture.exe` i `.env.example` u jedan folder.
 2. Pokreni `DragonheirCapture.exe`. Pri prvom Start-u traži API ključ; zalijepi ga i to je to.
 
@@ -34,24 +35,30 @@ Napravi ključ na https://console.anthropic.com/settings/keys. Čuva se samo u f
 
 | Postavka | Default | Značenje |
 |---|---|---|
-| `MODEL` | `claude-opus-5-5` | Najtačniji. `claude-haiku-5-5` je ~30× jeftiniji, ali može pogriješiti sitne brojeve. |
+| `MODEL` | `claude-haiku-5-5` | Jeftin. `claude-opus-5-5` je tačniji za sitne brojeve, ali ~30× skuplji. |
+| `PRECHECK` | `true` | Brza provjera tipa ekrana prije punog čitanja. |
+| `AUTO` | `true` | `false` = čita samo kad pritisneš taster. |
+| `HOTKEY` | `F8` | "Pročitaj ovaj ekran sada" (radi i dok je igra u fokusu). |
 | `MODE` | `api` | `collect` = bez API-ja, samo čuva jedinstvene ekrane kao JPEG. |
 | `INTERVAL_SECONDS` | `5` | Koliko često slika. |
 | `MAX_CALLS_PER_HOUR` | `120` | Gornja granica čitanja na sat. |
-| `DAILY_BUDGET_USD` | `3.00` | Staje sa čitanjem kad dnevna potrošnja dođe do ovoga. |
+| `DAILY_BUDGET_USD` | `1.00` | Staje sa čitanjem kad dnevna potrošnja dođe do ovoga. |
 | `KEEP_IMAGES` | `false` | `true` = čuva pročitane slike u `data\captures`. |
 | `JPEG_QUALITY` | `80` | Kompresija slike. |
 
 ## Koliko košta
 
-Plaćaju se samo ekrani koje Claude stvarno pročita (borbe, loading i ponovljeni ekrani su besplatni).
+Plaćaju se samo ekrani koje Claude stvarno pogleda. Borbe, loading i ponovljeni ekrani su besplatni, a ostali meniji koštaju samo brzu provjeru.
 
-| Model | Po ekranu | Sat pregledanja menija (~40–120 ekrana) |
+| | Po ekranu | Sat igre |
 |---|---|---|
-| claude-opus-5-5 | ~$0.03 | ~$1–4 (dnevni limit $3 po defaultu) |
-| claude-haiku-5-5 | ~$0.0015 | ~$0.05–0.20 |
+| Brza provjera (Haiku, mala slika) | ~$0.0001 | |
+| Puno čitanje, claude-haiku-5-5 (default) | ~$0.001 | ~$0.05–0.15 |
+| Puno čitanje, claude-opus-5-5 | ~$0.03 | ~$1–4 |
 
-Procjena: slika ~1 600×900 px ≈ 2 000 tokena ulaza, ~1 000 tokena izlaza; cijene Opus 5.5 $4/$20, Haiku 5.5 $0.10/$0.50 po milion tokena. Tačna potrošnja se vidi u programu.
+Sa Haiku-om $100 kredita traje stotinama sati igre. Dnevni limit je $1. Procjena: slika ~1 600×900 px ≈ 2 000 tokena ulaza, ~1 000 tokena izlaza; cijene po milion tokena: Haiku 5.5 $0.10/$0.50, Opus 5.5 $4/$20. Tačna potrošnja se vidi u programu.
+
+**Najjeftinije:** `AUTO=false` i pritisni F8 samo na ekranima koje želiš upisati.
 
 ## Savjet za najbolje podatke
 

@@ -24,6 +24,11 @@ SCREEN_TYPES = [
 ]
 
 
+# Screens worth a full read; everything else is skipped after the precheck.
+DATA_SCREENS = {"hero_detail", "hero_gear", "gear_detail", "hero_list", "artifact_detail",
+                "artifact_list", "inventory", "resources", "team_setup", "player_profile"}
+
+
 def _nullable(t):
     return {"anyOf": [{"type": t}, {"type": "null"}]}
 
@@ -87,6 +92,22 @@ SCHEMA = _obj({
 })
 
 
+PRECHECK_SCHEMA = {
+    "type": "object",
+    "properties": {"screen_type": {"type": "string", "enum": SCREEN_TYPES}},
+    "required": ["screen_type"],
+    "additionalProperties": False,
+}
+
+PRECHECK_SYSTEM = (
+    "Classify a small screenshot from the PC game Dragonheir: Silent Gods by screen type. "
+    "hero_detail: one hero's level/stars/stats/skills. hero_gear / gear_detail: equipment. "
+    "hero_list: roster grid of hero cards. artifact_detail / artifact_list: artifacts. "
+    "inventory / resources: items, materials, currencies. team_setup: team formation. "
+    "player_profile: account profile. battle, menu (other menus, shops, map, chat), loading, other."
+)
+
+
 def _known_names_text():
     p = Path(__file__).with_name("known_names.json")
     try:
@@ -133,11 +154,35 @@ class Extractor:
         self.s = settings
         self.client = anthropic.Anthropic(api_key=settings.api_key or None, max_retries=3)
 
-    def cost(self, usage) -> float:
-        pin, pout = self.s.price()
+    def cost(self, usage, model=None) -> float:
+        pin, pout = self.s.price(model)
         inp = (usage.input_tokens or 0) + (getattr(usage, "cache_creation_input_tokens", 0) or 0) * 1.25
         inp += (getattr(usage, "cache_read_input_tokens", 0) or 0) * 0.1
         return inp / 1e6 * pin + (usage.output_tokens or 0) / 1e6 * pout
+
+    def precheck(self, jpeg: bytes):
+        """Return (screen_type | None, cost_usd). None means the check failed; then read anyway."""
+        model = self.s.precheck_model
+        try:
+            resp = self.client.messages.create(
+                model=model,
+                max_tokens=2000,
+                system=PRECHECK_SYSTEM,
+                messages=[{"role": "user", "content": [
+                    {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg",
+                                                  "data": base64.standard_b64encode(jpeg).decode("ascii")}},
+                    {"type": "text", "text": "Screen type?"},
+                ]}],
+                output_config={"effort": "low", "format": {"type": "json_schema", "schema": PRECHECK_SCHEMA}},
+            )
+        except anthropic.APIError:
+            return None, 0.0
+        cost = self.cost(resp.usage, model)
+        try:
+            text = "".join(b.text for b in resp.content if b.type == "text")
+            return json.loads(text)["screen_type"], cost
+        except (json.JSONDecodeError, KeyError):
+            return None, cost
 
     def read(self, jpeg: bytes):
         """Read one JPEG screenshot. Return (data dict | None, cost_usd, error str | None)."""

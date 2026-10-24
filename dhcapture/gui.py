@@ -7,6 +7,7 @@ import tkinter as tk
 from tkinter import messagebox, simpledialog, ttk
 
 from . import export, winlist
+from .hotkey import Hotkey
 from .config import APP_DIR, Settings
 from .worker import Worker
 
@@ -43,6 +44,9 @@ class App:
         self.windows = []
         self._build()
         self.refresh_windows()
+        self.hotkey = Hotkey(self.s.hotkey, lambda: self.worker and self.worker.read_now())
+        if not self.hotkey.start():
+            self.read_btn.configure(text="Read now")
         self.root.after(300, self._poll)
         self.root.protocol("WM_DELETE_WINDOW", self.quit)
 
@@ -69,7 +73,7 @@ class App:
     def _build(self):
         outer = ttk.Frame(self.root, padding=14)
         outer.pack(fill="both", expand=True)
-        mode = "Claude API · " + self.s.model if self.s.mode == "api" else "Collect only (no API)"
+        mode = "Claude API · " + self.s.model.replace("claude-", "") if self.s.mode == "api" else "Collect only (no API)"
         ttk.Label(outer, text="Dragonheir Capture", style="Title.TLabel").pack(anchor="w")
         ttk.Label(outer, text=mode, foreground=MUTED).pack(anchor="w", pady=(0, 10))
 
@@ -85,10 +89,16 @@ class App:
         row2.pack(fill="x", pady=(0, 10))
         self.btn = ttk.Button(row2, text="▶  Start", style="Accent.TButton", command=self.toggle)
         self.btn.pack(side="left")
+        self.read_btn = ttk.Button(row2, text=f"Read now ({self.s.hotkey})", command=self.read_now)
+        self.read_btn.pack(side="left", padx=(6, 0))
         ttk.Button(row2, text="Export", command=self.export_now).pack(side="left", padx=6)
         ttk.Button(row2, text="📁", width=3, command=self.open_folder).pack(side="left")
         self.state_lbl = ttk.Label(row2, text="● Idle", foreground=MUTED)
         self.state_lbl.pack(side="right")
+
+        self.auto_var = tk.BooleanVar(value=self.s.auto)
+        ttk.Checkbutton(outer, text=f"Auto (every {self.s.interval_s:g} s)", variable=self.auto_var,
+                        command=lambda: setattr(self.s, "auto", self.auto_var.get())).pack(anchor="w", pady=(0, 10))
 
         c = self._card(outer)
         grid = ttk.Frame(c, style="Card.TFrame")
@@ -137,6 +147,12 @@ class App:
         self.btn.configure(text="❚❚  Pause")
         self.state_lbl.configure(text="● Watching", foreground=ACCENT)
 
+    def read_now(self):
+        if not (self.worker and self.worker.hwnd):
+            self.toggle()
+        if self.worker and self.worker.hwnd:
+            self.worker.read_now()
+
     def export_now(self):
         w = self.worker or Worker(self.s, lambda _: None)
         path = export.write(w.store, self.s.export_path)
@@ -166,6 +182,7 @@ class App:
     def quit(self):
         if self.worker:
             self.worker.stop()
+        self.hotkey.stop()
         self.root.destroy()
 
     def run(self):

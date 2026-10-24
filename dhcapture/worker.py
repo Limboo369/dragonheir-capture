@@ -4,7 +4,7 @@ import time
 from pathlib import Path
 
 from . import export, winlist
-from .extract import Extractor, to_jpeg
+from .extract import DATA_SCREENS, Extractor, to_jpeg
 from .gate import Gate
 from .store import Store
 
@@ -19,6 +19,7 @@ class Worker:
         self.hwnd = None
         self._stop = threading.Event()
         self._pause = threading.Event()
+        self._now = threading.Event()  # hotkey / "Read now" button
         self._thread = None
         self.stats = {"captured": 0, "read": 0, "skipped": 0, "last": "", "error": ""}
 
@@ -39,6 +40,11 @@ class Worker:
 
     def stop(self):
         self._stop.set()
+        self._now.set()
+
+    def read_now(self):
+        """Read the current screen right away, skipping the stillness, duplicate and precheck filters."""
+        self._now.set()
 
     @property
     def paused(self):
@@ -52,29 +58,49 @@ class Worker:
 
     def _run(self):
         last_retry = 0.0
+        next_auto = 0.0
         while not self._stop.is_set():
-            t0 = time.time()
-            if not self._pause.is_set() and self.hwnd:
+            forced = self._now.is_set()
+            self._now.clear()
+            due = self.s.auto and not self._pause.is_set() and time.time() >= next_auto
+            if self.hwnd and (forced or due):
+                if due:
+                    next_auto = time.time() + self.s.interval_s
                 try:
-                    self._tick()
+                    self._tick(force=forced)
                     if self.extractor and time.time() - last_retry > 60:
                         last_retry = time.time()
                         self._retry_pending()
                 except Exception as e:  # keep running whatever happens
                     self._emit(error=f"{type(e).__name__}: {e}")
-            self._stop.wait(max(0.5, self.s.interval_s - (time.time() - t0)))
+            self._now.wait(max(0.2, next_auto - time.time()) if self.s.auto else 1.0)
 
-    def _tick(self):
+    def _tick(self, force=False):
         img = winlist.capture(self.hwnd)
         if img is None:
             self._emit(last="game window hidden or minimized")
             return
         self.stats["captured"] += 1
-        keep, reason, h = self.gate.check(img, self.store.spent_today())
-        if not keep:
-            self.stats["skipped"] += 1
-            self._emit(last=reason)
-            return
+        if force:
+            h = self.gate.hash(img)
+            if self.s.mode == "api" and self.store.spent_today() >= self.s.daily_budget_usd:
+                self._emit(last="daily budget reached")
+                return
+        else:
+            keep, reason, h = self.gate.check(img, self.store.spent_today())
+            if not keep:
+                self.stats["skipped"] += 1
+                self._emit(last=reason)
+                return
+            if self.s.mode == "api" and self.s.precheck:
+                small = to_jpeg(img, 512, 70)
+                stype, cost = self.extractor.precheck(small)
+                if stype is not None and stype not in DATA_SCREENS:
+                    self.gate.mark_read(h)  # don't look at this screen again
+                    self.store.log_capture(h, None, {"screen_type": stype}, cost, None)
+                    self.stats["skipped"] += 1
+                    self._emit(last=f"{stype}: no data, skipped")
+                    return
         jpeg = to_jpeg(img, self.s.max_image_edge, self.s.jpeg_quality)
         del img
         self.gate.mark_read(h)
