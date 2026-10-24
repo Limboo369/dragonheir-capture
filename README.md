@@ -63,8 +63,8 @@ Sa Haiku-om $100 kredita traje stotinama sati igre. Dnevni limit je $1. Procjena
 ## Hero sweep (prvo popunjavanje)
 
 1. Otvori listu heroja u igri (i skroluj je ako ih ima više). Program iz nje upiše sve heroje i njihovu snagu.
-2. U programu se pojavi lista heroja koje još nije vidio izbliza i traka napretka, npr. `3 / 27 heroes`.
-3. Otvori svakog heroja sa liste jednom (F8 ga čita odmah). Heroj nestaje sa liste kad je upisan.
+2. U programu se pojavi tabela svih heroja i traka napretka, npr. `3 / 27 heroes`. Narandžasti su viđeni samo u listi; za svakog piše Lvl, Power, Details (✓/○), koliko opreme je upisano i koji artefakt nosi.
+3. Otvori svakog narandžastog heroja jednom i pritisni F8. Kad je upisan, dobije ✓.
 4. Poslije toga Auto režim samo hvata promjene dok igraš.
 
 `data\precheck.log` pokazuje za svaki ekran šta je brza provjera mislila i da li je ekran pročitan ili preskočen.

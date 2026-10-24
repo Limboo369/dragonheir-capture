@@ -23,12 +23,16 @@ def ensure_api_key(root, s):
         parent=root, show="*")
     if not key:
         return False
-    env = APP_DIR / ".env"
-    lines = env.read_text(encoding="utf-8").splitlines() if env.exists() else []
-    lines = [l for l in lines if not l.startswith("ANTHROPIC_API_KEY=")] + [f"ANTHROPIC_API_KEY={key.strip()}"]
-    env.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    save_env("ANTHROPIC_API_KEY", key.strip())
     s.api_key = key.strip()
     return True
+
+
+def save_env(name, value):
+    env = APP_DIR / ".env"
+    lines = env.read_text(encoding="utf-8").splitlines() if env.exists() else []
+    lines = [l for l in lines if not l.startswith(name + "=")] + [f"{name}={value}"]
+    env.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 class App:
@@ -63,6 +67,8 @@ class App:
         st.map("TButton", background=[("active", "#26304a")])
         st.configure("Accent.TButton", background=ACCENT, foreground="#0b1220")
         st.map("Accent.TButton", background=[("active", "#a5d8ff")])
+        st.configure("Treeview", background=PANEL, fieldbackground=PANEL, foreground=FG, borderwidth=0, rowheight=22)
+        st.configure("Treeview.Heading", background=BG, foreground=MUTED, borderwidth=0)
         st.configure("TCombobox", fieldbackground=PANEL, background=PANEL, foreground=FG, arrowcolor=FG)
 
     def _card(self, parent):
@@ -119,10 +125,18 @@ class App:
         self.sweep_lbl.pack(side="right")
         self.sweep_bar = ttk.Progressbar(c, maximum=1, value=0)
         self.sweep_bar.pack(fill="x", pady=(6, 6))
-        self.todo = tk.Listbox(c, height=6, bg=PANEL, fg=FG, borderwidth=0, highlightthickness=0,
-                               selectbackground=PANEL, activestyle="none", font=("Segoe UI", 10))
-        self.todo.pack(fill="x")
-        ttk.Label(c, text="Open each hero below once (F8 reads it right away).", style="Muted.TLabel").pack(anchor="w", pady=(4, 0))
+        cols = ("lvl", "power", "details", "gear", "artifact")
+        self.tree = ttk.Treeview(c, columns=cols, height=8, selectmode="none")
+        self.tree.heading("#0", text="Hero", anchor="w")
+        self.tree.column("#0", width=130, anchor="w")
+        for col, title, w in (("lvl", "Lvl", 40), ("power", "Power", 70), ("details", "Details", 60),
+                              ("gear", "Gear", 50), ("artifact", "Artifact", 130)):
+            self.tree.heading(col, text=title)
+            self.tree.column(col, width=w, anchor="center" if col != "artifact" else "w")
+        self.tree.tag_configure("todo", foreground=WARN)
+        self.tree.pack(fill="x")
+        ttk.Label(c, text="Orange = only seen in the hero list. Open that hero once (F8 reads it right away).",
+                  style="Muted.TLabel", wraplength=420).pack(anchor="w", pady=(4, 0))
 
         c = self._card(outer)
         self.line1 = ttk.Label(c, text="Screens: 0 captured · 0 read", style="Card.TLabel")
@@ -185,7 +199,8 @@ class App:
         if st:
             for k, v in st["counts"].items():
                 self.vals[k.capitalize()].configure(text=str(v))
-            self.line1.configure(text=f"Screens: {st['captured']} captured · {st['read']} read · {st['skipped']} skipped")
+            self.line1.configure(text=f"Screens: {st['captured']} captured · {st['read']} read · "
+                                      f"{st['skipped']} skipped")
             self.line2.configure(text=f"Spent: ${st['spent_today']:.2f} today · ${st['spent_total']:.2f} total"
                                       f"  (limit ${self.s.daily_budget_usd:.2f}/day)")
             sw = st["sweep"]
@@ -193,9 +208,11 @@ class App:
                 self.sweep_lbl.configure(text=f"{sw['done']} / {sw['total']} heroes" +
                                          ("  ✓ done" if not sw["todo"] else ""))
                 self.sweep_bar.configure(maximum=sw["total"], value=sw["done"])
-                self.todo.delete(0, "end")
-                for name in sw["todo"]:
-                    self.todo.insert("end", "○  " + name)
+            self.tree.delete(*self.tree.get_children())
+            for h in st["heroes"]:
+                self.tree.insert("", "end", text=h["name"], tags=() if h["detailed"] else ("todo",), values=(
+                    h["level"] or "–", f"{h['power']:,.0f}" if h["power"] else "–",
+                    "✓" if h["detailed"] else "○", h["gear"] or "–", h["artifact"] or "–"))
             msg = st["error"] or st["last"]
             self.line3.configure(text=msg, foreground=WARN if st["error"] else MUTED)
         self.root.after(500, self._poll)

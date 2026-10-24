@@ -56,6 +56,7 @@ class Worker:
         done, total, todo = self.store.sweep()
         self.on_status({**self.stats, "counts": self.store.counts(),
                         "sweep": {"done": done, "total": total, "todo": todo},
+                        "heroes": self.store.hero_status(),
                         "spent_today": self.store.spent_today(), "spent_total": self.store.spent_total()})
 
     def _run(self):

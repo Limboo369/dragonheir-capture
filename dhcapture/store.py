@@ -131,6 +131,23 @@ class Store:
         todo = [r["name"] for r in rows if not r["detailed"]]
         return len(rows) - len(todo), len(rows), todo
 
+    def hero_status(self):
+        """Per hero: what is known so far, for the checklist in the window."""
+        gear = {}
+        for r in self.db.execute("SELECT key FROM gear"):
+            k = r["key"].split(":")[0]
+            gear[k] = gear.get(k, 0) + 1
+        arts = {}
+        for r in self.db.execute("SELECT name, equipped_on FROM artifacts WHERE equipped_on IS NOT NULL"):
+            arts[norm(r["equipped_on"])] = r["name"]
+        out = []
+        for r in self.db.execute("SELECT key, name, level, power, detailed FROM heroes"):
+            out.append({"name": r["name"], "level": r["level"], "power": r["power"],
+                        "detailed": bool(r["detailed"]), "gear": gear.get(r["key"], 0),
+                        "artifact": arts.get(r["key"])})
+        out.sort(key=lambda x: (x["detailed"], -(x["power"] or 0), x["name"]))
+        return out
+
     def counts(self):
         return {t: self.db.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
                 for t in ("heroes", "gear", "artifacts", "resources")}
