@@ -21,7 +21,8 @@ class Gate:
 
     @staticmethod
     def hash(img):
-        return imagehash.phash(img.convert("L").resize((256, 256)))
+        # 256-bit hash: fine enough that two hero screens with the same layout differ.
+        return imagehash.phash(img.convert("L").resize((512, 512)), hash_size=16)
 
     def seen(self, h) -> bool:
         return any(h - r <= self.s.same_screen_threshold for r in self.recent)
@@ -29,7 +30,9 @@ class Gate:
     def check(self, img, spent_today: float):
         """Return (keep: bool, reason: str, hash)."""
         h = self.hash(img)
-        if self.prev_hash is not None and h - self.prev_hash <= self.s.same_screen_threshold:
+        # "Still" is looser than "same screen": an idling 3D hero model moves a little,
+        # a battle changes a lot.
+        if self.prev_hash is not None and h - self.prev_hash <= self.s.still_threshold:
             self.still_count += 1
         else:
             self.still_count = 1

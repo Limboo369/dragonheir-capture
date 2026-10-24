@@ -4,7 +4,7 @@ import time
 from pathlib import Path
 
 from . import export, winlist
-from .extract import DATA_SCREENS, Extractor, to_jpeg
+from .extract import SKIP_SCREENS, Extractor, to_jpeg
 from .gate import Gate
 from .store import Store
 
@@ -53,7 +53,9 @@ class Worker:
     # --- loop ----------------------------------------------------------------
     def _emit(self, **kw):
         self.stats.update(kw)
+        done, total, todo = self.store.sweep()
         self.on_status({**self.stats, "counts": self.store.counts(),
+                        "sweep": {"done": done, "total": total, "todo": todo},
                         "spent_today": self.store.spent_today(), "spent_total": self.store.spent_total()})
 
     def _run(self):
@@ -95,7 +97,8 @@ class Worker:
             if self.s.mode == "api" and self.s.precheck:
                 small = to_jpeg(img, 512, 70)
                 stype, cost = self.extractor.precheck(small)
-                if stype is not None and stype not in DATA_SCREENS:
+                self._log_check(stype, cost)
+                if stype in SKIP_SCREENS:
                     self.gate.mark_read(h)  # don't look at this screen again
                     self.store.log_capture(h, None, {"screen_type": stype}, cost, None)
                     self.stats["skipped"] += 1
@@ -146,6 +149,14 @@ class Worker:
             h = p.stem.split("-")[-1]
             if not self._read_and_merge(p.read_bytes(), h, p.name, pending_path=p):
                 return
+
+    def _log_check(self, stype, cost):
+        """data/precheck.log: one line per precheck, to see what gets skipped and why."""
+        verdict = "skip" if stype in SKIP_SCREENS else "read"
+        line = f"{time.strftime('%Y-%m-%d %H:%M:%S')}\t{stype or 'check failed'}\t{verdict}\t${cost:.5f}\n"
+        self.s.data_dir.mkdir(parents=True, exist_ok=True)
+        with open(self.s.data_dir / "precheck.log", "a", encoding="utf-8") as f:
+            f.write(line)
 
     @staticmethod
     def _save(path, jpeg):

@@ -50,8 +50,10 @@ class Settings:
     hotkey: str = os.getenv("HOTKEY", "F8").strip().upper()
     effort: str = os.getenv("EFFORT", "medium")
     interval_s: float = _f("INTERVAL_SECONDS", 5)
-    # Hamming distance on a 64-bit perceptual hash: <= this means "same screen".
-    same_screen_threshold: int = int(_f("SAME_SCREEN_THRESHOLD", 6))
+    # Hamming distance on a 256-bit perceptual hash: <= this means "same screen"
+    # (already read), and <= still_threshold means "not moving" between two captures.
+    same_screen_threshold: int = int(_f("SAME_SCREEN_THRESHOLD", 14))
+    still_threshold: int = int(_f("STILL_THRESHOLD", 40))
     # A screen must stay still this many captures in a row before it is sent
     # (filters out battles and animations, which change every frame).
     stable_frames: int = int(_f("STABLE_FRAMES", 2))

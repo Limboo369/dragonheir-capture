@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS captures (
 CREATE TABLE IF NOT EXISTS heroes (
   key TEXT PRIMARY KEY, name TEXT, rarity TEXT, level INTEGER, stars INTEGER,
   awakening TEXT, power REAL, element TEXT, school TEXT,
-  stats TEXT, skills TEXT, updated TEXT
+  stats TEXT, skills TEXT, updated TEXT, detailed INTEGER
 );
 CREATE TABLE IF NOT EXISTS gear (
   key TEXT PRIMARY KEY, hero TEXT, slot TEXT, set_name TEXT, rarity TEXT,
@@ -43,6 +43,9 @@ class Store:
         self.db = sqlite3.connect(str(path), check_same_thread=False)
         self.db.row_factory = sqlite3.Row
         self.db.executescript(SCHEMA_SQL)
+        cols = {r[1] for r in self.db.execute("PRAGMA table_info(heroes)")}
+        if "detailed" not in cols:  # databases from v0.1
+            self.db.execute("ALTER TABLE heroes ADD COLUMN detailed INTEGER")
 
     def spent_today(self) -> float:
         day = time.strftime("%Y-%m-%d", time.gmtime())
@@ -79,6 +82,8 @@ class Store:
         if not data or data.get("confidence") == "low":
             return 0
         data = normalize(data)
+        # A hero's own screen (stats/skills or gear) counts as read in detail for the sweep.
+        detail = 1 if data.get("screen_type") in ("hero_detail", "hero_gear") else None
         n = 0
         for h in data.get("heroes", []):
             if not h.get("name"):
@@ -88,6 +93,7 @@ class Store:
                 "stars": h.get("stars"), "awakening": h.get("awakening"), "power": h.get("power"),
                 "element": h.get("element"), "school": h.get("school"),
                 "stats": json.dumps(h.get("stats") or []), "skills": json.dumps(h.get("skills") or []),
+                "detailed": detail,
             })
             n += 1
         for g in data.get("gear", []):
@@ -118,6 +124,12 @@ class Store:
                 n += 1
         self.db.commit()
         return n
+
+    def sweep(self):
+        """(heroes read in detail, heroes known, names still to open)."""
+        rows = self.db.execute("SELECT name, detailed FROM heroes ORDER BY power DESC, name").fetchall()
+        todo = [r["name"] for r in rows if not r["detailed"]]
+        return len(rows) - len(todo), len(rows), todo
 
     def counts(self):
         return {t: self.db.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]

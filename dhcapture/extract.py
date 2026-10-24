@@ -24,9 +24,9 @@ SCREEN_TYPES = [
 ]
 
 
-# Screens worth a full read; everything else is skipped after the precheck.
-DATA_SCREENS = {"hero_detail", "hero_gear", "gear_detail", "hero_list", "artifact_detail",
-                "artifact_list", "inventory", "resources", "team_setup", "player_profile"}
+# The precheck only drops screens that surely carry no account data. Anything else,
+# including menus it is unsure about, gets the full read (a Haiku read is ~$0.001).
+SKIP_SCREENS = {"battle", "loading"}
 
 
 # Structured outputs allow at most 16 union-typed (nullable) fields per schema, so
@@ -107,7 +107,9 @@ PRECHECK_SYSTEM = (
     "hero_detail: one hero's level/stars/stats/skills. hero_gear / gear_detail: equipment. "
     "hero_list: roster grid of hero cards. artifact_detail / artifact_list: artifacts. "
     "inventory / resources: items, materials, currencies. team_setup: team formation. "
-    "player_profile: account profile. battle, menu (other menus, shops, map, chat), loading, other."
+    "player_profile: account profile. battle: a fight in progress (combat field, health bars, "
+    "skill buttons). loading: loading or splash screen. menu: any other menu. other: anything else. "
+    "When unsure between a data screen and menu/other, pick the data screen."
 )
 
 

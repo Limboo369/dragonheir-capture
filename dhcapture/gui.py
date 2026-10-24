@@ -112,6 +112,19 @@ class App:
             ttk.Label(cell, text=key, style="Muted.TLabel").pack(anchor="w")
 
         c = self._card(outer)
+        top = ttk.Frame(c, style="Card.TFrame")
+        top.pack(fill="x")
+        ttk.Label(top, text="Hero sweep", style="Card.TLabel").pack(side="left")
+        self.sweep_lbl = ttk.Label(top, text="open the hero list first", style="Muted.TLabel")
+        self.sweep_lbl.pack(side="right")
+        self.sweep_bar = ttk.Progressbar(c, maximum=1, value=0)
+        self.sweep_bar.pack(fill="x", pady=(6, 6))
+        self.todo = tk.Listbox(c, height=6, bg=PANEL, fg=FG, borderwidth=0, highlightthickness=0,
+                               selectbackground=PANEL, activestyle="none", font=("Segoe UI", 10))
+        self.todo.pack(fill="x")
+        ttk.Label(c, text="Open each hero below once (F8 reads it right away).", style="Muted.TLabel").pack(anchor="w", pady=(4, 0))
+
+        c = self._card(outer)
         self.line1 = ttk.Label(c, text="Screens: 0 captured · 0 read", style="Card.TLabel")
         self.line1.pack(anchor="w")
         self.line2 = ttk.Label(c, text="Spent: $0.00 today · $0.00 total", style="Muted.TLabel")
@@ -175,6 +188,14 @@ class App:
             self.line1.configure(text=f"Screens: {st['captured']} captured · {st['read']} read · {st['skipped']} skipped")
             self.line2.configure(text=f"Spent: ${st['spent_today']:.2f} today · ${st['spent_total']:.2f} total"
                                       f"  (limit ${self.s.daily_budget_usd:.2f}/day)")
+            sw = st["sweep"]
+            if sw["total"]:
+                self.sweep_lbl.configure(text=f"{sw['done']} / {sw['total']} heroes" +
+                                         ("  ✓ done" if not sw["todo"] else ""))
+                self.sweep_bar.configure(maximum=sw["total"], value=sw["done"])
+                self.todo.delete(0, "end")
+                for name in sw["todo"]:
+                    self.todo.insert("end", "○  " + name)
             msg = st["error"] or st["last"]
             self.line3.configure(text=msg, foreground=WARN if st["error"] else MUTED)
         self.root.after(500, self._poll)
