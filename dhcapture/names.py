@@ -26,9 +26,19 @@ def canonical(name, kind):
     return idx[hit[0]] if hit else name
 
 
+def is_known_hero(name):
+    return _key(name) in _INDEX["heroes"]
+
+
 def normalize(data):
+    # Hero names that match nothing in the known list are misreads (e.g. "Fraander"
+    # for Ergander); drop them rather than create phantom heroes.
+    heroes = []
     for h in data.get("heroes", []):
         h["name"] = canonical(h.get("name"), "heroes")
+        if h["name"] and is_known_hero(h["name"]):
+            heroes.append(h)
+    data["heroes"] = heroes
     for g in data.get("gear", []):
         g["hero"] = canonical(g.get("hero"), "heroes")
         g["set"] = canonical(g.get("set"), "gear_sets")

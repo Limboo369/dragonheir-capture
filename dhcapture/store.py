@@ -3,7 +3,7 @@ import json
 import sqlite3
 import time
 
-from .names import normalize
+from .names import is_known_hero, normalize
 from datetime import datetime, timezone
 
 SCHEMA_SQL = """
@@ -47,6 +47,10 @@ class Store:
         cols = {r[1] for r in self.db.execute("PRAGMA table_info(heroes)")}
         if "detailed" not in cols:  # databases from v0.1
             self.db.execute("ALTER TABLE heroes ADD COLUMN detailed INTEGER")
+        for r in self.db.execute("SELECT key, name FROM heroes").fetchall():
+            if not is_known_hero(r["name"]):  # misreads saved by older versions
+                self.db.execute("DELETE FROM heroes WHERE key=?", (r["key"],))
+        self.db.commit()
 
     def spent_today(self) -> float:
         day = time.strftime("%Y-%m-%d", time.gmtime())
