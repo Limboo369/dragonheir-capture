@@ -23,7 +23,7 @@ jobs:
       - name: Smoke test
         run: |
           python -c "import dhcapture.winlist as w; print(len(w.list_windows()), 'windows')"
-          python tests/smoke_gui.py
+          python -m tests.smoke_gui
       - name: Build
         run: pyinstaller --noconfirm --onefile --windowed --name DragonheirCapture --add-data "dhcapture\known_names.json;dhcapture" dhcapture\__main__.py
       - uses: actions/upload-artifact@v4
