@@ -2,11 +2,13 @@
 
 Features
 - Reminders posted to the announcements channel (Alliance Rally, Golden Wing, Sparkle Tournament, GvE), /reminder
+- Events and summon banners board (/event add, /event scan with a screenshot, /events)
 - Welcome post for new players with buttons to give Recruit/Member, /promote
 - /hero <name>   hero card: tier, element, school, best gear sets and artifacts
 - /school <name> best heroes of one school
 - /ask <question> Dragonheir questions answered by Claude, with per-user and server-wide daily limits
 """
+import base64
 import datetime as dt
 import json
 import logging
@@ -156,6 +158,7 @@ class RegalBot(discord.Client):
 
     async def setup_hook(self):
         reminders.start()
+        event_watch.start()
 
     async def on_ready(self):
         # guild commands appear instantly; global ones can take up to an hour
@@ -370,6 +373,224 @@ PROMOTE_PREFIX = "regal:role:"
 
 def find_channel(guild: discord.Guild, word: str):
     return next((ch for ch in guild.text_channels if word in ch.name), None)
+
+
+# ---------- events and summon banners ----------
+# Officers add what is live on our server (/event add, or /event scan with a screenshot of the in-game event page).
+# The bot keeps one "Active now" board in the events channel, removes things when they end and warns 24h before.
+EVENTS_CHANNEL = os.environ.get("EVENTS_CHANNEL", "events-and-banners")
+KINDS = {"banner": "🎰 Summon banners", "event": "🎉 Events"}
+db.execute("CREATE TABLE IF NOT EXISTS events (name TEXT PRIMARY KEY COLLATE NOCASE, kind TEXT, ends TEXT, note TEXT)")
+db.execute("CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT)")
+db.commit()
+
+
+def parse_when(text: str) -> dt.datetime | None:
+    """'3d', '2d 5h', '12h 30m' (time left) or '2026-10-30 05:00' (server-local end time)."""
+    text = text.strip().lower()
+    try:
+        return dt.datetime.strptime(text, "%Y-%m-%d %H:%M").replace(tzinfo=TZ)
+    except ValueError:
+        pass
+    left, number = dt.timedelta(), ""
+    for ch in text.replace(" ", ""):
+        if ch.isdigit():
+            number += ch
+        elif ch in "dhm" and number:
+            unit = {"d": "days", "h": "hours", "m": "minutes"}[ch]
+            left += dt.timedelta(**{unit: int(number)})
+            number = ""
+        else:
+            return None
+    return dt.datetime.now(TZ) + left if left and not number else None
+
+
+def save_event(kind: str, name: str, ends: dt.datetime, note: str = "") -> None:
+    db.execute("INSERT INTO events VALUES (?, ?, ?, ?) ON CONFLICT(name) DO UPDATE SET kind = excluded.kind, "
+               "ends = excluded.ends, note = excluded.note", (name.strip()[:80], kind, ends.isoformat(), note[:150]))
+    db.commit()
+
+
+def active_events():
+    rows = db.execute("SELECT name, kind, ends, note FROM events ORDER BY ends").fetchall()
+    return [(n, k, dt.datetime.fromisoformat(e), note) for n, k, e, note in rows]
+
+
+def board_embed() -> discord.Embed:
+    e = discord.Embed(title="🗓️ Active now on our server", color=0x9B59B6)
+    rows = active_events()
+    for kind, label in KINDS.items():
+        lines = [f"**{n}** · ends <t:{int(end.timestamp())}:R>" + (f"\n└ {note}" if note else "")
+                 for n, k, end, note in rows if k == kind]
+        e.add_field(name=label, value="\n".join(lines)[:1024] or "Nothing right now.", inline=False)
+    e.set_footer(text="Officers update this with /event add or /event scan · times show in your own timezone")
+    return e
+
+
+def events_channel(guild: discord.Guild):
+    return find_channel(guild, EVENTS_CHANNEL)
+
+
+async def refresh_board(guild: discord.Guild) -> None:
+    """Post a fresh board at the bottom of the channel (and pin it), removing the old one."""
+    ch = events_channel(guild)
+    if not ch:
+        return
+    key = f"board:{guild.id}"
+    old = db.execute("SELECT value FROM kv WHERE key = ?", (key,)).fetchone()
+    if old:
+        try:
+            await (await ch.fetch_message(int(old[0]))).delete()
+        except discord.HTTPException:
+            pass
+    msg = await ch.send(embed=board_embed())
+    try:
+        await msg.pin()
+    except discord.HTTPException:
+        pass
+    db.execute("INSERT OR REPLACE INTO kv VALUES (?, ?)", (key, str(msg.id)))
+    db.commit()
+
+
+async def refresh_all_boards() -> None:
+    for guild in bot.guilds:
+        await refresh_board(guild)
+
+
+@tasks.loop(minutes=10)
+async def event_watch():
+    now = dt.datetime.now(TZ)
+    changed = False
+    for name, kind, end, note in active_events():
+        if end <= now:
+            db.execute("DELETE FROM events WHERE name = ?", (name,))
+            changed = True
+        elif end - now <= dt.timedelta(hours=24):
+            mark = f"ending:{name}:{end.isoformat()}"
+            if not db.execute("SELECT 1 FROM sent WHERE key = ?", (mark,)).fetchone():
+                db.execute("INSERT INTO sent VALUES (?)", (mark,))
+                for guild in bot.guilds:
+                    ch = events_channel(guild)
+                    if ch:
+                        what = "banner" if kind == "banner" else "event"
+                        await ch.send(f"⏰ Last day: the **{name}** {what} ends <t:{int(end.timestamp())}:R>!")
+    db.commit()
+    if changed:
+        await refresh_all_boards()
+
+
+@event_watch.before_loop
+async def _wait_ready_events():
+    await bot.wait_until_ready()
+
+
+SCAN_PROMPT = """This is a screenshot from the game Dragonheir: Silent Gods, usually the event list or a summon
+banner page. List every event and summon banner you can read with the time it ends. Today is {now} (server time
+{tz}). For "ends" give either the time left exactly as shown converted to the form "3d 5h" / "12h 30m", or an
+end date as "YYYY-MM-DD HH:MM". Use an empty string when no end time is visible. kind is "banner" for summon or
+hero banners, otherwise "event". note is at most 8 words about the reward or featured hero, or empty."""
+
+SCAN_SCHEMA = {
+    "type": "object",
+    "properties": {"items": {"type": "array", "items": {
+        "type": "object",
+        "properties": {"name": {"type": "string"}, "kind": {"type": "string", "enum": ["banner", "event"]},
+                       "ends": {"type": "string"}, "note": {"type": "string"}},
+        "required": ["name", "kind", "ends", "note"], "additionalProperties": False}}},
+    "required": ["items"],
+    "additionalProperties": False,
+}
+
+
+async def read_screenshot(image: bytes, media_type: str) -> list[dict]:
+    now = dt.datetime.now(TZ)
+    response = await claude.messages.create(
+        model=MODEL,
+        max_tokens=2000,
+        output_config={"effort": "low", "format": {"type": "json_schema", "schema": SCAN_SCHEMA}},
+        messages=[{"role": "user", "content": [
+            {"type": "image", "source": {"type": "base64", "media_type": media_type,
+                                         "data": base64.b64encode(image).decode()}},
+            {"type": "text", "text": SCAN_PROMPT.format(now=f"{now:%Y-%m-%d %H:%M}", tz=TZ.key)},
+        ]}],
+    )
+    text = next((b.text for b in response.content if b.type == "text"), "")
+    return json.loads(text).get("items", []) if response.stop_reason != "refusal" and text else []
+
+
+event_group = app_commands.Group(name="event", description="Events and summon banners (officers)",
+                                 default_permissions=discord.Permissions(manage_messages=True))
+KIND_CHOICES = [app_commands.Choice(name="Summon banner", value="banner"), app_commands.Choice(name="Event", value="event")]
+
+
+async def event_autocomplete(_: discord.Interaction, current: str):
+    names = [n for n, *_ in active_events() if current.lower() in n.lower()]
+    return [app_commands.Choice(name=n, value=n) for n in names[:25]]
+
+
+@event_group.command(name="add", description="Add or update an event or banner")
+@app_commands.describe(kind="Banner or event", name="Name as in the game",
+                       ends="Time left like 3d 5h, or end time like 2026-10-30 05:00",
+                       note="Optional: featured hero or reward")
+@app_commands.choices(kind=KIND_CHOICES)
+async def event_add(interaction: discord.Interaction, kind: app_commands.Choice[str], name: str, ends: str,
+                    note: str = ""):
+    end = parse_when(ends)
+    if not end or end <= dt.datetime.now(TZ):
+        await interaction.response.send_message("I didn't understand the end time. Use 3d 5h or 2026-10-30 05:00.",
+                                                ephemeral=True)
+        return
+    save_event(kind.value, name, end, note)
+    await interaction.response.send_message(f"✅ **{name}** added, ends <t:{int(end.timestamp())}:R>.", ephemeral=True)
+    await refresh_all_boards()
+
+
+@event_group.command(name="remove", description="Remove an event or banner")
+@app_commands.autocomplete(name=event_autocomplete)
+async def event_remove(interaction: discord.Interaction, name: str):
+    gone = db.execute("DELETE FROM events WHERE name = ?", (name,)).rowcount
+    db.commit()
+    await interaction.response.send_message(f"🗑️ Removed **{name}**." if gone else f"No event called **{name}**.",
+                                            ephemeral=True)
+    if gone:
+        await refresh_all_boards()
+
+
+@event_group.command(name="scan", description="Read events and banners from a game screenshot")
+@app_commands.describe(screenshot="Screenshot of the in-game event list or a summon banner")
+async def event_scan(interaction: discord.Interaction, screenshot: discord.Attachment):
+    media = (screenshot.content_type or "").split(";")[0]
+    if claude is None or media not in ("image/png", "image/jpeg", "image/webp", "image/gif"):
+        await interaction.response.send_message("Please attach a PNG or JPG screenshot.", ephemeral=True)
+        return
+    await interaction.response.defer(thinking=True, ephemeral=True)
+    try:
+        items = await read_screenshot(await screenshot.read(), media)
+    except (anthropic.APIError, json.JSONDecodeError) as exc:
+        log.warning("Scan failed: %s", exc)
+        await interaction.followup.send("I couldn't read that screenshot, try again in a minute.", ephemeral=True)
+        return
+    added, skipped = [], []
+    for item in items:
+        end = parse_when(item.get("ends", ""))
+        if end and end > dt.datetime.now(TZ) and item.get("name"):
+            save_event(item["kind"], item["name"], end, item.get("note", ""))
+            added.append(f"✅ **{item['name']}** · ends <t:{int(end.timestamp())}:R>")
+        elif item.get("name"):
+            skipped.append(f"⚠️ **{item['name']}** (no end time, add it with /event add)")
+    if added:
+        await refresh_all_boards()
+    await interaction.followup.send("\n".join(added + skipped) or "I didn't find any events in that screenshot.",
+                                    ephemeral=True)
+
+
+bot.tree.add_command(event_group)
+
+
+@bot.tree.command(name="events", description="What events and summon banners are live right now")
+async def events_cmd(interaction: discord.Interaction):
+    await interaction.response.send_message(embed=board_embed())
+
 
 
 @bot.event
