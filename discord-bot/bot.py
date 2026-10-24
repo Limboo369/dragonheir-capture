@@ -26,8 +26,8 @@ load_dotenv(HERE / ".env")
 DISCORD_TOKEN = os.environ["DISCORD_BOT_TOKEN"]
 ANTHROPIC_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 MODEL = os.environ.get("CLAUDE_MODEL", "claude-haiku-5-5")
-ASK_PER_USER = int(os.environ.get("ASK_LIMIT_PER_USER", "10"))
-ASK_PER_SERVER = int(os.environ.get("ASK_LIMIT_PER_SERVER", "150"))
+ASK_PER_USER = int(os.environ.get("ASK_LIMIT_PER_USER", "20"))
+ASK_PER_SERVER = int(os.environ.get("ASK_LIMIT_PER_SERVER", "500"))
 TZ = ZoneInfo(os.environ.get("TIMEZONE", "Europe/Belgrade"))
 RALLY_TIME = os.environ.get("RALLY_REMINDER_TIME", "20:00")          # every day
 SPARKLE_TIME = os.environ.get("SPARKLE_REMINDER_TIME", "18:00")      # Mondays

@@ -5,7 +5,7 @@ Discord bot for the REGAL alliance (Dragonheir: Silent Gods).
 - Reminders in #announcements: Alliance Rally every day, Sparkle week on Mondays
 - `/hero <name>`: tier, school, element, best gear sets and artifacts (AllClash Season 9 data)
 - `/school <school>`: best heroes of a school
-- `/ask <question>`: Dragonheir-only answers from Claude, 10 questions per person per day, 150 per server per day
+- `/ask <question>`: Dragonheir-only answers from Claude, 20 questions per person per day, 500 per server per day
 
 ## Install on Linux (Ubuntu/Debian)
 
