@@ -2,7 +2,8 @@
 
 Discord bot for the REGAL alliance (Dragonheir: Silent Gods).
 
-- Reminders in #announcements: Alliance Rally every day, Sparkle week on Mondays
+- Reminders in #announcements: Alliance Rally, Golden Wing, Sparkle Tournament stages, Alliance GvE; officers change them with `/reminder`
+- Welcome post for new players with "Make Recruit" / "Make Member" buttons, plus `/promote` (needs "Server Members Intent" on in the Developer Portal)
 - `/hero <name>`: tier, school, element, best gear sets and artifacts (AllClash Season 9 data)
 - `/school <school>`: best heroes of a school
 - `/ask <question>`: Dragonheir-only answers from Claude, 20 questions per person per day, 500 per server per day
