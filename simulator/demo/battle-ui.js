@@ -59,6 +59,7 @@
     '.bs-drop.on{background:var(--accent-soft);border-color:var(--accent)}',
     '.bs-drop .bs-small{max-width:46ch}',
     '.bs-filled{box-shadow:inset 0 0 0 2px var(--good)!important}',
+    '.bs-check{box-shadow:inset 0 0 0 2px var(--warn)!important;background:var(--warn-soft)!important}',
     '.bs-seg{display:inline-grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--fill);border-radius:10px;padding:2px;gap:2px}',
     '.bs-seg button{padding:7px 12px;border-radius:8px;font:600 12.5px var(--font);white-space:nowrap}',
     '.bs-seg button[aria-pressed="true"]{background:var(--card);box-shadow:var(--shadow-sm)}',
@@ -789,7 +790,7 @@
       var one = function (v) { v = typeof v === 'string' ? +v.replace(/[%,\s+]/g, '') : +v; return isFinite(v) ? v : null; };
       var num = function (v) {
         if (v && typeof v === 'object') { var b = one(v.base), x = one(v.bonus); if (b == null && x == null) return one(v.total); return Math.round(((b || 0) + (x || 0)) * 10) / 10; }
-        if (typeof v === 'string' && /\d\s*\+\s*\d/.test(v)) return v.split('+').reduce(function (a, p) { var q = one(p); return q == null ? a : a + q; }, 0);
+        if (typeof v === 'string' && /\d[\s%]*\+\s*\d/.test(v)) return v.split('+').reduce(function (a, p) { var q = one(p); return q == null ? a : a + q; }, 0);
         return one(v);
       };
       if (num(js.level)) { c.level = Math.max(1, Math.min(100, num(js.level))); got.push('level'); }
@@ -798,6 +799,7 @@
       if (js.artifact && typeof js.artifact === 'object') {
         var D = S.data(), an = js.artifact.name && matchName(js.artifact.name, Object.keys(D.artifacts).map(function (x) { return D.artifacts[x].n; }));
         if (an) { c.artifact.name = an; got.push('artifact'); }
+        else if (c.artifact.name && (num(js.artifact.level) != null || num(js.artifact.stars))) got.push('artcheck'); // level read, name not: the kept name may be wrong
         // Level and stars only change the artifact the hero already has (or the one just read).
         if (c.artifact.name && num(js.artifact.level) != null) { c.artifact.level = Math.max(0, Math.min(20, num(js.artifact.level))); got.push('artlv'); }
         if (c.artifact.name && num(js.artifact.stars)) { c.artifact.tier = Math.max(0, Math.min(5, num(js.artifact.stars) - 1)); got.push('arttier'); }
@@ -833,12 +835,15 @@
       save(); render();
       if (who == null) { msg('Nothing readable found.'); return; }
       heroSheet(slot); // always redraw so the inputs show the new values
+      var check = filled.indexOf('artcheck') >= 0, artN = sh && sh.querySelector('#bs-art');
+      filled = filled.filter(function (f) { return f !== 'artcheck'; });
+      if (check && artN) artN.classList.add('bs-check');
       filled.forEach(function (f) {
         var n = sh && (sh.querySelector('#bs-st-' + f) || sh.querySelector('#bs-g-' + f) || sh.querySelector(f === 'level' ? '#bs-lv' : f === 'stars' ? '#bs-stars' : f === 'artifact' ? '#bs-art' : f === 'artlv' ? '#bs-artlv' : f === 'arttier' ? '#bs-arttier' : f === 'skb' ? '#bs-skb' : f === 'sku' ? '#bs-sku' : null));
         if (n) n.classList.add('bs-filled');
       });
       var m2 = sh && sh.querySelector('#bs-shotmsg');
-      if (m2) m2.textContent = filled.length ? 'Filled ' + filled.length + ' fields (green). Check them against the game.' : 'Nothing readable found on this screenshot.';
+      if (m2) m2.textContent = filled.length ? 'Filled ' + filled.length + ' fields (green). Check them against the game.' + (check ? ' The artifact name is not written on this screenshot: check the artifact (amber).' : '') : 'Nothing readable found on this screenshot.';
     }
     function shotSheet(t) { sheet('<div class="hd"><h3>Screenshot</h3><button class="x" data-a="close" aria-label="Close">×</button></div><p class="bs-muted" style="margin:0">' + E(t) + '</p>'); }
 

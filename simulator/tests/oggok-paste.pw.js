@@ -29,6 +29,19 @@ const path = require('path').join(__dirname, '../demo/battle-sim.html');
   const exp = { hp: '22099', atk: '974', def: '704', cr: '41.4', cd: '67.3', acc: '73', res: '36', ench: '72', haste: '0', lv: '59', artlv: '12' };
   const bad = Object.keys(exp).filter(k => v[k] !== exp[k]);
   console.log(bad.length ? 'FAIL ' + bad.join(',') : 'PASS all values', 'errors', errs);
+  const chk = await pg.evaluate(() => document.querySelector('#bs-art').classList.contains('bs-check') && !document.querySelector('#bs-art').classList.contains('bs-filled'));
+  console.log(chk ? 'PASS artifact flagged amber' : 'FAIL artifact not flagged');
+  // Same screen answered as strings, exactly as written in the game
+  await pg.evaluate(() => { window.__answer = { stats: { hp: '13,489 +8,610', critRate: '10.0% +31.4%', critDmg: '50.0% +17.3%' } }; });
+  await pg.evaluate(async () => {
+    const c = document.createElement('canvas'); c.width = 40; c.height = 40;
+    const blob = await new Promise(r => c.toBlob(r, 'image/png'));
+    const dt = new DataTransfer(); dt.items.add(new File([blob], 'o2.png', { type: 'image/png' }));
+    document.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true }));
+  });
+  await pg.waitForTimeout(1200);
+  const s2 = await pg.evaluate(() => [document.querySelector('#bs-st-hp').value, document.querySelector('#bs-st-critRate').value, document.querySelector('#bs-st-critDmg').value].join('/'));
+  console.log(s2 === '22099/41.4/67.3' ? 'PASS string shape' : 'FAIL string shape ' + s2);
   await pg.screenshot({ path: 'oggok.png' });
   await br.close();
 })();
