@@ -52,7 +52,7 @@ body { background: var(--wall); color: var(--label); font: 400 14px/1.4 var(--fo
   });
   // Storage: the artifact database keeps the setup across devices and browsers
   // (Darko's rule: never lose saved data); localStorage is only a fast cache.
-  var KEY = 'sim/loadout', dbp = null, ui = null, timer = null;
+  var KEY = 'sim/loadout', dbp = null, ui = null, timer = null, localAt = 0;
   function lsGet(k) { try { return JSON.parse(localStorage.getItem('dhsim:' + k)); } catch (e) { return null; } }
   function lsSet(k, v) { try { localStorage.setItem('dhsim:' + k, JSON.stringify(v)); } catch (e) { } }
   function db() { if (!dbp) dbp = (window.claude && window.claude.use ? window.claude.use('db') : Promise.resolve(null)).catch(function () { return null; }); return dbp; }
@@ -68,7 +68,7 @@ body { background: var(--wall); color: var(--label); font: 400 14px/1.4 var(--fo
     },
     load: function (k) { return lsGet(k); },
     save: function (k, v) {
-      lsSet(k, v);
+      lsSet(k, v); localAt = Date.now();
       clearTimeout(timer);
       timer = setTimeout(function () { timer = null; db().then(function (d) { if (d) return d.doc(k).set({ json: JSON.stringify(v), at: new Date().toISOString() }); }).catch(function (e) { console.warn('save failed', e && e.code); }); }, 600);
     }
@@ -85,7 +85,7 @@ body { background: var(--wall); color: var(--label); font: 400 14px/1.4 var(--fo
     db().then(function (d) {
       if (!d) return;
       d.doc(KEY).onSnapshot(function (snap) {
-        if (!snap.exists || snap.metadata.hasPendingWrites || snap.metadata.fromCache || timer) return;
+        if (!snap.exists || snap.metadata.hasPendingWrites || snap.metadata.fromCache || timer || Date.now() - localAt < 8000) return;
         var v = null; try { v = JSON.parse(snap.data().json || 'null'); } catch (e) { }
         if (v && v.team && JSON.stringify(v) !== JSON.stringify(ui.state())) { lsSet(KEY, v); ui.setState(v); }
       }, function () { });
