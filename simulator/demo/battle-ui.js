@@ -926,6 +926,7 @@
         ['var(--good)', 'Official game data', 'Hero stats, skill numbers and chances, artifact and set texts, captain auras.'],
         ['var(--good)', 'Sourced rules', 'Skill charge times, Skill Haste, Accuracy vs Resistance (a 75% debuff can still miss), status values, Frost 5-stack burst, Support bond shields.'],
         ['var(--warn)', 'Estimated', 'Boss HP, damage and skill sizes (never published), how much each stage adds (from official boss levels), the Domain element penalty, the Defense curve, cast times, gear when you leave stats empty.'],
+        ['var(--accent)', 'Calibrated on 1 fight', 'Temporal Vortex (Sea King) was tuned to one real in-game Statistics screen (Difficulty I, Lv59 team, 5.53M): total damage and each hero\'s share match it. One fight only, so other difficulties and teams are still estimates. Send another Statistics screen to check it.'],
         ['var(--warn)', 'Skill levels', 'Common pattern from game tooltips: Battle skill Lv2 +5% damage, Lv3 +10%, Lv4 +25% effect chance, Lv5 3 s faster; Ultimate Lv2 +10% damage, Lv3 +25% chance, Lv4 3 s faster, Lv5 +10% damage. Some heroes upgrade differently.'],
         ['var(--label-3)', 'How to use it', 'Compare teams and setups on equal terms. Typing your real stats makes your side exact; the boss side stays an estimate until we calibrate it from one of your fight statistics screens.']
       ];
