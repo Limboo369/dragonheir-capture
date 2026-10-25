@@ -100,6 +100,7 @@
     '.bs-hc .dr{font:700 12px var(--font)}',
     '.bs-meter{height:6px;border-radius:3px;background:var(--fill);overflow:hidden}',
     '.bs-meter i{display:block;height:100%;border-radius:3px}',
+    '.bs-mv{color:var(--label);font-weight:600;font-variant-numeric:tabular-nums}',
     '.bs-kv{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;font-size:12px}',
     '.bs-kv dt{color:var(--label-3)}',
     '.bs-kv dd{margin:0;text-align:right;font-variant-numeric:tabular-nums;font-weight:600}',
@@ -356,13 +357,23 @@
       return h;
     }
     function kpi(k1, n) { return '<div class="bs-kpi"><div class="k">' + E(k1) + '</div><div class="n">' + n + '</div></div>'; }
-    function heroCard(p) {
+    function taken(p) { return p.takenHp != null ? p.takenHp : (p.taken || 0); }
+    // Labelled bar like the game's Statistics screen; f = 0..1 of the bar.
+    function meter(label, val, f, col) {
+      return '<div><div class="bs-small" style="display:flex;justify-content:space-between"><span>' + label + '</span><span class="bs-mv">' + val + '</span></div><div class="bs-meter"><i style="width:' + Math.max(2, f * 100) + '%;background:' + col + '"></i></div></div>';
+    }
+    function heroCard(p, i, all) {
       var id = p.heroId, dr = p.deathRate, minHp = p.minHp ? p.minHp.p50 : 1;
+      // Damage and Taken bars are scaled to the team's highest value, so heroes compare at a glance.
+      var maxD = Math.max.apply(null, all.map(function (q) { return q.damage || 0; })) || 1;
+      var maxT = Math.max.apply(null, all.map(taken)) || 1;
       var c = dr >= 0.3 ? 'var(--bad)' : dr > 0.05 ? 'var(--warn)' : 'var(--good)';
       var land = p.landRate != null ? Math.round(p.debuffLanded) + ' / ' + Math.round(p.debuffTries) + ' (' + pct(p.landRate) + ')' : '–';
       return '<div class="bs-hc"><div class="top">' + avatar(id) + '<div style="min-width:0"><div class="nm">' + E(p.name) + '</div><div class="dr" style="color:' + c + '">' + (dr ? 'Dies in ' + pct(dr) + (p.deathTime ? ' · ~' + mmss(p.deathTime.p50) : '') : 'Never dies') + '</div></div></div>' +
-        '<div><div class="bs-small" style="display:flex;justify-content:space-between"><span>Lowest HP</span><span>' + pct(minHp) + '</span></div><div class="bs-meter"><i style="width:' + Math.max(2, minHp * 100) + '%;background:' + c + '"></i></div></div>' +
-        '<dl class="bs-kv"><dt>Damage</dt><dd>' + k(p.damage) + ' · ' + pct(p.share) + '</dd><dt>Taken</dt><dd>' + k(p.takenHp != null ? p.takenHp : p.taken) + '</dd>' +
+        meter('Lowest HP', pct(minHp), minHp, c) +
+        meter('Damage', k(p.damage) + ' · ' + pct(p.share), (p.damage || 0) / maxD, 'var(--bs-dmg)') +
+        meter('Taken', k(taken(p)), taken(p) / maxT, 'var(--bs-shield)') +
+        '<dl class="bs-kv">' +
         // Like the game's Statistics screen, Healed counts heals plus shield that actually blocked damage.
         (p.healing || p.shieldUsed ? '<dt>Healed</dt><dd class="bs-up">' + k((p.healing || 0) + (p.shieldUsed || 0)) + '</dd>' : '') + (p.shieldUsed ? '<dt>by shields</dt><dd style="color:var(--bs-shield)">' + k(p.shieldUsed) + '</dd>' : '') +
         '<dt>Debuffs</dt><dd title="landed / tried">' + land + '</dd></dl></div>';
