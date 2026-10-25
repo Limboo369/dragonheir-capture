@@ -1,4 +1,4 @@
-# DHSim API (v0.2)
+# DHSim API (v0.3)
 
 One file for the browser: `dist/dhsim.js` (about 770 KB, no dependencies, no build step at runtime). 58 heroes have hand-written kits; every other hero gets an auto kit read from its skill text.
 It defines `window.DHSim` with the official data already loaded.
@@ -45,3 +45,23 @@ Rules live in `DHSim.RULE_INFO` (value, `conf`: verified / reported / estimated 
 Hero stats, skill numbers, artifacts and sets come from the official tables; charge times per hero, Skill Haste, Accuracy vs Resistance and status values from sourced rules; the DEF curve, gear profiles, animation locks and enemy stats are assumptions. See MODEL.md for every source, and CALIBRATION.md for the in-game tests that replace the guesses.
 
 Useful battle helpers for kits: `b.landChance(src, tgt, chance, skill, noRes)`, `b.tierValue('Defense Up', 2)`, `b.rechargeRate(u)`, `b.ultFull(u)`, `b.timing(u, 'uc')`.
+
+## v0.3 survival API
+
+| Call | Returns |
+|---|---|
+| `DHSim.simulate(opts).survival` | `{win, loss, timeout, anyDeath, firstDeath, wipeAt, band: [[p10,p50,p90] per s], alive: [per s], incomingDps, healPs, absorbPs, sustain, runs: [{seed, result, t, hpLeft, deaths}]}` |
+| `perHero[i]` (new fields) | `maxHp, minHp {p10,p50,...}, deathTime {p50,...}, absorbed, debuffTries, debuffLanded, landRate, resisted, takenBy` |
+| `DHSim.replay(opts, seed, step)` | `{seed, result, t, units: [{uid, side, name, heroId, isBoss, maxHp}], frames: [{t, u: [[uid, hp, maxHp, shield, energy, alive, statuses]]}], events: [{t, k, s, g, a, ...}]}`; event kinds: d damage, h heal, s shield, u ult, k battle skill, b status applied, m resisted, x death, bs boss skill, sp summon |
+| `DHSim.pickRun(result, 'typical'\|'worst'\|'best')` | one entry of `survival.runs` |
+| `DHSim.runBatch(opts, from, n)` / `DHSim.summarize(battles, opts)` | building blocks for chunked runs |
+| `await DHSim.survival.run(opts, {runs, onProgress})` | same as `simulate`, yields between batches |
+| `await DHSim.survival.breakingPoint(opts, {runs})` | `{power, margin, capped?}` |
+| `await DHSim.survival.healerCheck(opts, pool, {stress, runs})` | `{stress, current, add: [...], without: [...], verdict: 'yes'\|'maybe'\|'no'\|'none'}` |
+| `await DHSim.survival.robustness(opts, {runs, keys})` | `{base, rows: [{rule, value, win, hpLeft, deaths}], min, max, robust, verdict, worst}` |
+| `DHSim.survival.defense(result, opts)` | per hero `{hp, def, res, ehp, dmgCut, takenShare, aloneSeconds}` |
+| `DHSim.survival.fromAccount(json)` | `{heroId: spec}` from a "dragonheir-account" export (typed totals, sets by piece count, artifact) |
+
+New enemy presets: `harpy`, `xenos`, `scavenger`, `gruentius`, `fyre` (each with `skills` and `mechanics` for display); option `stage9` for Xenos. New rules: `bossPower`, `frostStacks`, `frostBurst`, `frostBurstCap`, `chanceAdd`. Spec `stats.totals: true` = typed hero-screen totals (no double counting).
+
+UI: `DHBattleUI.mount(el, host)` from `ui/battle-ui.js`; host `{load(key), save(key, value), pics, owned, defaultTeam, defaultArtifacts}`; it stores its setup under key `sim/loadout`.

@@ -1,4 +1,4 @@
-# DHSim combat model (v0.2)
+# DHSim combat model (v0.3)
 
 DHSim is a time-step battle simulator for Dragonheir: Silent Gods. It plays the same fight many times (Monte Carlo) and compares heroes, teams, artifacts and stats by their simulated result, not by internet tier lists. This page says what every number in the model is based on, so a result can be judged by how much of it is known and how much is guessed.
 
@@ -97,6 +97,31 @@ Every rule can be overridden per call (`rules: {defK: 900}`); `DHSim.sensitivity
 | bonds | true | verified | - | School bonds with published numbers (Support: 30 s shield of 10%/15% max HP). Frost, Poison and other bond numbers are not published, so those bonds are not modelled. |
 | poisonInterval | 3 | assumed | 3 to 5 | In-game seconds between Poison ticks. The engine ticks every 1s at the same damage rate; this sets Vicana's interval cut (x interval/(interval-2)) and the size of a Poison Explosion (one tick of every stack). |
 
+## v0.3: survival (2026-10-25)
+
+v0.3 adds the enemy side of the fight so results answer "do we live": the boss hits back on its real skill rhythm, heroes die, healing and shields matter, and every number comes from hundreds of fights with fresh dice.
+
+| Rule / feature | Model | Source | Confidence |
+|---|---|---|---|
+| Season 1 bosses | Deadly Harpy (Grave of Venom), Blood Prince Xenos (Grave of Curse), Colossal Scavenger (Grave of Rot), Soul Devourer Gruentius (Ancient Battlefield), Dead Phoenix - Fyre (Heretical Ruins); `bosses-s1.js` | mechanics: dragonheir.info 836/841/846/851/855 (2025-09-10); rhythm: HellHades 2025-07-30 | mechanics verified, numbers assumed |
+| Boss targeting | explicit per skill: front line (tank first, taunt wins), random, highest ATK, farthest (back line), all, area; listed in each preset's `skills` | boss pages above | reported |
+| Boss numbers | HP 35-45x and ATK 2.2-2.6x a level-matched reference hero, skill multipliers 0.4-3.2x ATK, times `bossPower` | none published anywhere | assumed (range 0.75-1.4x) |
+| Frost (Reborn) | stacks to 5; the 5th stack bursts for 3% of the target max HP as Cold damage (capped at `frostBurstCap` x ATK, 4 by default) and resets; Frost bond [2] freezes 5 s on the burst (bosses immune), [3] adds Cold | Steam overhaul preview 2025-05-12, CN beta 2025-01-21 | verified; the cap is assumed |
+| Set pieces | Legendary: 2 pieces = stats, 3 = effect; Mythic: 1 piece = effect; Epic/Rare: 2 = stats | game config (gear-sets.json) | verified |
+| 38 Beginner-pool sets | every effect coded in `items.js` from the config text (Imperial Executioner +16% on skill crits, Ancestral Protection 15% redirect, Monelisse's Teardrop, ...) | equip-2025.json | verified texts; how "redirect" and "+X% chance" stack is assumed |
+| "+X% chance" artifacts | added to the skill chance (75% + 20% = 95%), then the ACC vs RES curve multiplies | not stated in game | assumed (`chanceAdd`) |
+| Typed hero-screen totals | `stats: {..., totals: true}` replaces the model for those stats; set 2-piece stats and artifact main stats are NOT added again; set and artifact effects, captain aura, bonds and battle buffs still apply | the hero screen shows totals with gear | verified behaviour of the game UI |
+| Max HP reduction | `u.maxHpCut` lowers max HP and the heal cap (Xenos) | boss page 855 | mechanics verified, size assumed |
+| Healing Reduction / Prohibition | x0.5 / x0 healing received | S1 status table | verified |
+
+**Survival outputs** (`result.survival`): win / loss / timeout split, team HP band per second (10th, 50th, 90th percentile of fights), heroes alive per second, first death, damage taken per second vs healing and shields per second. Per hero: death rate, median time of death, lowest HP, damage taken, debuffs tried / landed / resisted.
+
+**Analyses** (`survival.js`, async): `breakingPoint` (boss strength where the team wins half its fights), `healerCheck` (every owned healer or shielder swapped in, and the team's own healers swapped out, at a stronger boss), `robustness` (win rate with each assumed rule at both ends of its range; reports when the verdict changes), `defense` (effective HP per hero).
+
+**Replay**: `DHSim.replay(opts, seed)` reruns one fight with a trace: a frame every 0.2 s (HP, max HP, shield, energy, statuses per unit) and every event (damage, heal, shield, cast, debuff landed or resisted, death, boss skill name). `pickRun(result, 'typical' | 'worst' | 'best')` picks the seed.
+
+**Calibration path for bosses**: after one real fight, compare the in-game Statistics screen (damage taken by the team, clear time) with the replay of the same team and set `bossPower` so damage taken per second matches.
+
 ## Files
 
 | File | What it is |
@@ -105,11 +130,15 @@ Every rule can be overridden per call (`rules: {defK: 900}`); `DHSim.sensitivity
 | `kits.js`, `kits/extra-ice.js`, `kits/extra-poison.js` | 58 hand-written hero kits from the official skill texts |
 | `items.js` | coded artifact and set effects |
 | `enemies.js` | enemy benches (dummy, five dummies, boss, hard boss, waves) |
+| `bosses-s1.js` | Season 1 dungeon bosses with mechanics and per-skill targeting |
+| `survival.js` | async survival analyses, account import |
+| `ui/battle-ui.js` | survival simulator screen (DHBattleUI.mount), used by the demo page and the Companion |
+| `demo/battle-sim.html` | standalone Battle Simulator page |
 | `data/sim-data.js` | official data, built by `tools/build_data.py` |
 | `research/` | sourced research: formulas, timing (per hero), bosses |
 | `dist/dhsim.js` | one-file browser bundle (`tools/bundle.py`) |
 | `demo/battle-lab.html` | Battle Lab page |
 | `tools/report.js` | standard roster analysis, writes `results/report.md` |
-| `tests/*.test.js` | 98 checks: kit numbers vs skill texts, sourced rules |
+| `tests/*.test.js` | 120 checks: kit numbers vs skill texts, sourced rules, survival acceptance tests (T2-T19) |
 
 Run: `node tests/kits.test.js` (and the other test files), `node tools/report.js 30`, `python3 tools/bundle.py`.

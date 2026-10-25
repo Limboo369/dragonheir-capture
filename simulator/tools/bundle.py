@@ -25,7 +25,7 @@ def main():
         parts.append(open(os.path.join(ROOT, f), encoding='utf-8').read())
     parts.append('(function(r){r.DHSim.setData(r.DHSIM_DATA);})(typeof window!=="undefined"?window:globalThis);')
     extra = sorted('kits/' + f for f in os.listdir(os.path.join(ROOT, 'kits')) if f.endswith('.js'))
-    for f in ['kits.js'] + extra + ['items.js', 'enemies.js']:
+    for f in ['kits.js'] + extra + ['items.js', 'enemies.js', 'bosses-s1.js', 'survival.js']:
         parts.append(open(os.path.join(ROOT, f), encoding='utf-8').read())
     out = os.path.join(ROOT, 'dist', 'dhsim.js')
     os.makedirs(os.path.dirname(out), exist_ok=True)

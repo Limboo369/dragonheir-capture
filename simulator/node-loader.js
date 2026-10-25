@@ -7,4 +7,6 @@ require('./kits/extra-ice.js');
 require('./kits/extra-poison.js');
 require('./items.js');
 require('./enemies.js');
+require('./bosses-s1.js');
+require('./survival.js');
 module.exports = S;

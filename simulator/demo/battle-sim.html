@@ -1,0 +1,62 @@
+<title>Dragonheir Battle Simulator</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Same colour tokens as the Dragonheir Companion "Library" design, so the module looks identical here and inside the app. */
+:root {
+  --wall: #E9EEF4; --pane: #FFFFFF; --card: #FFFFFF; --card-2: #F4F6F9; --float: rgba(255,255,255,.92);
+  --fill: rgba(118,118,128,.12); --fill-2: rgba(118,118,128,.07); --fill-3: rgba(118,118,128,.20); --hover: rgba(118,118,128,.10);
+  --sep: rgba(60,60,67,.13); --sep-2: rgba(60,60,67,.24); --label: #1D1D1F; --label-2: #6E6E73; --label-3: #8A8A8F;
+  --accent: #0A74BA; --accent-bg: #0A7FD0; --accent-soft: rgba(10,127,208,.12); --on-accent: #FFFFFF; --sel: rgba(10,127,208,.13);
+  --focus: rgba(10,127,208,.55); --good: #1E8E3E; --good-soft: rgba(30,142,62,.12); --warn: #B25E00; --warn-soft: rgba(230,140,0,.14);
+  --bad: #D70015; --gold: #C78A00; --scrim: rgba(0,0,0,.28); --ring: rgba(0,0,0,.06);
+  --shadow: 0 1px 2px rgba(0,0,0,.06), 0 12px 36px rgba(0,0,0,.16); --shadow-sm: 0 1px 2px rgba(0,0,0,.08), 0 2px 8px rgba(0,0,0,.06);
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text", system-ui, sans-serif;
+  --font-d: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI Variable Display", system-ui, sans-serif;
+  --spring: cubic-bezier(.2,.8,.2,1);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --wall: #0E1116; --pane: #1E1E20; --card: #232326; --card-2: #2A2A2E; --float: rgba(44,44,48,.92);
+  --fill: rgba(118,118,128,.24); --fill-2: rgba(118,118,128,.14); --fill-3: rgba(118,118,128,.34); --hover: rgba(255,255,255,.05);
+  --sep: rgba(255,255,255,.085); --sep-2: rgba(255,255,255,.16); --label: #F5F5F7; --label-2: #A1A1A6; --label-3: #7C7C82;
+  --accent: #6CC6FF; --accent-bg: #1C8BE0; --accent-soft: rgba(108,198,255,.14); --on-accent: #FFFFFF; --sel: rgba(108,198,255,.15);
+  --focus: rgba(108,198,255,.6); --good: #34C759; --good-soft: rgba(52,199,89,.14); --warn: #FFB340; --warn-soft: rgba(255,179,64,.14);
+  --bad: #FF6961; --gold: #FFC93C; --scrim: rgba(0,0,0,.5); --ring: rgba(255,255,255,.07);
+  --shadow: 0 0 0 .5px rgba(255,255,255,.08), 0 18px 50px rgba(0,0,0,.55); --shadow-sm: 0 0 0 .5px rgba(255,255,255,.06), 0 4px 14px rgba(0,0,0,.35);
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --wall: #0E1116; --pane: #1E1E20; --card: #232326; --card-2: #2A2A2E; --float: rgba(44,44,48,.92);
+  --fill: rgba(118,118,128,.24); --fill-2: rgba(118,118,128,.14); --fill-3: rgba(118,118,128,.34); --hover: rgba(255,255,255,.05);
+  --sep: rgba(255,255,255,.085); --sep-2: rgba(255,255,255,.16); --label: #F5F5F7; --label-2: #A1A1A6; --label-3: #7C7C82;
+  --accent: #6CC6FF; --accent-bg: #1C8BE0; --accent-soft: rgba(108,198,255,.14); --on-accent: #FFFFFF; --sel: rgba(108,198,255,.15);
+  --focus: rgba(108,198,255,.6); --good: #34C759; --good-soft: rgba(52,199,89,.14); --warn: #FFB340; --warn-soft: rgba(255,179,64,.14);
+  --bad: #FF6961; --gold: #FFC93C; --scrim: rgba(0,0,0,.5); --ring: rgba(255,255,255,.07);
+  --shadow: 0 0 0 .5px rgba(255,255,255,.08), 0 18px 50px rgba(0,0,0,.55); --shadow-sm: 0 0 0 .5px rgba(255,255,255,.06), 0 4px 14px rgba(0,0,0,.35);
+  color-scheme: dark; }
+body { background: var(--wall); color: var(--label); font: 400 14px/1.4 var(--font); -webkit-font-smoothing: antialiased; }
+.wrap { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 48px; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 1px; border-radius: 8px; }
+.loading { max-width: 900px; margin: 40px auto; color: var(--label-2); text-align: center; }
+</style>
+<div class="wrap"><div id="app"><p class="loading">Loading the simulator…</p></div></div>
+<script src="dhsim.js"></script>
+<script src="battle-ui.js"></script>
+<script src="portraits.js"></script>
+<script>
+(function () {
+  // Darko's roster (project memory, 2026-10-25): his Legendaries plus every Season 1 Epic.
+  var LEG = ['Auster', 'Hvitar', 'Lossenia', 'Hochadir', 'Ergander', 'Alphanarsy', 'Vinyara', 'Felosia', 'Eurion', 'Torrin', 'Durango', 'Oggok', 'Twitch', 'Lothair'];
+  var owned = [];
+  Object.keys(DHSim.kits()).forEach(function (id) {
+    var h = DHSim.data().heroes[id];
+    if (h && ((h.r === 'Epic' && h.season === 's1') || LEG.indexOf(h.n) >= 0)) owned.push(+id);
+  });
+  var host = {
+    pics: window.DH_PICS || {},
+    owned: owned,
+    load: function (k) { try { return JSON.parse(localStorage.getItem('dhsim:' + k)); } catch (e) { return null; } },
+    save: function (k, v) { try { localStorage.setItem('dhsim:' + k, JSON.stringify(v)); } catch (e) { } }
+  };
+  function go() { DHBattleUI.mount(document.getElementById('app'), host); }
+  if (window.DHSim && window.DHBattleUI) go(); else window.addEventListener('load', go);
+})();
+</script>

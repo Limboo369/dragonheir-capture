@@ -16,7 +16,7 @@
 })(typeof window !== 'undefined' ? window : globalThis, function () {
   'use strict';
 
-  var VERSION = '0.2.0';
+  var VERSION = '0.3.0';
 
   // ---------------------------------------------------------------- rules --
   // conf: verified = official text or table; estimated = derived from data;
@@ -56,7 +56,12 @@
     areaSize: { v: 3, conf: 'assumed', note: 'Enemies hit by an "enemies within range" skill when more are alive.', range: [2, 5] },
     bossControlMult: { v: 0, conf: 'verified', note: 'Bosses are immune to control (official boss pages). Set above 0 to test partial control.', range: [0, 0.5] },
     rechargePenalty: { v: 0.7, conf: 'verified', note: 'Recharging Speed Penalty: recharge speed x 0.7 (official S1 table: -30%).' },
-    bonds: { v: true, conf: 'verified', note: 'School bonds with published numbers (Support: 30 s shield of 10%/15% max HP). Frost, Poison and other bond numbers are not published, so those bonds are not modelled.' }
+    bonds: { v: true, conf: 'verified', note: 'School bonds with published numbers (Support: 30 s shield of 10%/15% max HP; Frost [2]: 5 Frost stacks freeze for 5 s, [3]: Cold 5 s and Cold on 1 enemy at start). Poison and other bond numbers are not published, so those bonds are not modelled.' },
+    frostStacks: { v: 5, conf: 'verified', note: 'Reborn S1: Frost stacks up to 5; at 5 stacks it bursts for [+3% Max HP] Cold damage (Steam overhaul preview 2025-05-12, CN beta 2025-01-21). 0 = old single Frost.' },
+    frostBurst: { v: 0.03, conf: 'verified', note: 'Frost 5-stack burst: share of the target max HP dealt as Cold damage by the hero who added the 5th stack.' },
+    frostBurstCap: { v: 4, conf: 'assumed', note: 'Cap on the Frost burst in x ATK of that hero ("scaled with the Frost hero\'s attack"). The text does not say how; without a cap a boss with 40x hero HP would take a huge hit.', range: [2, 8] },
+    bossPower: { v: 1, conf: 'assumed', note: 'Boss and enemy ATK multiplier. No source publishes boss ATK/HP/DEF; 1 = the bench tuned so a level-matched team wins a normal boss with HP to spare. Calibrate from one in-game Statistics screen (damage taken / time).', range: [0.75, 1.4] },
+    chanceAdd: { v: true, conf: 'assumed', note: '"+X% chance of inflicting status" (Frost Globe, sets) is added to the skill chance (75% + 20% = 95%, capped at 100%), then the Accuracy vs Resistance curve multiplies. The game text does not say add or multiply.' }
   };
   // [ACC - RES, land chance], linear between points, 0 below, landCap above.
   // Above 0: developer Q&A 2025-12-09 (dragonheir.info #1693): 0..50 fails
@@ -191,13 +196,16 @@
       var a = artifactByName(spec.artifact.name || spec.artifact);
       if (a) {
         var al = clamp((spec.artifact.level || 20) - 1, 0, 19);
-        a.stats.forEach(function (p) { addStat(s, p[0], p[1][al]); });
+        // Typed hero-screen totals already contain the artifact's main stats.
+        if (!(spec.stats && spec.stats.totals)) a.stats.forEach(function (p) { addStat(s, p[0], p[1][al]); });
       } else notes.push('unknown artifact ' + (spec.artifact.name || spec.artifact));
     }
     (spec.sets || []).forEach(function (sn) {
       var set = setByName(sn.name || sn);
       if (!set) { notes.push('unknown set ' + (sn.name || sn)); return; }
-      for (var k in set.bonus2) addStat(s, k, set.bonus2[k]);
+      // Typed hero-screen totals already contain the 2-piece stats.
+      if (spec.stats && spec.stats.totals) return;
+      if (setPieces(set, sn) >= 2) for (var k in set.bonus2) addStat(s, k, set.bonus2[k]);
     });
     if (spec.stats) {
       // Measured in-game totals override the model (best accuracy).
@@ -209,6 +217,10 @@
     }
     return { s: s, h: h, notes: notes };
   }
+  // Reborn gear: 4 slots; Legendary 2-piece stats + 3-piece effect, Mythic
+  // 1-piece effect, Epic/Rare 2-piece stats (game config, gear-sets.json).
+  function setPieces(set, sn) { return sn.pieces || (set.r === 'Mythic' ? 1 : set.r === 'Legendary' ? 3 : 2); }
+  function setNeed(set) { return set.r === 'Mythic' ? 1 : 3; }
   function addStat(s, k, v) {
     switch (k) {
       case 'atk': s.atkF += v; break;
@@ -246,11 +258,11 @@
     'Damage Reduction': ['dmgRed', 1, 'pct', [0.3, 0.3, 0.3]]
   };
   // 1 = cannot act, 0 = control that still lets the unit act.
-  var CONTROL = { 'Frozen': 1, 'Stunned': 1, 'Knocked Up': 1, 'Silenced': 0, 'Taunt': 0, 'Sleep': 1, 'Petrified': 1, 'Fear': 1, 'Charmed': 1 };
+  var CONTROL = { 'Frozen': 1, 'Stunned': 1, 'Knocked Up': 1, 'Silenced': 0, 'Taunt': 0, 'Sleep': 1, 'Petrified': 1, 'Fear': 1, 'Charmed': 1, 'Devoured': 1 };
   // Controls during which the unit gains no ultimate energy (official S1 status table).
-  var NO_ENERGY = { 'Frozen': 1, 'Stunned': 1, 'Knocked Up': 1, 'Sleep': 1, 'Petrified': 1 };
-  var DEBUFF_OTHER = { 'Frost': 1, 'Poison': 1, 'Burn': 1, 'Bleeding': 1, 'Buff Prohibition': 1, 'Recharging Speed Penalty': 1, 'Healing Prohibition': 1, 'Healing Reduction': 1, 'Vulnerable': 1, 'Static': 1, 'Blind': 1 };
-  var STACKING = { 'Poison': 'poisonMaxStacks', 'Burn': 20, 'Bleeding': 10, 'Static': 10 };
+  var NO_ENERGY = { 'Frozen': 1, 'Stunned': 1, 'Knocked Up': 1, 'Sleep': 1, 'Petrified': 1, 'Devoured': 1 };
+  var DEBUFF_OTHER = { 'Cold': 1, 'Frost': 1, 'Poison': 1, 'Burn': 1, 'Bleeding': 1, 'Buff Prohibition': 1, 'Recharging Speed Penalty': 1, 'Healing Prohibition': 1, 'Healing Reduction': 1, 'Vulnerable': 1, 'Static': 1, 'Blind': 1 };
+  var STACKING = { 'Poison': 'poisonMaxStacks', 'Burn': 20, 'Bleeding': 10, 'Static': 10, 'Frost': 'frostStacks' };
   function parseStatus(name) {
     var m = /^(.*?)\s+(I{1,3})$/.exec(name);
     var base = m ? m[1] : name, tier = m ? m[2].length : 0;
@@ -276,10 +288,19 @@
     this.waveIdx = 0;
     this.result = null;
     this.uidSeq = 0;
+    // Replay trace (one battle): frames every trace.step s plus an event list.
+    this.trace = cfg.trace ? { step: cfg.trace.step || 0.2, frames: [], ev: [] } : null;
+    // Team HP fraction and heroes alive, sampled every second (survival curves).
+    this.curve = [];
   }
   var B = Battle.prototype;
 
   B.chance = function (p) { return p >= 1 || this.rand() < p; };
+  B.tr = function (type, d) {
+    if (!this.trace || this.trace.ev.length > 30000) return;
+    d.t = Math.round(this.t * 100) / 100; d.k = type;
+    this.trace.ev.push(d);
+  };
   B.note = function (msg) { if (this.log && this.log.length < 4000) this.log.push(this.t.toFixed(2) + ' ' + msg); };
 
   B.on = function (owner, ev, fn) { (this.listeners[ev] = this.listeners[ev] || []).push({ owner: owner, fn: fn }); };
@@ -301,12 +322,16 @@
   // ---- unit creation
   B.addUnit = function (side, spec, extra) {
     var built = spec.custom ? spec.custom : buildStats(spec);
+    // Preset enemies: boss strength rule scales their ATK (fresh copy per battle).
+    if (spec.custom && side === 'B' && this.R.bossPower !== 1) {
+      built = { h: built.h, notes: built.notes, s: Object.assign({}, built.s, { atkB: built.s.atkB * this.R.bossPower }) };
+    }
     var u = {
       uid: ++this.uidSeq, side: side, spec: spec, h: built.h, name: (built.h && built.h.n) || spec.name,
       heroId: built.h ? built.h.id : null, s: built.s, alive: true, isBoss: !!spec.isBoss,
       melee: built.h ? built.h.melee : !!spec.melee, sts: [], shields: [], flags: {}, energy: 0,
       cdBattle: this.R.battleFirst, basicT: 0.2 + 0.3 * this.rand(), castUntil: 0, insp: spec.insp || 0,
-      rec: { dmg: 0, by: {}, heal: 0, shield: 0, taken: 0, absorbed: 0, deathAt: null, ults: 0, battles: 0, basics: 0 }
+      rec: { dmg: 0, by: {}, heal: 0, shield: 0, taken: 0, absorbed: 0, deathAt: null, ults: 0, battles: 0, basics: 0, dTry: 0, dLand: 0, dResisted: 0, minHp: 1, takenBy: {} }
     };
     if (extra) for (var k in extra) u[k] = extra[k];
     var fs = finalStats(u.s);
@@ -347,7 +372,7 @@
   };
   B.atk = function (u) { return Math.max(0, u.s.atkB * (1 + u.s.atkP + this.mod(u, 'atkP')) + u.s.atkF + this.mod(u, 'atkF')); };
   B.def = function (u) { return Math.max(0, u.s.defB * (1 + u.s.defP + this.mod(u, 'defP')) + u.s.defF + this.mod(u, 'defF')); };
-  B.maxHp = function (u) { return u.maxHp0 + this.mod(u, 'hpF'); };
+  B.maxHp = function (u) { return Math.max(1, u.maxHp0 + this.mod(u, 'hpF') - (u.maxHpCut || 0)); };
   B.stat = function (u, k) { return (u.s[k] || 0) + this.mod(u, k); };
   B.has = function (u, base) {
     for (var i = 0; i < u.sts.length; i++) if (u.sts[i].base === base) return u.sts[i];
@@ -437,7 +462,7 @@
     var R = this.R;
     var raw = typeof coef === 'number' ? coef : this.scale(src, tgt, coef);
     var ctx = { src: src, tgt: tgt, o: o, bonus: (o.bonus || 0) + this.stat(src, 'dmgBonus'), defIgnore: (o.defIgnore || 0) + this.stat(src, 'defIgnore'),
-      critRate: this.stat(src, 'critRate') + (o.critRate || 0), critDmg: this.stat(src, 'critDmg'), vuln: this.stat(tgt, 'vuln'), raw: raw };
+      critRate: this.stat(src, 'critRate') + (o.critRate || 0), critDmg: this.stat(src, 'critDmg'), vuln: this.stat(tgt, 'vuln'), raw: raw, critExtra: 0 };
     this.emit('modifyDamage', ctx);
     if (this.has(tgt, 'Invincibility')) { this.emit('hit', { src: src, tgt: tgt, o: o, amount: 0, crit: false }); return { amount: 0 }; }
     var isDot = o.tag === 'dot' || o.el === 'Derivative' || o.derivative;
@@ -445,7 +470,7 @@
     var m = (1 + ctx.bonus) * (1 + ctx.vuln) * (1 - clamp(this.stat(tgt, 'dmgRed'), 0, R.dmgRedCap));
     if (isDot && !o.trueDmg) m *= 1 + Math.max(0, this.stat(src, 'ench')) / R.derivEnch;
     if (this.has(tgt, 'Frozen')) m *= 1 - R.frozenDmgTaken;
-    if (crit) m *= 1 + ctx.critDmg * (1 - this.stat(tgt, 'critDmgTakenRed'));
+    if (crit) m *= (1 + ctx.critDmg * (1 - this.stat(tgt, 'critDmgTakenRed'))) * (1 + ctx.critExtra);
     if (!o.trueDmg && !(o.el === 'Derivative' && R.derivativeIgnoresDef)) {
       var d = this.def(tgt) * (1 - clamp(ctx.defIgnore, 0, 1));
       m *= R.defK / (d + R.defK);
@@ -457,6 +482,7 @@
     src.rec.by[tag] = (src.rec.by[tag] || 0) + dealt;
     if (R.energyPerHitTaken && !this.noEnergy(tgt)) tgt.energy = Math.min(R.ultMax, tgt.energy + R.energyPerHitTaken * this.energyMult(tgt));
     var ev = { src: src, tgt: tgt, o: o, amount: dealt, crit: crit };
+    if (this.trace && dealt > 0) this.tr('d', { s: src.uid, g: tgt.uid, a: Math.round(dealt), c: crit ? 1 : 0, g2: tag });
     if (!o.quiet) this.emit('hit', ev);
     if (crit && !o.quiet) this.emit('crit', ev);
     if (o.apply) for (var i = 0; i < o.apply.length; i++) {
@@ -486,8 +512,13 @@
     }
     var lost = before - tgt.hp;
     tgt.rec.taken += lost + (ctx.amount - amount);
+    if (src) { var sk = (o && o.tag) || 'skill'; tgt.rec.takenBy[sk] = (tgt.rec.takenBy[sk] || 0) + lost + (ctx.amount - amount); }
+    var frac = tgt.hp / this.maxHp(tgt);
+    if (frac < tgt.rec.minHp) tgt.rec.minHp = frac;
+    ctx.hpLost = lost;
     if (tgt.hp <= 0) this.kill(tgt, src);
     else this.emit('damaged', { tgt: tgt, src: src, amount: lost, o: ctx.o });
+    if (src && lost > 0) this.emit('hpLost', { tgt: tgt, src: src, amount: lost, o: ctx.o });
     return lost + (ctx.amount - amount);
   };
   B.kill = function (u, src) {
@@ -495,6 +526,7 @@
     u.alive = false; u.hp = 0; u.rec.deathAt = this.t;
     u.sts = []; u.shields = [];
     this.note(u.name + ' dies');
+    this.tr('x', { g: u.uid, s: src ? src.uid : 0 });
     this.emit('death', { tgt: u, src: src });
     if (src) this.emit('kill', { src: src, tgt: u });
   };
@@ -507,6 +539,7 @@
     var mh = this.maxHp(tgt), eff = Math.min(ctx.amount, mh - tgt.hp);
     tgt.hp += eff;
     src.rec.heal += eff;
+    if (this.trace && eff > 0.5) this.tr('h', { s: src.uid, g: tgt.uid, a: Math.round(eff) });
     this.emit('healed', { src: src, tgt: tgt, amount: eff, o: o });
     return eff;
   };
@@ -518,6 +551,7 @@
     var sh = { amt: amt, until: this.t + dur, src: src };
     tgt.shields.push(sh);
     src.rec.shield += amt;
+    if (this.trace && amt > 0.5) this.tr('s', { s: src.uid, g: tgt.uid, a: Math.round(amt) });
     this.emit('shielded', { src: src, tgt: tgt, amount: amt, o: o });
     return amt;
   };
@@ -558,7 +592,15 @@
     if (hostile) {
       if (tgt.side === src.side) return false;
       if (this.has(tgt, 'Debuff Immunity') || (p.kind === 'control' && (this.has(tgt, 'Control Immunity') || tgt.controlImmune))) return false;
-      if (!this.chance(this.landChance(src, tgt, chance, extra.skill, extra.ignoreRes))) return false;
+      src.rec.dTry++;
+      if (!this.chance(this.landChance(src, tgt, chance, extra.skill, extra.ignoreRes))) {
+        // A miss: either the skill's own chance failed or the target resisted.
+        tgt.rec.dResisted++;
+        this.tr('m', { s: src.uid, g: tgt.uid, n: name });
+        this.emit('resisted', { src: src, tgt: tgt, name: name });
+        return false;
+      }
+      src.rec.dLand++;
       var dctx = { src: src, tgt: tgt, name: name, base: p.base, dur: dur };
       this.emit('debuffDuration', dctx);
       dur = dctx.dur;
@@ -571,6 +613,7 @@
     var until = this.t + dur, ex = this.has(tgt, p.base);
     var maxStacks = STACKING[p.base];
     if (typeof maxStacks === 'string') maxStacks = R[maxStacks];
+    var burst = false;
     var already = !!ex;
     if (maxStacks) {
       if (!ex) { ex = { base: p.base, name: p.base, kind: p.kind, tier: 0, stacks: [], src: src }; tgt.sts.push(ex); }
@@ -578,6 +621,7 @@
       for (var i = 0; i < n; i++) {
         if (ex.stacks.length >= maxStacks) ex.stacks.shift();
         ex.stacks.push({ until: until, src: src, pow: extra.value != null ? extra.value : this.atk(src) });
+        if (p.base === 'Frost' && ex.stacks.length >= maxStacks) { burst = true; break; }
       }
     } else if (ex && ex.tier >= p.tier) {
       ex.until = Math.max(ex.until, until);
@@ -588,10 +632,25 @@
       tgt.sts.push(ex);
     }
     var ev = { src: src, tgt: tgt, name: name, base: p.base, kind: p.kind, already: already, skill: extra.skill };
+    if (this.trace && !extra.quiet) this.tr('b', { s: src.uid, g: tgt.uid, n: name, h: hostile ? 1 : 0 });
     this.emit('statusApplied', ev);
     if (hostile) this.emit('debuffApplied', ev);
     if (p.base === 'Taunt') tgt.tgt = src;
+    if (burst) this.frostBurst(src, tgt, ex);
     return true;
+  };
+  // Reborn Frost: 5 stacks burst for [+3% Max HP] Cold damage (capped by the
+  // hero's ATK, see frostBurstCap), then the stacks are used up. Frost bond
+  // [2] freezes for 5 s on the burst, [3] adds Cold for 5 s.
+  B.frostBurst = function (src, tgt, st) {
+    var R = this.R;
+    this.remove(tgt, 'Frost');
+    var amt = Math.min(R.frostBurst * this.maxHp(tgt), R.frostBurstCap * this.atk(src));
+    this.hit(src, tgt, amt, { el: 'Cold', tag: 'passive', noCrit: true, frostBurst: true });
+    var bond = this.bondCount && this.bondCount[src.side] && this.bondCount[src.side].Frost || 0;
+    if (R.bonds && bond >= 2 && tgt.alive) this.apply(src, tgt, 'Frozen', 1, 5, { quiet: false });
+    if (R.bonds && bond >= 3 && tgt.alive) this.apply(src, tgt, 'Cold', 1, 5);
+    this.emit('frostBurst', { src: src, tgt: tgt });
   };
   B.remove = function (u, base) { u.sts = u.sts.filter(function (s) { return s.base !== base; }); };
   B.dispel = function (u, n, kind) {
@@ -661,6 +720,7 @@
       u.energy = 0;
       u.rec.ults++;
       this.note(u.name + ' ult');
+      this.tr('u', { s: u.uid });
       this.emit('cast', { src: u, slot: 'ult' });
       k.ult(u, this);
       this.emit('afterCast', { src: u, slot: 'ult' });
@@ -670,6 +730,7 @@
     if (k.battle && !silenced && u.cdBattle <= 0) {
       u.cdBattle = this.battleCd(u);
       u.rec.battles++;
+      this.tr('k', { s: u.uid });
       this.emit('cast', { src: u, slot: 'battle' });
       k.battle(u, this);
       this.emit('afterCast', { src: u, slot: 'battle' });
@@ -717,6 +778,8 @@
         if (!this.noEnergy(u)) u.energy = Math.min(R.ultMax, u.energy + (R.energyRegen != null ? R.energyRegen : R.ultMax / this.ultFull(u)) * rate * R.dt);
         this.act(u);
       }
+      if (this.t >= this.curve.length - 1e-9) this.curve.push(this.teamState());
+      if (this.trace && this.t >= this.trace.frames.length * this.trace.step - 1e-9) this.trace.frames.push(this.frame());
       if (this.tlStep && this.t >= nextTl) {
         nextTl += this.tlStep;
         this.timeline.push(this.snapshot());
@@ -728,12 +791,34 @@
       if (!this.sideAlive('A')) { this.result = 'loss'; break; }
     }
     if (!this.result) this.result = 'timeout';
+    this.curve.push(this.teamState());
+    if (this.trace) this.trace.frames.push(this.frame());
     return this;
   };
   B.spawnWave = function (idx) {
     var self = this, w = this.waves[idx];
     w.forEach(function (spec) { var u = self.addUnit('B', spec, spec.extra); if (u.kit.init) u.kit.init(u, self); });
     this.note('wave ' + (idx + 1));
+  };
+  // [team HP fraction (shields not counted), heroes alive] for side A.
+  B.teamState = function () {
+    var mh = 0, ch = 0, alive = 0;
+    for (var i = 0; i < this.units.length; i++) {
+      var u = this.units[i];
+      if (u.side !== 'A') continue;
+      mh += u.maxHp0; ch += Math.max(0, u.hp);
+      if (u.alive) alive++;
+    }
+    return [mh ? ch / mh : 0, alive];
+  };
+  // Replay frame: per unit [uid, hp, maxHp, shield, energy 0-1, alive, statuses].
+  B.frame = function () {
+    var self = this, R = this.R;
+    return { t: Math.round(this.t * 100) / 100, u: this.units.map(function (u) {
+      var sh = 0; for (var i = 0; i < u.shields.length; i++) sh += u.shields[i].amt;
+      var sts = u.alive ? u.sts.map(function (s) { return [s.name || s.base, s.kind === 'buff' ? 0 : s.kind === 'control' ? 2 : 1, s.stacks ? s.stacks.length : 0]; }) : [];
+      return [u.uid, Math.round(Math.max(0, u.hp)), Math.round(self.maxHp(u)), Math.round(sh), Math.round(u.energy / R.ultMax * 100) / 100, u.alive ? 1 : 0, sts];
+    }) };
   };
   B.snapshot = function () {
     var self = this;
@@ -794,6 +879,14 @@
   // Dauntless bonds also need numbers that are not published.
   var BONDS = {};
   // Support: all allies get a 30 s shield of 10% [2] / 15% [3] of their max HP at battle start.
+  // Frost: the 5-stack effects live in B.frostBurst; [3] also puts Cold on 1 enemy at start.
+  BONDS.Frost = function (b, mine, all, n) {
+    if (!b.R.bonds || n < 3) return;
+    b.on(null, 'battleStart', function () {
+      var e = b.enemies(mine[0]);
+      if (e.length) b.apply(mine[0], e[0], 'Cold', 1, 5);
+    });
+  };
   BONDS.Support = function (b, mine, all, n) {
     if (!b.R.bonds) return;
     var pct = n >= 3 ? 0.15 : 0.1;
@@ -822,6 +915,8 @@
     // Bonds
     var schools = {};
     units.forEach(function (u) { if (u.h && u.h.sc) schools[u.h.sc] = (schools[u.h.sc] || 0) + 1; });
+    b.bondCount = b.bondCount || {};
+    b.bondCount[side] = schools;
     for (var sc in schools) if (schools[sc] >= 2 && BONDS[sc]) BONDS[sc](b, units.filter(function (u) { return u.h && u.h.sc === sc; }), units, schools[sc]);
     // Artifacts and sets with coded effects.
     units.forEach(function (u) {
@@ -833,10 +928,9 @@
         if (fx) fx(u, b, clamp(sp.artifact.tier == null ? 0 : sp.artifact.tier, 0, 5));
       }
       (sp.sets || []).forEach(function (sn) {
-        var set = setByName(sn.name || sn), pieces = sn.pieces || (set && set.r === 'Mythic' ? 2 : 4);
+        var set = setByName(sn.name || sn);
         var fx = set && SET_FX[set.n];
-        var need = set && set.r === 'Mythic' ? 2 : 4;
-        if (fx && pieces >= need) fx(u, b);
+        if (fx && setPieces(set, sn) >= setNeed(set)) fx(u, b);
       });
     });
     return units;
@@ -852,18 +946,19 @@
       b.waves = made.waves;
       b.waves[0].forEach(function (spec) { b.addUnit('B', spec, spec.extra); });
     } else made.units.forEach(function (spec) { b.addUnit('B', spec, spec.extra); });
-    b.enemyInfo = { name: preset.name, conf: preset.conf, note: preset.note };
+    b.enemyInfo = { name: preset.name, conf: preset.conf, note: preset.note, skills: preset.skills || null, mechanics: preset.mechanics || null };
     return null;
   }
 
   function runOnce(opts, seed) {
     var R = defaultRules();
     if (opts.rules) for (var k in opts.rules) R[k] = opts.rules[k];
-    var b = new Battle({ rules: R, seed: seed, log: opts.log, mode: opts.mode, timelineStep: opts.timelineStep });
+    var b = new Battle({ rules: R, seed: seed, log: opts.log, mode: opts.mode, timelineStep: opts.timelineStep, trace: opts.trace });
     var team = prepareSide(b, 'A', opts.team, opts);
     enemySide(b, opts.enemy, opts);
     var maxTime = opts.seconds || (opts.enemy && opts.enemy.seconds) || R.maxTime;
     b.maxTime = maxTime;
+    b.seed = seed;
     b.run(maxTime);
     return b;
   }
@@ -872,7 +967,8 @@
     var n = battles.length, first = battles[0];
     var A = first.units.filter(function (u) { return u.side === 'A'; });
     var wins = 0, ttk = [], dps = [], hpLeft = [], deaths = 0, clear = [];
-    var per = A.map(function (u) { return { slot: u.slot, heroId: u.heroId, name: u.name, kit: u.kit.conf || 'hand', damage: 0, by: {}, healing: 0, shielding: 0, taken: 0, deaths: 0, ults: 0, battles: 0, basics: 0 }; });
+    var per = A.map(function (u) { return { slot: u.slot, heroId: u.heroId, name: u.name, kit: u.kit.conf || 'hand', damage: 0, by: {}, healing: 0, shielding: 0, taken: 0, deaths: 0, ults: 0, battles: 0, basics: 0,
+      absorbed: 0, debuffTries: 0, debuffLanded: 0, resisted: 0, minHp: [], deathTimes: [], maxHp: Math.round(u.maxHp0), takenBy: {} }; });
     battles.forEach(function (b) {
       var aUnits = b.units.filter(function (u) { return u.side === 'A'; });
       var total = 0;
@@ -880,8 +976,11 @@
         var p = per[i];
         p.damage += u.rec.dmg; p.healing += u.rec.heal; p.shielding += u.rec.shield; p.taken += u.rec.taken;
         p.ults += u.rec.ults; p.battles += u.rec.battles; p.basics += u.rec.basics;
+        p.absorbed += u.rec.absorbed; p.debuffTries += u.rec.dTry; p.debuffLanded += u.rec.dLand; p.resisted += u.rec.dResisted;
+        p.minHp.push(u.alive ? u.rec.minHp : 0);
         for (var k in u.rec.by) p.by[k] = (p.by[k] || 0) + u.rec.by[k];
-        if (!u.alive) { p.deaths++; deaths++; }
+        for (var k3 in u.rec.takenBy) p.takenBy[k3] = (p.takenBy[k3] || 0) + u.rec.takenBy[k3];
+        if (!u.alive) { p.deaths++; deaths++; p.deathTimes.push(u.rec.deathAt); }
         total += u.rec.dmg;
       });
       if (b.result === 'win') { wins++; ttk.push(b.t); }
@@ -899,8 +998,14 @@
     per.forEach(function (p) {
       p.share = p.damage / totalDmg;
       p.damage /= n; p.healing /= n; p.shielding /= n; p.taken /= n; p.deathRate = p.deaths / n; delete p.deaths;
-      p.ults /= n; p.battles /= n; p.basics /= n;
+      p.ults /= n; p.battles /= n; p.basics /= n; p.absorbed /= n;
       for (var k in p.by) p.by[k] /= n;
+      for (var k4 in p.takenBy) p.takenBy[k4] /= n;
+      p.landRate = p.debuffTries ? p.debuffLanded / p.debuffTries : null;
+      p.debuffTries /= n; p.debuffLanded /= n; p.resisted /= n;
+      p.minHp = stats(p.minHp);
+      p.deathTime = p.deathTimes.length ? stats(p.deathTimes) : null;
+      delete p.deathTimes;
     });
     function stats(arr) {
       if (!arr.length) return null;
@@ -916,6 +1021,7 @@
     for (var k2 in RULE_INFO) if (RULE_INFO[k2].conf === 'assumed') assumed.push(k2);
     var autoKits = per.filter(function (p) { return p.kit === 'auto'; }).map(function (p) { return p.name; });
     return {
+      survival: survival(battles),
       runs: n, winRate: wins / n, ttk: stats(ttk), dps: stats(dps), teamHpLeft: stats(hpLeft), clear: stats(clear),
       perHero: per, captain: first.captain && first.captain.A, enemy: first.enemyInfo || null,
       timeline: opts.timelineStep ? first.timeline : undefined, log: opts.log ? first.log : undefined,
@@ -925,6 +1031,84 @@
         note: 'Hero stats and skill numbers are official data. Charge times, Skill Haste, Accuracy vs Resistance and status values come from sourced game rules (some from 2023-2024). The DEF curve, gear, cast times and boss stats are assumptions (see RULE_INFO). Use results to compare options, not as exact in-game numbers.'
       },
       notes: [].concat.apply([], first.units.map(function (u) { return u.notes || []; }))
+    };
+  }
+
+  // Survival view across runs: outcome split, team HP band per second, heroes
+  // alive per second, first death, incoming damage vs healing and shields.
+  function survival(battles) {
+    var n = battles.length, out = { win: 0, loss: 0, timeout: 0 }, len = 0;
+    battles.forEach(function (b) { out[b.result]++; len = Math.max(len, b.curve.length); });
+    var band = [], alive = [];
+    for (var t = 0; t < len; t++) {
+      var hp = [], al = 0, cnt = 0;
+      battles.forEach(function (b) {
+        // After a battle ends its last state carries on (a win keeps its HP, a wipe stays at 0).
+        var c = b.curve[Math.min(t, b.curve.length - 1)];
+        hp.push(c[0]); al += c[1]; cnt++;
+      });
+      hp.sort(function (a, b) { return a - b; });
+      band.push([hp[Math.floor(cnt * 0.1)], hp[Math.floor(cnt * 0.5)], hp[Math.min(cnt - 1, Math.floor(cnt * 0.9))]]);
+      alive.push(al / cnt);
+    }
+    var first = [], anyDeath = 0, taken = 0, healed = 0, absorbed = 0, secs = 0, wipeAt = [];
+    battles.forEach(function (b) {
+      var d = null;
+      b.units.forEach(function (u) {
+        if (u.side !== 'A') return;
+        if (u.rec.deathAt != null && (d == null || u.rec.deathAt < d)) d = u.rec.deathAt;
+        taken += u.rec.taken; absorbed += u.rec.absorbed;
+        healed += u.rec.heal;
+      });
+      if (d != null) { anyDeath++; first.push(d); }
+      if (b.result === 'loss') wipeAt.push(b.t);
+      secs += b.t;
+    });
+    first.sort(function (a, b) { return a - b; });
+    wipeAt.sort(function (a, b) { return a - b; });
+    var runs = battles.map(function (b) {
+      var A = b.units.filter(function (u) { return u.side === 'A'; });
+      var hp = b.curve[b.curve.length - 1][0];
+      return { seed: b.seed, result: b.result, t: Math.round(b.t * 10) / 10, hpLeft: hp, deaths: A.filter(function (u) { return !u.alive; }).length };
+    });
+    return {
+      win: out.win / n, loss: out.loss / n, timeout: out.timeout / n,
+      anyDeath: anyDeath / n, firstDeath: first.length ? first[Math.floor(first.length / 2)] : null,
+      wipeAt: wipeAt.length ? wipeAt[Math.floor(wipeAt.length / 2)] : null,
+      band: band, alive: alive,
+      // Damage the enemy dealt to the team per second (before shields), and how much of it
+      // healing plus shields covered.
+      incomingDps: taken / Math.max(1e-9, secs), healPs: healed / Math.max(1e-9, secs), absorbPs: absorbed / Math.max(1e-9, secs),
+      sustain: taken ? (healed + absorbed) / taken : null,
+      runs: runs
+    };
+  }
+  // Pick a representative run for the replay: 'typical' (most common outcome,
+  // median time), 'worst' (a loss if any, else the lowest HP left), 'best'.
+  function pickRun(res, which) {
+    var runs = res.survival.runs.slice();
+    if (which === 'worst') {
+      runs.sort(function (a, b) { return (a.result === 'loss' ? 0 : 1) - (b.result === 'loss' ? 0 : 1) || a.hpLeft - b.hpLeft; });
+      return runs[0];
+    }
+    if (which === 'best') {
+      runs.sort(function (a, b) { return (b.result === 'win' ? 1 : 0) - (a.result === 'win' ? 1 : 0) || b.hpLeft - a.hpLeft || a.t - b.t; });
+      return runs[0];
+    }
+    var cnt = {}; runs.forEach(function (r) { cnt[r.result] = (cnt[r.result] || 0) + 1; });
+    var top = Object.keys(cnt).sort(function (a, b) { return cnt[b] - cnt[a]; })[0];
+    var same = runs.filter(function (r) { return r.result === top; }).sort(function (a, b) { return a.t - b.t || a.hpLeft - b.hpLeft; });
+    return same[Math.floor(same.length / 2)];
+  }
+  // Re-run one battle by seed with a full trace for the animated replay.
+  function replay(opts, seed, step) {
+    var b = runOnce(Object.assign({}, opts, { trace: { step: step || 0.2 } }), seed);
+    return {
+      seed: seed, result: b.result, t: b.t, maxTime: b.maxTime,
+      units: b.units.map(function (u) {
+        return { uid: u.uid, side: u.side, slot: u.slot, name: u.name, heroId: u.heroId, isBoss: u.isBoss, melee: !!u.melee, school: u.h ? u.h.sc : null, el: u.h ? u.h.el : null, maxHp: Math.round(u.maxHp0) };
+      }),
+      frames: b.trace.frames, events: b.trace.ev
     };
   }
 
@@ -1058,7 +1242,11 @@
     starsForLevel: starsForLevel, captainFx: captainFx, artifactByName: artifactByName, setByName: setByName,
     registerKit: registerKit, registerArtifact: registerArtifact, registerSet: registerSet, registerBond: registerBond, registerBoss: registerBoss,
     kits: function () { return KITS; }, bosses: function () { return BOSSES; }, artifactsCoded: function () { return Object.keys(ARTIFACT_FX); }, setsCoded: function () { return Object.keys(SET_FX); },
-    simulate: simulate, compare: compare, rankCandidates: rankCandidates, rankVariants: rankVariants, optimizeTeam: optimizeTeam, statWeights: statWeights, sensitivity: sensitivity, metric: metric,
+    simulate: simulate, replay: replay, pickRun: pickRun, runBatch: function (opts, from, count) {
+      var seed = opts.seed || 12345, out = [];
+      for (var i = from; i < from + count; i++) out.push(runOnce(opts, seed + i * 7919));
+      return out;
+    }, summarize: summarize, compare: compare, rankCandidates: rankCandidates, rankVariants: rankVariants, optimizeTeam: optimizeTeam, statWeights: statWeights, sensitivity: sensitivity, metric: metric,
     runOnce: runOnce, Battle: Battle, parseStatus: parseStatus, autoKit: autoKit
   };
 });

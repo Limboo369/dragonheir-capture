@@ -18,7 +18,7 @@
 })(typeof window !== 'undefined' ? window : globalThis, function () {
   'use strict';
 
-  var VERSION = '0.2.0';
+  var VERSION = '0.3.0';
 
   // ---------------------------------------------------------------- rules --
   // conf: verified = official text or table; estimated = derived from data;
@@ -58,7 +58,12 @@
     areaSize: { v: 3, conf: 'assumed', note: 'Enemies hit by an "enemies within range" skill when more are alive.', range: [2, 5] },
     bossControlMult: { v: 0, conf: 'verified', note: 'Bosses are immune to control (official boss pages). Set above 0 to test partial control.', range: [0, 0.5] },
     rechargePenalty: { v: 0.7, conf: 'verified', note: 'Recharging Speed Penalty: recharge speed x 0.7 (official S1 table: -30%).' },
-    bonds: { v: true, conf: 'verified', note: 'School bonds with published numbers (Support: 30 s shield of 10%/15% max HP). Frost, Poison and other bond numbers are not published, so those bonds are not modelled.' }
+    bonds: { v: true, conf: 'verified', note: 'School bonds with published numbers (Support: 30 s shield of 10%/15% max HP; Frost [2]: 5 Frost stacks freeze for 5 s, [3]: Cold 5 s and Cold on 1 enemy at start). Poison and other bond numbers are not published, so those bonds are not modelled.' },
+    frostStacks: { v: 5, conf: 'verified', note: 'Reborn S1: Frost stacks up to 5; at 5 stacks it bursts for [+3% Max HP] Cold damage (Steam overhaul preview 2025-05-12, CN beta 2025-01-21). 0 = old single Frost.' },
+    frostBurst: { v: 0.03, conf: 'verified', note: 'Frost 5-stack burst: share of the target max HP dealt as Cold damage by the hero who added the 5th stack.' },
+    frostBurstCap: { v: 4, conf: 'assumed', note: 'Cap on the Frost burst in x ATK of that hero ("scaled with the Frost hero\'s attack"). The text does not say how; without a cap a boss with 40x hero HP would take a huge hit.', range: [2, 8] },
+    bossPower: { v: 1, conf: 'assumed', note: 'Boss and enemy ATK multiplier. No source publishes boss ATK/HP/DEF; 1 = the bench tuned so a level-matched team wins a normal boss with HP to spare. Calibrate from one in-game Statistics screen (damage taken / time).', range: [0.75, 1.4] },
+    chanceAdd: { v: true, conf: 'assumed', note: '"+X% chance of inflicting status" (Frost Globe, sets) is added to the skill chance (75% + 20% = 95%, capped at 100%), then the Accuracy vs Resistance curve multiplies. The game text does not say add or multiply.' }
   };
   // [ACC - RES, land chance], linear between points, 0 below, landCap above.
   // Above 0: developer Q&A 2025-12-09 (dragonheir.info #1693): 0..50 fails
@@ -193,13 +198,16 @@
       var a = artifactByName(spec.artifact.name || spec.artifact);
       if (a) {
         var al = clamp((spec.artifact.level || 20) - 1, 0, 19);
-        a.stats.forEach(function (p) { addStat(s, p[0], p[1][al]); });
+        // Typed hero-screen totals already contain the artifact's main stats.
+        if (!(spec.stats && spec.stats.totals)) a.stats.forEach(function (p) { addStat(s, p[0], p[1][al]); });
       } else notes.push('unknown artifact ' + (spec.artifact.name || spec.artifact));
     }
     (spec.sets || []).forEach(function (sn) {
       var set = setByName(sn.name || sn);
       if (!set) { notes.push('unknown set ' + (sn.name || sn)); return; }
-      for (var k in set.bonus2) addStat(s, k, set.bonus2[k]);
+      // Typed hero-screen totals already contain the 2-piece stats.
+      if (spec.stats && spec.stats.totals) return;
+      if (setPieces(set, sn) >= 2) for (var k in set.bonus2) addStat(s, k, set.bonus2[k]);
     });
     if (spec.stats) {
       // Measured in-game totals override the model (best accuracy).
@@ -211,6 +219,10 @@
     }
     return { s: s, h: h, notes: notes };
   }
+  // Reborn gear: 4 slots; Legendary 2-piece stats + 3-piece effect, Mythic
+  // 1-piece effect, Epic/Rare 2-piece stats (game config, gear-sets.json).
+  function setPieces(set, sn) { return sn.pieces || (set.r === 'Mythic' ? 1 : set.r === 'Legendary' ? 3 : 2); }
+  function setNeed(set) { return set.r === 'Mythic' ? 1 : 3; }
   function addStat(s, k, v) {
     switch (k) {
       case 'atk': s.atkF += v; break;
@@ -248,11 +260,11 @@
     'Damage Reduction': ['dmgRed', 1, 'pct', [0.3, 0.3, 0.3]]
   };
   // 1 = cannot act, 0 = control that still lets the unit act.
-  var CONTROL = { 'Frozen': 1, 'Stunned': 1, 'Knocked Up': 1, 'Silenced': 0, 'Taunt': 0, 'Sleep': 1, 'Petrified': 1, 'Fear': 1, 'Charmed': 1 };
+  var CONTROL = { 'Frozen': 1, 'Stunned': 1, 'Knocked Up': 1, 'Silenced': 0, 'Taunt': 0, 'Sleep': 1, 'Petrified': 1, 'Fear': 1, 'Charmed': 1, 'Devoured': 1 };
   // Controls during which the unit gains no ultimate energy (official S1 status table).
-  var NO_ENERGY = { 'Frozen': 1, 'Stunned': 1, 'Knocked Up': 1, 'Sleep': 1, 'Petrified': 1 };
-  var DEBUFF_OTHER = { 'Frost': 1, 'Poison': 1, 'Burn': 1, 'Bleeding': 1, 'Buff Prohibition': 1, 'Recharging Speed Penalty': 1, 'Healing Prohibition': 1, 'Healing Reduction': 1, 'Vulnerable': 1, 'Static': 1, 'Blind': 1 };
-  var STACKING = { 'Poison': 'poisonMaxStacks', 'Burn': 20, 'Bleeding': 10, 'Static': 10 };
+  var NO_ENERGY = { 'Frozen': 1, 'Stunned': 1, 'Knocked Up': 1, 'Sleep': 1, 'Petrified': 1, 'Devoured': 1 };
+  var DEBUFF_OTHER = { 'Cold': 1, 'Frost': 1, 'Poison': 1, 'Burn': 1, 'Bleeding': 1, 'Buff Prohibition': 1, 'Recharging Speed Penalty': 1, 'Healing Prohibition': 1, 'Healing Reduction': 1, 'Vulnerable': 1, 'Static': 1, 'Blind': 1 };
+  var STACKING = { 'Poison': 'poisonMaxStacks', 'Burn': 20, 'Bleeding': 10, 'Static': 10, 'Frost': 'frostStacks' };
   function parseStatus(name) {
     var m = /^(.*?)\s+(I{1,3})$/.exec(name);
     var base = m ? m[1] : name, tier = m ? m[2].length : 0;
@@ -278,10 +290,19 @@
     this.waveIdx = 0;
     this.result = null;
     this.uidSeq = 0;
+    // Replay trace (one battle): frames every trace.step s plus an event list.
+    this.trace = cfg.trace ? { step: cfg.trace.step || 0.2, frames: [], ev: [] } : null;
+    // Team HP fraction and heroes alive, sampled every second (survival curves).
+    this.curve = [];
   }
   var B = Battle.prototype;
 
   B.chance = function (p) { return p >= 1 || this.rand() < p; };
+  B.tr = function (type, d) {
+    if (!this.trace || this.trace.ev.length > 30000) return;
+    d.t = Math.round(this.t * 100) / 100; d.k = type;
+    this.trace.ev.push(d);
+  };
   B.note = function (msg) { if (this.log && this.log.length < 4000) this.log.push(this.t.toFixed(2) + ' ' + msg); };
 
   B.on = function (owner, ev, fn) { (this.listeners[ev] = this.listeners[ev] || []).push({ owner: owner, fn: fn }); };
@@ -303,12 +324,16 @@
   // ---- unit creation
   B.addUnit = function (side, spec, extra) {
     var built = spec.custom ? spec.custom : buildStats(spec);
+    // Preset enemies: boss strength rule scales their ATK (fresh copy per battle).
+    if (spec.custom && side === 'B' && this.R.bossPower !== 1) {
+      built = { h: built.h, notes: built.notes, s: Object.assign({}, built.s, { atkB: built.s.atkB * this.R.bossPower }) };
+    }
     var u = {
       uid: ++this.uidSeq, side: side, spec: spec, h: built.h, name: (built.h && built.h.n) || spec.name,
       heroId: built.h ? built.h.id : null, s: built.s, alive: true, isBoss: !!spec.isBoss,
       melee: built.h ? built.h.melee : !!spec.melee, sts: [], shields: [], flags: {}, energy: 0,
       cdBattle: this.R.battleFirst, basicT: 0.2 + 0.3 * this.rand(), castUntil: 0, insp: spec.insp || 0,
-      rec: { dmg: 0, by: {}, heal: 0, shield: 0, taken: 0, absorbed: 0, deathAt: null, ults: 0, battles: 0, basics: 0 }
+      rec: { dmg: 0, by: {}, heal: 0, shield: 0, taken: 0, absorbed: 0, deathAt: null, ults: 0, battles: 0, basics: 0, dTry: 0, dLand: 0, dResisted: 0, minHp: 1, takenBy: {} }
     };
     if (extra) for (var k in extra) u[k] = extra[k];
     var fs = finalStats(u.s);
@@ -349,7 +374,7 @@
   };
   B.atk = function (u) { return Math.max(0, u.s.atkB * (1 + u.s.atkP + this.mod(u, 'atkP')) + u.s.atkF + this.mod(u, 'atkF')); };
   B.def = function (u) { return Math.max(0, u.s.defB * (1 + u.s.defP + this.mod(u, 'defP')) + u.s.defF + this.mod(u, 'defF')); };
-  B.maxHp = function (u) { return u.maxHp0 + this.mod(u, 'hpF'); };
+  B.maxHp = function (u) { return Math.max(1, u.maxHp0 + this.mod(u, 'hpF') - (u.maxHpCut || 0)); };
   B.stat = function (u, k) { return (u.s[k] || 0) + this.mod(u, k); };
   B.has = function (u, base) {
     for (var i = 0; i < u.sts.length; i++) if (u.sts[i].base === base) return u.sts[i];
@@ -439,7 +464,7 @@
     var R = this.R;
     var raw = typeof coef === 'number' ? coef : this.scale(src, tgt, coef);
     var ctx = { src: src, tgt: tgt, o: o, bonus: (o.bonus || 0) + this.stat(src, 'dmgBonus'), defIgnore: (o.defIgnore || 0) + this.stat(src, 'defIgnore'),
-      critRate: this.stat(src, 'critRate') + (o.critRate || 0), critDmg: this.stat(src, 'critDmg'), vuln: this.stat(tgt, 'vuln'), raw: raw };
+      critRate: this.stat(src, 'critRate') + (o.critRate || 0), critDmg: this.stat(src, 'critDmg'), vuln: this.stat(tgt, 'vuln'), raw: raw, critExtra: 0 };
     this.emit('modifyDamage', ctx);
     if (this.has(tgt, 'Invincibility')) { this.emit('hit', { src: src, tgt: tgt, o: o, amount: 0, crit: false }); return { amount: 0 }; }
     var isDot = o.tag === 'dot' || o.el === 'Derivative' || o.derivative;
@@ -447,7 +472,7 @@
     var m = (1 + ctx.bonus) * (1 + ctx.vuln) * (1 - clamp(this.stat(tgt, 'dmgRed'), 0, R.dmgRedCap));
     if (isDot && !o.trueDmg) m *= 1 + Math.max(0, this.stat(src, 'ench')) / R.derivEnch;
     if (this.has(tgt, 'Frozen')) m *= 1 - R.frozenDmgTaken;
-    if (crit) m *= 1 + ctx.critDmg * (1 - this.stat(tgt, 'critDmgTakenRed'));
+    if (crit) m *= (1 + ctx.critDmg * (1 - this.stat(tgt, 'critDmgTakenRed'))) * (1 + ctx.critExtra);
     if (!o.trueDmg && !(o.el === 'Derivative' && R.derivativeIgnoresDef)) {
       var d = this.def(tgt) * (1 - clamp(ctx.defIgnore, 0, 1));
       m *= R.defK / (d + R.defK);
@@ -459,6 +484,7 @@
     src.rec.by[tag] = (src.rec.by[tag] || 0) + dealt;
     if (R.energyPerHitTaken && !this.noEnergy(tgt)) tgt.energy = Math.min(R.ultMax, tgt.energy + R.energyPerHitTaken * this.energyMult(tgt));
     var ev = { src: src, tgt: tgt, o: o, amount: dealt, crit: crit };
+    if (this.trace && dealt > 0) this.tr('d', { s: src.uid, g: tgt.uid, a: Math.round(dealt), c: crit ? 1 : 0, g2: tag });
     if (!o.quiet) this.emit('hit', ev);
     if (crit && !o.quiet) this.emit('crit', ev);
     if (o.apply) for (var i = 0; i < o.apply.length; i++) {
@@ -488,8 +514,13 @@
     }
     var lost = before - tgt.hp;
     tgt.rec.taken += lost + (ctx.amount - amount);
+    if (src) { var sk = (o && o.tag) || 'skill'; tgt.rec.takenBy[sk] = (tgt.rec.takenBy[sk] || 0) + lost + (ctx.amount - amount); }
+    var frac = tgt.hp / this.maxHp(tgt);
+    if (frac < tgt.rec.minHp) tgt.rec.minHp = frac;
+    ctx.hpLost = lost;
     if (tgt.hp <= 0) this.kill(tgt, src);
     else this.emit('damaged', { tgt: tgt, src: src, amount: lost, o: ctx.o });
+    if (src && lost > 0) this.emit('hpLost', { tgt: tgt, src: src, amount: lost, o: ctx.o });
     return lost + (ctx.amount - amount);
   };
   B.kill = function (u, src) {
@@ -497,6 +528,7 @@
     u.alive = false; u.hp = 0; u.rec.deathAt = this.t;
     u.sts = []; u.shields = [];
     this.note(u.name + ' dies');
+    this.tr('x', { g: u.uid, s: src ? src.uid : 0 });
     this.emit('death', { tgt: u, src: src });
     if (src) this.emit('kill', { src: src, tgt: u });
   };
@@ -509,6 +541,7 @@
     var mh = this.maxHp(tgt), eff = Math.min(ctx.amount, mh - tgt.hp);
     tgt.hp += eff;
     src.rec.heal += eff;
+    if (this.trace && eff > 0.5) this.tr('h', { s: src.uid, g: tgt.uid, a: Math.round(eff) });
     this.emit('healed', { src: src, tgt: tgt, amount: eff, o: o });
     return eff;
   };
@@ -520,6 +553,7 @@
     var sh = { amt: amt, until: this.t + dur, src: src };
     tgt.shields.push(sh);
     src.rec.shield += amt;
+    if (this.trace && amt > 0.5) this.tr('s', { s: src.uid, g: tgt.uid, a: Math.round(amt) });
     this.emit('shielded', { src: src, tgt: tgt, amount: amt, o: o });
     return amt;
   };
@@ -560,7 +594,15 @@
     if (hostile) {
       if (tgt.side === src.side) return false;
       if (this.has(tgt, 'Debuff Immunity') || (p.kind === 'control' && (this.has(tgt, 'Control Immunity') || tgt.controlImmune))) return false;
-      if (!this.chance(this.landChance(src, tgt, chance, extra.skill, extra.ignoreRes))) return false;
+      src.rec.dTry++;
+      if (!this.chance(this.landChance(src, tgt, chance, extra.skill, extra.ignoreRes))) {
+        // A miss: either the skill's own chance failed or the target resisted.
+        tgt.rec.dResisted++;
+        this.tr('m', { s: src.uid, g: tgt.uid, n: name });
+        this.emit('resisted', { src: src, tgt: tgt, name: name });
+        return false;
+      }
+      src.rec.dLand++;
       var dctx = { src: src, tgt: tgt, name: name, base: p.base, dur: dur };
       this.emit('debuffDuration', dctx);
       dur = dctx.dur;
@@ -573,6 +615,7 @@
     var until = this.t + dur, ex = this.has(tgt, p.base);
     var maxStacks = STACKING[p.base];
     if (typeof maxStacks === 'string') maxStacks = R[maxStacks];
+    var burst = false;
     var already = !!ex;
     if (maxStacks) {
       if (!ex) { ex = { base: p.base, name: p.base, kind: p.kind, tier: 0, stacks: [], src: src }; tgt.sts.push(ex); }
@@ -580,6 +623,7 @@
       for (var i = 0; i < n; i++) {
         if (ex.stacks.length >= maxStacks) ex.stacks.shift();
         ex.stacks.push({ until: until, src: src, pow: extra.value != null ? extra.value : this.atk(src) });
+        if (p.base === 'Frost' && ex.stacks.length >= maxStacks) { burst = true; break; }
       }
     } else if (ex && ex.tier >= p.tier) {
       ex.until = Math.max(ex.until, until);
@@ -590,10 +634,25 @@
       tgt.sts.push(ex);
     }
     var ev = { src: src, tgt: tgt, name: name, base: p.base, kind: p.kind, already: already, skill: extra.skill };
+    if (this.trace && !extra.quiet) this.tr('b', { s: src.uid, g: tgt.uid, n: name, h: hostile ? 1 : 0 });
     this.emit('statusApplied', ev);
     if (hostile) this.emit('debuffApplied', ev);
     if (p.base === 'Taunt') tgt.tgt = src;
+    if (burst) this.frostBurst(src, tgt, ex);
     return true;
+  };
+  // Reborn Frost: 5 stacks burst for [+3% Max HP] Cold damage (capped by the
+  // hero's ATK, see frostBurstCap), then the stacks are used up. Frost bond
+  // [2] freezes for 5 s on the burst, [3] adds Cold for 5 s.
+  B.frostBurst = function (src, tgt, st) {
+    var R = this.R;
+    this.remove(tgt, 'Frost');
+    var amt = Math.min(R.frostBurst * this.maxHp(tgt), R.frostBurstCap * this.atk(src));
+    this.hit(src, tgt, amt, { el: 'Cold', tag: 'passive', noCrit: true, frostBurst: true });
+    var bond = this.bondCount && this.bondCount[src.side] && this.bondCount[src.side].Frost || 0;
+    if (R.bonds && bond >= 2 && tgt.alive) this.apply(src, tgt, 'Frozen', 1, 5, { quiet: false });
+    if (R.bonds && bond >= 3 && tgt.alive) this.apply(src, tgt, 'Cold', 1, 5);
+    this.emit('frostBurst', { src: src, tgt: tgt });
   };
   B.remove = function (u, base) { u.sts = u.sts.filter(function (s) { return s.base !== base; }); };
   B.dispel = function (u, n, kind) {
@@ -663,6 +722,7 @@
       u.energy = 0;
       u.rec.ults++;
       this.note(u.name + ' ult');
+      this.tr('u', { s: u.uid });
       this.emit('cast', { src: u, slot: 'ult' });
       k.ult(u, this);
       this.emit('afterCast', { src: u, slot: 'ult' });
@@ -672,6 +732,7 @@
     if (k.battle && !silenced && u.cdBattle <= 0) {
       u.cdBattle = this.battleCd(u);
       u.rec.battles++;
+      this.tr('k', { s: u.uid });
       this.emit('cast', { src: u, slot: 'battle' });
       k.battle(u, this);
       this.emit('afterCast', { src: u, slot: 'battle' });
@@ -719,6 +780,8 @@
         if (!this.noEnergy(u)) u.energy = Math.min(R.ultMax, u.energy + (R.energyRegen != null ? R.energyRegen : R.ultMax / this.ultFull(u)) * rate * R.dt);
         this.act(u);
       }
+      if (this.t >= this.curve.length - 1e-9) this.curve.push(this.teamState());
+      if (this.trace && this.t >= this.trace.frames.length * this.trace.step - 1e-9) this.trace.frames.push(this.frame());
       if (this.tlStep && this.t >= nextTl) {
         nextTl += this.tlStep;
         this.timeline.push(this.snapshot());
@@ -730,12 +793,34 @@
       if (!this.sideAlive('A')) { this.result = 'loss'; break; }
     }
     if (!this.result) this.result = 'timeout';
+    this.curve.push(this.teamState());
+    if (this.trace) this.trace.frames.push(this.frame());
     return this;
   };
   B.spawnWave = function (idx) {
     var self = this, w = this.waves[idx];
     w.forEach(function (spec) { var u = self.addUnit('B', spec, spec.extra); if (u.kit.init) u.kit.init(u, self); });
     this.note('wave ' + (idx + 1));
+  };
+  // [team HP fraction (shields not counted), heroes alive] for side A.
+  B.teamState = function () {
+    var mh = 0, ch = 0, alive = 0;
+    for (var i = 0; i < this.units.length; i++) {
+      var u = this.units[i];
+      if (u.side !== 'A') continue;
+      mh += u.maxHp0; ch += Math.max(0, u.hp);
+      if (u.alive) alive++;
+    }
+    return [mh ? ch / mh : 0, alive];
+  };
+  // Replay frame: per unit [uid, hp, maxHp, shield, energy 0-1, alive, statuses].
+  B.frame = function () {
+    var self = this, R = this.R;
+    return { t: Math.round(this.t * 100) / 100, u: this.units.map(function (u) {
+      var sh = 0; for (var i = 0; i < u.shields.length; i++) sh += u.shields[i].amt;
+      var sts = u.alive ? u.sts.map(function (s) { return [s.name || s.base, s.kind === 'buff' ? 0 : s.kind === 'control' ? 2 : 1, s.stacks ? s.stacks.length : 0]; }) : [];
+      return [u.uid, Math.round(Math.max(0, u.hp)), Math.round(self.maxHp(u)), Math.round(sh), Math.round(u.energy / R.ultMax * 100) / 100, u.alive ? 1 : 0, sts];
+    }) };
   };
   B.snapshot = function () {
     var self = this;
@@ -796,6 +881,14 @@
   // Dauntless bonds also need numbers that are not published.
   var BONDS = {};
   // Support: all allies get a 30 s shield of 10% [2] / 15% [3] of their max HP at battle start.
+  // Frost: the 5-stack effects live in B.frostBurst; [3] also puts Cold on 1 enemy at start.
+  BONDS.Frost = function (b, mine, all, n) {
+    if (!b.R.bonds || n < 3) return;
+    b.on(null, 'battleStart', function () {
+      var e = b.enemies(mine[0]);
+      if (e.length) b.apply(mine[0], e[0], 'Cold', 1, 5);
+    });
+  };
   BONDS.Support = function (b, mine, all, n) {
     if (!b.R.bonds) return;
     var pct = n >= 3 ? 0.15 : 0.1;
@@ -824,6 +917,8 @@
     // Bonds
     var schools = {};
     units.forEach(function (u) { if (u.h && u.h.sc) schools[u.h.sc] = (schools[u.h.sc] || 0) + 1; });
+    b.bondCount = b.bondCount || {};
+    b.bondCount[side] = schools;
     for (var sc in schools) if (schools[sc] >= 2 && BONDS[sc]) BONDS[sc](b, units.filter(function (u) { return u.h && u.h.sc === sc; }), units, schools[sc]);
     // Artifacts and sets with coded effects.
     units.forEach(function (u) {
@@ -835,10 +930,9 @@
         if (fx) fx(u, b, clamp(sp.artifact.tier == null ? 0 : sp.artifact.tier, 0, 5));
       }
       (sp.sets || []).forEach(function (sn) {
-        var set = setByName(sn.name || sn), pieces = sn.pieces || (set && set.r === 'Mythic' ? 2 : 4);
+        var set = setByName(sn.name || sn);
         var fx = set && SET_FX[set.n];
-        var need = set && set.r === 'Mythic' ? 2 : 4;
-        if (fx && pieces >= need) fx(u, b);
+        if (fx && setPieces(set, sn) >= setNeed(set)) fx(u, b);
       });
     });
     return units;
@@ -854,18 +948,19 @@
       b.waves = made.waves;
       b.waves[0].forEach(function (spec) { b.addUnit('B', spec, spec.extra); });
     } else made.units.forEach(function (spec) { b.addUnit('B', spec, spec.extra); });
-    b.enemyInfo = { name: preset.name, conf: preset.conf, note: preset.note };
+    b.enemyInfo = { name: preset.name, conf: preset.conf, note: preset.note, skills: preset.skills || null, mechanics: preset.mechanics || null };
     return null;
   }
 
   function runOnce(opts, seed) {
     var R = defaultRules();
     if (opts.rules) for (var k in opts.rules) R[k] = opts.rules[k];
-    var b = new Battle({ rules: R, seed: seed, log: opts.log, mode: opts.mode, timelineStep: opts.timelineStep });
+    var b = new Battle({ rules: R, seed: seed, log: opts.log, mode: opts.mode, timelineStep: opts.timelineStep, trace: opts.trace });
     var team = prepareSide(b, 'A', opts.team, opts);
     enemySide(b, opts.enemy, opts);
     var maxTime = opts.seconds || (opts.enemy && opts.enemy.seconds) || R.maxTime;
     b.maxTime = maxTime;
+    b.seed = seed;
     b.run(maxTime);
     return b;
   }
@@ -874,7 +969,8 @@
     var n = battles.length, first = battles[0];
     var A = first.units.filter(function (u) { return u.side === 'A'; });
     var wins = 0, ttk = [], dps = [], hpLeft = [], deaths = 0, clear = [];
-    var per = A.map(function (u) { return { slot: u.slot, heroId: u.heroId, name: u.name, kit: u.kit.conf || 'hand', damage: 0, by: {}, healing: 0, shielding: 0, taken: 0, deaths: 0, ults: 0, battles: 0, basics: 0 }; });
+    var per = A.map(function (u) { return { slot: u.slot, heroId: u.heroId, name: u.name, kit: u.kit.conf || 'hand', damage: 0, by: {}, healing: 0, shielding: 0, taken: 0, deaths: 0, ults: 0, battles: 0, basics: 0,
+      absorbed: 0, debuffTries: 0, debuffLanded: 0, resisted: 0, minHp: [], deathTimes: [], maxHp: Math.round(u.maxHp0), takenBy: {} }; });
     battles.forEach(function (b) {
       var aUnits = b.units.filter(function (u) { return u.side === 'A'; });
       var total = 0;
@@ -882,8 +978,11 @@
         var p = per[i];
         p.damage += u.rec.dmg; p.healing += u.rec.heal; p.shielding += u.rec.shield; p.taken += u.rec.taken;
         p.ults += u.rec.ults; p.battles += u.rec.battles; p.basics += u.rec.basics;
+        p.absorbed += u.rec.absorbed; p.debuffTries += u.rec.dTry; p.debuffLanded += u.rec.dLand; p.resisted += u.rec.dResisted;
+        p.minHp.push(u.alive ? u.rec.minHp : 0);
         for (var k in u.rec.by) p.by[k] = (p.by[k] || 0) + u.rec.by[k];
-        if (!u.alive) { p.deaths++; deaths++; }
+        for (var k3 in u.rec.takenBy) p.takenBy[k3] = (p.takenBy[k3] || 0) + u.rec.takenBy[k3];
+        if (!u.alive) { p.deaths++; deaths++; p.deathTimes.push(u.rec.deathAt); }
         total += u.rec.dmg;
       });
       if (b.result === 'win') { wins++; ttk.push(b.t); }
@@ -901,8 +1000,14 @@
     per.forEach(function (p) {
       p.share = p.damage / totalDmg;
       p.damage /= n; p.healing /= n; p.shielding /= n; p.taken /= n; p.deathRate = p.deaths / n; delete p.deaths;
-      p.ults /= n; p.battles /= n; p.basics /= n;
+      p.ults /= n; p.battles /= n; p.basics /= n; p.absorbed /= n;
       for (var k in p.by) p.by[k] /= n;
+      for (var k4 in p.takenBy) p.takenBy[k4] /= n;
+      p.landRate = p.debuffTries ? p.debuffLanded / p.debuffTries : null;
+      p.debuffTries /= n; p.debuffLanded /= n; p.resisted /= n;
+      p.minHp = stats(p.minHp);
+      p.deathTime = p.deathTimes.length ? stats(p.deathTimes) : null;
+      delete p.deathTimes;
     });
     function stats(arr) {
       if (!arr.length) return null;
@@ -918,6 +1023,7 @@
     for (var k2 in RULE_INFO) if (RULE_INFO[k2].conf === 'assumed') assumed.push(k2);
     var autoKits = per.filter(function (p) { return p.kit === 'auto'; }).map(function (p) { return p.name; });
     return {
+      survival: survival(battles),
       runs: n, winRate: wins / n, ttk: stats(ttk), dps: stats(dps), teamHpLeft: stats(hpLeft), clear: stats(clear),
       perHero: per, captain: first.captain && first.captain.A, enemy: first.enemyInfo || null,
       timeline: opts.timelineStep ? first.timeline : undefined, log: opts.log ? first.log : undefined,
@@ -927,6 +1033,84 @@
         note: 'Hero stats and skill numbers are official data. Charge times, Skill Haste, Accuracy vs Resistance and status values come from sourced game rules (some from 2023-2024). The DEF curve, gear, cast times and boss stats are assumptions (see RULE_INFO). Use results to compare options, not as exact in-game numbers.'
       },
       notes: [].concat.apply([], first.units.map(function (u) { return u.notes || []; }))
+    };
+  }
+
+  // Survival view across runs: outcome split, team HP band per second, heroes
+  // alive per second, first death, incoming damage vs healing and shields.
+  function survival(battles) {
+    var n = battles.length, out = { win: 0, loss: 0, timeout: 0 }, len = 0;
+    battles.forEach(function (b) { out[b.result]++; len = Math.max(len, b.curve.length); });
+    var band = [], alive = [];
+    for (var t = 0; t < len; t++) {
+      var hp = [], al = 0, cnt = 0;
+      battles.forEach(function (b) {
+        // After a battle ends its last state carries on (a win keeps its HP, a wipe stays at 0).
+        var c = b.curve[Math.min(t, b.curve.length - 1)];
+        hp.push(c[0]); al += c[1]; cnt++;
+      });
+      hp.sort(function (a, b) { return a - b; });
+      band.push([hp[Math.floor(cnt * 0.1)], hp[Math.floor(cnt * 0.5)], hp[Math.min(cnt - 1, Math.floor(cnt * 0.9))]]);
+      alive.push(al / cnt);
+    }
+    var first = [], anyDeath = 0, taken = 0, healed = 0, absorbed = 0, secs = 0, wipeAt = [];
+    battles.forEach(function (b) {
+      var d = null;
+      b.units.forEach(function (u) {
+        if (u.side !== 'A') return;
+        if (u.rec.deathAt != null && (d == null || u.rec.deathAt < d)) d = u.rec.deathAt;
+        taken += u.rec.taken; absorbed += u.rec.absorbed;
+        healed += u.rec.heal;
+      });
+      if (d != null) { anyDeath++; first.push(d); }
+      if (b.result === 'loss') wipeAt.push(b.t);
+      secs += b.t;
+    });
+    first.sort(function (a, b) { return a - b; });
+    wipeAt.sort(function (a, b) { return a - b; });
+    var runs = battles.map(function (b) {
+      var A = b.units.filter(function (u) { return u.side === 'A'; });
+      var hp = b.curve[b.curve.length - 1][0];
+      return { seed: b.seed, result: b.result, t: Math.round(b.t * 10) / 10, hpLeft: hp, deaths: A.filter(function (u) { return !u.alive; }).length };
+    });
+    return {
+      win: out.win / n, loss: out.loss / n, timeout: out.timeout / n,
+      anyDeath: anyDeath / n, firstDeath: first.length ? first[Math.floor(first.length / 2)] : null,
+      wipeAt: wipeAt.length ? wipeAt[Math.floor(wipeAt.length / 2)] : null,
+      band: band, alive: alive,
+      // Damage the enemy dealt to the team per second (before shields), and how much of it
+      // healing plus shields covered.
+      incomingDps: taken / Math.max(1e-9, secs), healPs: healed / Math.max(1e-9, secs), absorbPs: absorbed / Math.max(1e-9, secs),
+      sustain: taken ? (healed + absorbed) / taken : null,
+      runs: runs
+    };
+  }
+  // Pick a representative run for the replay: 'typical' (most common outcome,
+  // median time), 'worst' (a loss if any, else the lowest HP left), 'best'.
+  function pickRun(res, which) {
+    var runs = res.survival.runs.slice();
+    if (which === 'worst') {
+      runs.sort(function (a, b) { return (a.result === 'loss' ? 0 : 1) - (b.result === 'loss' ? 0 : 1) || a.hpLeft - b.hpLeft; });
+      return runs[0];
+    }
+    if (which === 'best') {
+      runs.sort(function (a, b) { return (b.result === 'win' ? 1 : 0) - (a.result === 'win' ? 1 : 0) || b.hpLeft - a.hpLeft || a.t - b.t; });
+      return runs[0];
+    }
+    var cnt = {}; runs.forEach(function (r) { cnt[r.result] = (cnt[r.result] || 0) + 1; });
+    var top = Object.keys(cnt).sort(function (a, b) { return cnt[b] - cnt[a]; })[0];
+    var same = runs.filter(function (r) { return r.result === top; }).sort(function (a, b) { return a.t - b.t || a.hpLeft - b.hpLeft; });
+    return same[Math.floor(same.length / 2)];
+  }
+  // Re-run one battle by seed with a full trace for the animated replay.
+  function replay(opts, seed, step) {
+    var b = runOnce(Object.assign({}, opts, { trace: { step: step || 0.2 } }), seed);
+    return {
+      seed: seed, result: b.result, t: b.t, maxTime: b.maxTime,
+      units: b.units.map(function (u) {
+        return { uid: u.uid, side: u.side, slot: u.slot, name: u.name, heroId: u.heroId, isBoss: u.isBoss, melee: !!u.melee, school: u.h ? u.h.sc : null, el: u.h ? u.h.el : null, maxHp: Math.round(u.maxHp0) };
+      }),
+      frames: b.trace.frames, events: b.trace.ev
     };
   }
 
@@ -1060,7 +1244,11 @@
     starsForLevel: starsForLevel, captainFx: captainFx, artifactByName: artifactByName, setByName: setByName,
     registerKit: registerKit, registerArtifact: registerArtifact, registerSet: registerSet, registerBond: registerBond, registerBoss: registerBoss,
     kits: function () { return KITS; }, bosses: function () { return BOSSES; }, artifactsCoded: function () { return Object.keys(ARTIFACT_FX); }, setsCoded: function () { return Object.keys(SET_FX); },
-    simulate: simulate, compare: compare, rankCandidates: rankCandidates, rankVariants: rankVariants, optimizeTeam: optimizeTeam, statWeights: statWeights, sensitivity: sensitivity, metric: metric,
+    simulate: simulate, replay: replay, pickRun: pickRun, runBatch: function (opts, from, count) {
+      var seed = opts.seed || 12345, out = [];
+      for (var i = from; i < from + count; i++) out.push(runOnce(opts, seed + i * 7919));
+      return out;
+    }, summarize: summarize, compare: compare, rankCandidates: rankCandidates, rankVariants: rankVariants, optimizeTeam: optimizeTeam, statWeights: statWeights, sensitivity: sensitivity, metric: metric,
     runOnce: runOnce, Battle: Battle, parseStatus: parseStatus, autoKit: autoKit
   };
 });
@@ -3410,6 +3598,172 @@
   });
 })(typeof window !== 'undefined' ? window : globalThis);
 
+// ---- Season 1 (Beginner pool) gear sets. Effect texts from the game config
+// (knowledge/data/gear-sets.json, equip-2025.json). Reborn rule: Legendary sets
+// give stats at 2 pieces and the effect at 3; Mythic pieces carry their effect
+// alone; Epic and Rare sets give stats at 2 pieces.
+(function (root) {
+  var S = root.DHSim || (typeof require !== 'undefined' ? require('./sim.js') : null);
+  var D = S.data();
+  // Epic / Rare sets are missing from the sim data (stats only).
+  var STAT_SETS = {
+    'Assassin Technique': ['Epic', { atk: 100, ench: 30 }], 'Barbarian': ['Epic', { atk: 100, critRate: 0.1 }],
+    'Blessing': ['Epic', { ench: 30, hp: 1000 }], 'Goblin Brawler': ['Epic', { atk: 100, haste: 20 }],
+    'Granite Will': ['Epic', { def: 100, hp: 1000 }], 'Heart of Deer Herder': ['Epic', { acc: 40, res: 60 }],
+    'Predator': ['Epic', { atk: 100, atkSpd: 0.2 }], 'Swift Shadow': ['Epic', { acc: 40, haste: 20 }],
+    'Guardian': ['Rare', { def: 50, hp: 500 }], 'Inquisitor': ['Rare', { acc: 30, res: 30 }], 'Rage': ['Rare', { atk: 50, hp: 500 }]
+  };
+  for (var n in STAT_SETS) if (!S.setByName(n)) D.sets['x:' + n] = { n: n, pieceSet: n, r: STAT_SETS[n][0], season: 's1', bonus2: STAT_SETS[n][1], spell: null };
+  var BEGINNER = ['Ancestral Guidance', 'Ancestral Protection', 'Assassin Technique', 'Barbarian', 'Blessing', 'Brotherhood Spirit', 'Chaos Symbiosis', 'Clean Sweep', "Cyril's Whisper", 'Death Record', 'Fearless Challenge', 'Goblin Brawler', 'Granite Will', 'Guardian', 'Heart of Deer Herder', 'Heart of the Gambler', 'Holy Hunter', 'Imperial Executioner', 'Imposing Presence', 'Impregnable', 'Inquisitor', 'Iron Bastion', 'Magic Crystal Refinement', 'Mark of Austerity', "Monelisse's Teardrop", 'Platinum Knight Quality', 'Power of Tides', 'Predator', "Puppeteer's Inspiration", 'Radiance of the Blue Oak', 'Rage', 'Revenge of the Fallen', "Rhapsodist's Calling", 'Schadenfreude', 'Sky Code Treaty', 'Strike the Unprepared', 'Swift Shadow', 'Tundra Tenacity'];
+  BEGINNER.forEach(function (n) { var s = S.setByName(n); if (s) s.beginner = true; });
+  S.BEGINNER_SETS = BEGINNER;
+
+  function SET(name, fx) { S.registerSet(name, fx); }
+  function dmgMod(b, u, fn) { b.on(u, 'modifyDamage', function (c) { if (c.src === u) fn(c); }); }
+  function isSkill(o) { return o.tag === 'battle' || o.tag === 'ult' || o.tag === 'passive'; }
+  function isDot(o) { return o.tag === 'dot' || o.el === 'Derivative' || o.derivative; }
+
+  // Legendary 3-piece effects
+  SET('Imperial Executioner', function (u, b) { dmgMod(b, u, function (c) { if (isSkill(c.o) && !isDot(c.o)) c.critExtra += 0.16; }); });
+  SET("Puppeteer's Inspiration", function (u, b) {
+    b.on(u, 'cast', function (e) {
+      if (e.src !== u || e.slot !== 'ult') return;
+      b.allies(u, false).forEach(function (a) {
+        if (!a.h || !u.h || a.h.el !== u.h.el || (a.flags.puppetT != null && b.t - a.flags.puppetT < 15)) return;
+        a.flags.puppetT = b.t;
+        b.energy(a, 0.1 * b.R.ultMax);
+      });
+    });
+  });
+  SET('Ancestral Protection', function (u, b) {
+    u.s.dmgRed = (u.s.dmgRed || 0) + 0.1;
+    b.on(u, 'beforeDamaged', function (c) {
+      var t = c.tgt;
+      if (t === u || t.side !== u.side || !u.alive || c.amount <= 0 || (c.o && c.o.redirect)) return;
+      var moved = 0.15 * c.amount;
+      c.amount -= moved;
+      b.damage(u, moved * 0.9, c.src, { tag: 'redirect', redirect: true });
+    });
+  });
+  SET('Holy Hunter', function (u, b) {
+    b.on(u, 'hit', function (e) { if (e.src === u && e.amount > 0 && !isDot(e.o) && e.tgt.alive) b.apply(u, e.tgt, 'Stunned', 0.2, 3); });
+  });
+  SET('Platinum Knight Quality', function (u, b) {
+    u.flags.pkUntil = -1;
+    b.on(u, 'cast', function (e) { if (e.src === u && e.slot === 'ult') u.flags.pkUntil = b.t + 12; });
+    dmgMod(b, u, function (c) { if (b.t <= u.flags.pkUntil) c.bonus += 0.3; });
+  });
+  SET('Brotherhood Spirit', function (u, b) {
+    b.on(u, 'cast', function (e) {
+      if (e.src !== u || e.slot !== 'ult') return;
+      b.allies(u, true).forEach(function (a) { b.buff(u, a, 'Brotherhood', 10, { dmgBonus: 0.15 }); });
+    });
+  });
+  SET("Cyril's Whisper", function (u, b) { dmgMod(b, u, function (c) { c.defIgnore += 0.07 * Math.min(3, b.countDebuffs(c.tgt)); }); });
+  SET('Tundra Tenacity', function (u, b) { b.on(u, 'damaged', function (e) { if (e.tgt === u && e.amount > 0) b.energy(u, 1); }); });
+  SET('Radiance of the Blue Oak', function (u, b) {
+    u.flags.oakT = -999;
+    b.on(u, 'damaged', function (e) {
+      if (e.tgt !== u || u.hp > 0.25 * b.maxHp(u) || b.t - u.flags.oakT < 60) return;
+      u.flags.oakT = b.t;
+      b.every(1, 10, function () { b.heal(u, u, 0.8 * b.def(u), { tag: 'set' }); }, u);
+    });
+  });
+  SET('Revenge of the Fallen', function (u, b) {
+    b.on(u, 'damaged', function (e) {
+      if (e.tgt !== u || !e.src || e.src.side === u.side || !e.src.alive || (e.o && e.o.reflect) || e.amount <= 0) return;
+      if (b.chance(0.5)) b.hit(u, e.src, 0.2 * e.amount, { trueDmg: true, noCrit: true, tag: 'set', reflect: true, quiet: true });
+    });
+  });
+  SET('Power of Tides', function (u, b) {
+    u.flags.tideT = -999;
+    b.on(u, 'resisted', function (e) {
+      if (e.tgt !== u || b.t - u.flags.tideT < 10) return;
+      u.flags.tideT = b.t;
+      var amt = 0.05 * b.maxHp(u);
+      b.allies(u, true).forEach(function (a) { b.heal(u, a, amt, { tag: 'set' }); });
+    });
+  });
+  SET("Rhapsodist's Calling", function (u, b) {
+    u.flags.rhap = [];
+    b.on(u, 'debuffApplied', function (e) { if (e.src === u) { u.flags.rhap.push(b.t + 10); if (u.flags.rhap.length > 4) u.flags.rhap.shift(); } });
+    dmgMod(b, u, function (c) { var n = u.flags.rhap.filter(function (x) { return x > b.t; }).length; c.bonus += 0.08 * n; });
+  });
+  SET('Heart of the Gambler', function (u, b) {
+    b.on(u, 'crit', function (e) {
+      if (e.src !== u || e.o.gambler || !e.tgt.alive) return;
+      if (b.chance(0.35)) b.hit(u, e.tgt, { atk: 1.3 }, { el: 'Physical', tag: 'set', gambler: true, noCrit: true });
+    });
+  });
+
+  // Mythic 1-piece effects
+  SET('Strike the Unprepared', function (u, b) { dmgMod(b, u, function (c) { if (b.has(c.tgt, 'Defense Penalty')) c.bonus += 0.3; }); });
+  SET('Imposing Presence', function (u, b) { dmgMod(b, u, function (c) { if (u.hp >= b.maxHp(u) - 0.5) c.bonus += 0.25; }); });
+  SET("Monelisse's Teardrop", function (u, b) {
+    u.flags.moneT = -999;
+    b.on(u, 'fatal', function (f) {
+      if (f.tgt !== u || f.saved || b.t - u.flags.moneT < 120) return;
+      u.flags.moneT = b.t;
+      f.saved = true;
+      b.apply(u, u, 'Immortality', 1, 3);
+      b.apply(u, u, 'Damage Reduction', 1, 10, { value: 0.15 });
+    });
+  });
+  SET('Chaos Symbiosis', function (u, b) {
+    b.on(null, 'battleStart', function () {
+      var n = b.allies(u, false).filter(function (a) { return a.h && u.h && a.h.sc === u.h.sc; }).length;
+      u.s.atkP += 0.06 * n;
+    });
+  });
+  SET('Fearless Challenge', function (u, b) { dmgMod(b, u, function (c) { if (b.maxHp(c.tgt) >= 1.5 * b.maxHp(u)) c.bonus += 0.16; }); });
+  SET('Death Record', function (u, b) {
+    b.on(u, 'hit', function (e) { if (e.src === u && isDot(e.o) && e.tgt.alive) e.tgt.flags.deathRec = b.t + 12; });
+    b.on(null, 'modifyDamage', function (c) { if (isDot(c.o) && c.tgt.flags.deathRec > b.t) c.vuln += 0.2 / Math.max(1, b.units.filter(function (x) { return x.alive && x.spec && x.spec.sets && x.spec.sets.some(function (s) { return (s.name || s) === 'Death Record'; }); }).length); });
+  });
+  SET('Schadenfreude', function (u, b) { b.on(u, 'debuffApplied', function (e) { if (e.src === u) b.heal(u, u, 0.02 * b.maxHp(u), { tag: 'set' }); }); });
+  SET('Magic Crystal Refinement', function (u, b) { u.s.atkF += 3 * Math.max(0, u.s.acc); });
+  SET('Ancestral Guidance', function (u, b) {
+    b.on(u, 'hit', function (e) {
+      if (e.src !== u || e.o.tag !== 'basic' || e.amount <= 0) return;
+      b.heal(u, u, e.amount * (u.hp < 0.25 * b.maxHp(u) ? 1.0 : 0.5), { tag: 'set' });
+    });
+  });
+  SET('Clean Sweep', function (u, b) {
+    b.on(u, 'second', function (e) {
+      if (e.u !== u) return;
+      if (u.energy >= b.R.ultMax && !u.flags.sweep) { u.flags.sweep = true; b.dispel(u, 99, 'debuff'); }
+      if (u.energy < b.R.ultMax) u.flags.sweep = false;
+    });
+  });
+  SET('Iron Bastion', function (u, b) {
+    b.on(u, 'crit', function (e) { if (e.tgt === u && e.src.side !== u.side) b.apply(u, e.src, 'Crit Rate Penalty', 0.5, 5, { mods: { critRate: -0.3 } }); });
+  });
+  SET('Impregnable', function (u, b) {
+    b.on(u, 'statusApplied', function (e) {
+      if (e.tgt !== u || e.kind !== 'buff' || !b.chance(0.5)) return;
+      var st = b.has(u, e.base); if (st) st.undispellable = true;
+    });
+  });
+  SET('Sky Code Treaty', function (u, b) {
+    u.flags.skyT = -999;
+    b.on(u, 'shielded', function (e) {
+      if (e.src !== u || b.t - u.flags.skyT < 20) return;
+      if (b.dispel(e.tgt, 1, 'debuff')) u.flags.skyT = b.t;
+    });
+  });
+  SET('Mark of Austerity', function (u, b) {
+    var st = null;
+    function upd() {
+      if (!u.alive) return;
+      if (!st || u.sts.indexOf(st) < 0) { b.buff(u, u, 'Austerity', 9999, { atkSpd: 0 }, { undispellable: true }); st = b.has(u, 'Austerity'); }
+      if (st) st.mods.atkSpd = 0.15 * Math.floor((1 - u.hp / b.maxHp(u)) * 10 + 1e-9);
+    }
+    b.on(null, 'battleStart', upd);
+    b.on(u, 'damaged', function (e) { if (e.tgt === u) upd(); });
+    b.on(u, 'healed', function (e) { if (e.tgt === u) upd(); });
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
+
 /*
  * Enemy presets for DHSim. Boss numbers are not published, so every preset is
  * built from a reference unit: the average naked stats of all Legendary heroes
@@ -3522,4 +3876,494 @@
   S.refStats = refStats;
   S.enemyUnit = unitSpec;
   S.bossKit = bossKit;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+/*
+ * Season 1 dungeon bosses for DHSim, with their mechanics.
+ *
+ * Mechanics (what each skill does, who it targets, the 6 s skill rhythm) come
+ * from the official boss pages on dragonheir.info (articles 836, 841, 846, 851,
+ * 855; 2025-09-10) and HellHades (2025-07-30), summarised in
+ * research/bosses.md. NUMBERS ARE NOT PUBLISHED ANYWHERE: HP, ATK, DEF and
+ * every skill multiplier here are estimates on the same scale as the generic
+ * boss (a level-matched reference hero x multipliers), scaled again by the
+ * bossPower rule. Every preset lists its skills with the target rule, so the
+ * UI can show who gets hit.
+ *
+ * enemy options: {preset, level, hpX, atkX, defX, res, acc, stage9}
+ */
+(function (root) {
+  var S = root.DHSim || (typeof require !== 'undefined' ? require('./sim.js') : null);
+
+  // ---- target rules (explicit per skill)
+  var PICK = {
+    // Front line first (melee heroes), the boss keeps its target until it dies; taunt wins.
+    front: function (b, u) { return b.target(u); },
+    random: function (b, u) { var e = b.targetable(u); return e[Math.floor(b.rand() * e.length)]; },
+    highestAtk: function (b, u) { var e = b.targetable(u), best = null; e.forEach(function (x) { if (!best || b.atk(x) > b.atk(best)) best = x; }); return best; },
+    // "Farthest from the boss": the back line (ranged heroes), random among them.
+    farthest: function (b, u) {
+      var e = b.targetable(u), back = e.filter(function (x) { return !x.melee; });
+      var pool = back.length ? back : e;
+      return pool[Math.floor(b.rand() * pool.length)];
+    },
+    lowestHp: function (b, u) { return b.lowestHp(b.targetable(u)); }
+  };
+  var TARGET_TEXT = { front: 'Front line (tank first)', random: 'Random hero', highestAtk: 'Highest ATK hero', farthest: 'Farthest hero (back line)', all: 'All heroes', area: 'Target + up to 2 nearby', self: 'Self', lowestHp: 'Lowest HP hero' };
+
+  function scaled(e, d) {
+    var r = S.refStats(e.level || 60);
+    return { hp: r.hp * (e.hpX || d.hpX), atk: r.atk * (e.atkX == null ? d.atkX : e.atkX), def: r.def * (e.defX || d.defX) };
+  }
+  function boss(name, st, e, kit) {
+    return S.enemyUnit(name, st, { isBoss: true, controlImmune: true, kit: kit, res: e.res == null ? 30 : e.res, acc: e.acc == null ? 30 : e.acc });
+  }
+  // A cycle kit: one skill every `step` s through the list, driven by the
+  // boss's energy bar (energy drain and Recharging Speed Penalty delay it).
+  function cycleKit(o) {
+    var step = o.step || 6;
+    return {
+      conf: 'preset', ultFull: step, ultFirst: step,
+      basic: o.basic || function (u, b, t) { b.hit(u, t, { atk: 1.0 }, { tag: 'basic' }); },
+      ult: function (u, b) {
+        var list = o.skills(u, b);
+        var i = u.flags.cyc = ((u.flags.cyc == null ? -1 : u.flags.cyc) + 1) % list.length;
+        u.flags.lastSkill = list[i].name;
+        b.tr('bs', { s: u.uid, n: list[i].name });
+        list[i].fn(u, b);
+      },
+      init: o.init
+    };
+  }
+  function summon(b, u, spec) {
+    var w = b.addUnit('B', spec, spec.extra);
+    if (w.kit.init) w.kit.init(w, b);
+    b.tr('sp', { g: w.uid, s: u.uid, n: w.name });
+    return w;
+  }
+  var idle = { conf: 'preset', basic: function () {} };
+  function skill(name, target, text, fn) { return { name: name, target: target, text: text, fn: fn }; }
+  function info(list) { return list.map(function (s) { return { name: s.name, target: s.target, targetText: TARGET_TEXT[s.target] || s.target, text: s.text }; }); }
+
+  // ------------------------------------------------ Grave of Venom: Deadly Harpy
+  var HARPY = [
+    skill('Poisonous Fletching', 'area', 'Area hit, dispels 1 buff from each hero hit, summons up to 2 Wisps.', null),
+    skill("Harpy's Breath", 'front', 'Chain of 4 heavy hits on one hero: the tank killer.', null),
+    skill("Harpy's Wrath", 'all', 'Hits every hero and shields every enemy unit.', null)
+  ];
+  S.registerBoss('harpy', {
+    name: 'Deadly Harpy', dungeon: 'Grave of Venom', conf: 'estimated',
+    note: 'Mechanics from the official boss page (dragonheir.info 851, 2025-09-10). Numbers are estimates: 35x hero HP, 2.6x ATK; Wisps 2.5x HP.',
+    skills: info(HARPY),
+    mechanics: ['Single-target attacks may call the Wisps to assist (less likely the more debuffs they carry).', 'A dying Wisp deals True damage to the Harpy (2% of its max HP, estimated).', 'Counters: Attack Penalty, Damage Reduction, healing on the tank.'],
+    make: function (e) {
+      var st = scaled(e, { hpX: 35, atkX: 2.6, defX: 1.2 });
+      var wispSt = scaled(e, { hpX: 2.5, atkX: 0.9, defX: 0.8 });
+      var wispKit = { conf: 'preset', basic: function () {}, init: function (w, b) { w.flags.wisp = true; } };
+      function wisp(i) { return S.enemyUnit('Wisp', wispSt, { kit: wispKit, melee: false, res: e.res == null ? 30 : e.res }); }
+      function wisps(b) { return b.units.filter(function (x) { return x.side === 'B' && x.alive && x.flags.wisp; }); }
+      var kit = cycleKit({
+        basic: function (u, b, t) {
+          b.hit(u, t, { atk: 1.0 }, { tag: 'basic' });
+          // Shadow Poison: Wisps assist single-target attacks.
+          wisps(b).forEach(function (w) {
+            var p = Math.max(0, 0.6 - 0.15 * b.countDebuffs(w));
+            if (t.alive && b.chance(p)) b.hit(w, t, { atk: 0.8 }, { tag: 'basic' });
+          });
+        },
+        skills: function () {
+          HARPY[0].fn = function (u, b) {
+            var t = b.target(u); if (!t) return;
+            b.area(u, t, 3).forEach(function (x) { b.dispel(x, 1, 'buff'); b.hit(u, x, { atk: 1.8 }, { tag: 'battle' }); });
+            var n = Math.min(2, 4 - wisps(b).length);
+            for (var i = 0; i < n; i++) summon(b, u, wisp(i));
+          };
+          HARPY[1].fn = function (u, b) {
+            var t = PICK.front(b, u);
+            for (var i = 0; i < 4 && t && t.alive; i++) b.hit(u, t, { atk: 1.3 }, { tag: 'battle' });
+          };
+          HARPY[2].fn = function (u, b) {
+            b.enemies(u).forEach(function (x) { b.hit(u, x, { atk: 1.5 }, { tag: 'ult' }); });
+            b.units.filter(function (x) { return x.side === 'B' && x.alive; }).forEach(function (x) { b.shield(u, x, x === u ? 0.04 * b.maxHp(u) : 0.3 * b.maxHp(x), 10, { tag: 'boss' }); });
+          };
+          return HARPY;
+        },
+        init: function (u, b) {
+          b.on(null, 'death', function (d) { if (d.tgt.flags.wisp && u.alive) b.hit(d.tgt, u, 0.02 * b.maxHp(u), { trueDmg: true, noCrit: true, tag: 'wisp', quiet: true }); });
+        }
+      });
+      return { units: [boss('Deadly Harpy', st, e, kit)] };
+    }
+  });
+
+  // ------------------------------------------ Grave of Curse: Blood Prince Xenos
+  var XENOS = [
+    skill('Rage of Blood', 'self', 'Attack Up for 12 s.', null),
+    skill('Vampiric Shield', 'front', 'Big hit on one hero; the damage becomes his shield.', null),
+    skill('Punishment of Blood', 'all', 'Dispels 1 buff from each hero, then hits everyone (more on unbuffed heroes from stage 9).', null)
+  ];
+  S.registerBoss('xenos', {
+    name: 'Blood Prince Xenos', dungeon: 'Grave of Curse', conf: 'estimated',
+    note: 'Mechanics from the official boss page (dragonheir.info 855, 2025-09-10). Numbers are estimates: 40x hero HP, 2.6x ATK; lifesteal 15% and max HP cut 25% of HP damage (capped at 40%).',
+    skills: info(XENOS),
+    mechanics: ['Blood Gush: HP damage he deals heals him and lowers the hero\'s max HP (shields block it).', 'Lower max HP also lowers how much a hero can be healed.', 'Counters: shields, buffs (from stage 9), burst damage.'],
+    make: function (e) {
+      var st = scaled(e, { hpX: 40, atkX: 2.6, defX: 1.2 });
+      var kit = cycleKit({
+        skills: function () {
+          XENOS[0].fn = function (u, b) { b.buff(u, u, 'Attack Up', 12, null, { value: 0.3 }); };
+          XENOS[1].fn = function (u, b) {
+            var t = PICK.front(b, u); if (!t) return;
+            var r = b.hit(u, t, { atk: 3.2 }, { tag: 'battle' });
+            if (r.amount > 0) b.shield(u, u, r.amount, 12, { tag: 'boss' });
+          };
+          XENOS[2].fn = function (u, b) {
+            b.enemies(u).forEach(function (x) {
+              b.dispel(x, 1, 'buff');
+              var bare = !x.sts.some(function (s) { return s.kind === 'buff'; });
+              b.hit(u, x, { atk: 1.5 }, { tag: 'ult', bonus: e.stage9 && bare ? 0.5 : 0 });
+            });
+          };
+          return XENOS;
+        },
+        init: function (u, b) {
+          b.on(u, 'hpLost', function (d) {
+            if (d.src !== u || d.tgt.side === u.side) return;
+            b.heal(u, u, 0.15 * d.amount, { tag: 'boss' });
+            var t = d.tgt;
+            t.maxHpCut = Math.min(0.4 * t.maxHp0, (t.maxHpCut || 0) + 0.25 * d.amount);
+            t.hp = Math.min(t.hp, b.maxHp(t));
+          });
+        }
+      });
+      return { units: [boss('Blood Prince Xenos', st, e, kit)] };
+    }
+  });
+
+  // ------------------------------------------- Grave of Rot: Colossal Scavenger
+  var ROT = [
+    skill('Putrid Breath', 'all', 'Hits every hero; Poison (more stacks with Corruption) and Recharging Speed Penalty.', null),
+    skill('Rotting Assault', 'random', 'Puts 2 debuffs on a random hero, then area damage around them (more targets with Corruption).', null),
+    skill('Greedy Hunt', 'front', 'Devours its target: damage every second and heals itself, more per Poison stack; ends when the boss takes enough damage.', null)
+  ];
+  S.registerBoss('scavenger', {
+    name: 'Colossal Scavenger', dungeon: 'Grave of Rot', conf: 'estimated',
+    note: 'Mechanics from the official boss page (dragonheir.info 836, 2025-09-10). Numbers are estimates: 45x hero HP (high sustain), 2.6x ATK before its permanent Attack Penalty.',
+    skills: info(ROT),
+    mechanics: ['Always under Attack Penalty (-25%).', 'Basic attacks may Poison.', 'Every debuff on it gives Corruption, which strengthens Putrid Breath and Rotting Assault.', 'Greedy Hunt ends early after the boss takes 6% of its max HP (estimated).'],
+    make: function (e) {
+      var st = scaled(e, { hpX: 45, atkX: 2.6, defX: 1.2 });
+      var kit = cycleKit({
+        basic: function (u, b, t) { b.hit(u, t, { atk: 1.0 }, { tag: 'basic', apply: [['Poison', 0.5, 8]] }); },
+        skills: function () {
+          ROT[0].fn = function (u, b) {
+            var stacks = 2 + Math.floor((u.flags.corr || 0) / 6);
+            b.enemies(u).forEach(function (x) { b.hit(u, x, { atk: 1.1 }, { tag: 'ult', apply: [['Poison', 0.8, 8, { stacks: stacks }], ['Recharging Speed Penalty', 0.6, 6]] }); });
+          };
+          ROT[1].fn = function (u, b) {
+            var t = PICK.random(b, u); if (!t) return;
+            b.apply(u, t, 'Defense Penalty I', 1, 8);
+            b.apply(u, t, 'Healing Reduction', 1, 8);
+            b.area(u, t, 2 + Math.floor((u.flags.corr || 0) / 8)).forEach(function (x) { b.hit(u, x, { atk: 1.6 }, { tag: 'battle' }); });
+          };
+          ROT[2].fn = function (u, b) {
+            var t = PICK.front(b, u); if (!t) return;
+            if (!b.apply(u, t, 'Devoured', 1, 6, { ignoreRes: true })) return;
+            var start = u.rec.taken, hunt = { on: true };
+            for (var i = 1; i <= 6; i++) b.after(i, function () {
+              if (!hunt.on || !t.alive || !u.alive) return;
+              if (u.rec.taken - start >= 0.06 * b.maxHp(u)) { hunt.on = false; b.remove(t, 'Devoured'); return; }
+              b.hit(u, t, { atk: 0.5 }, { tag: 'battle' });
+              b.heal(u, u, (0.005 + 0.001 * b.stacks(t, 'Poison')) * b.maxHp(u), { tag: 'boss' });
+            }, u);
+          };
+          return ROT;
+        },
+        init: function (u, b) {
+          u.s.atkP -= 0.25;
+          u.flags.corr = 0;
+          b.on(u, 'debuffApplied', function (d) { if (d.tgt === u) u.flags.corr = Math.min(30, u.flags.corr + 1); });
+        }
+      });
+      return { units: [boss('Colossal Scavenger', st, e, kit)] };
+    }
+  });
+
+  // -------------------------------- Ancient Battlefield: Soul Devourer Gruentius
+  var GRU = [
+    skill("Berserker's Wrath (Shield)", 'farthest', 'Stuns the farthest hero 4 s. If the stun misses, the boss Backfires: -30% damage dealt, +30% taken for 8 s.', null),
+    skill('Devouring Shadows (Shield)', 'self', 'Switches to Sword Form and gains Attack Up.', null),
+    skill("Berserker's Wrath (Sword)", 'highestAtk', 'Huge hit on the hero with the highest ATK.', null),
+    skill('Devouring Shadows (Sword)', 'all', 'Hits everyone and dispels ALL their buffs; gains permanent damage per buff dispelled; back to Shield Form with Defense Up.', null)
+  ];
+  S.registerBoss('gruentius', {
+    name: 'Soul Devourer Gruentius', dungeon: 'Ancient Battlefield', conf: 'estimated',
+    note: 'Mechanics from the official boss page (dragonheir.info 841, 2025-09-10). Numbers are estimates: 40x hero HP, 2.2x ATK.',
+    skills: info(GRU),
+    mechanics: ['Shield Form: basic attacks hit every hero (small).', 'Sword Form: basic attacks are heavy single hits.', 'Resistance on the back line makes the stun miss, which weakens the boss.'],
+    make: function (e) {
+      var st = scaled(e, { hpX: 40, atkX: 2.2, defX: 1.2 });
+      var kit = cycleKit({
+        basic: function (u, b, t) {
+          if (u.flags.sword) b.hit(u, t, { atk: 1.6 }, { tag: 'basic' });
+          else b.enemies(u).forEach(function (x) { b.hit(u, x, { atk: 0.4 }, { tag: 'basic' }); });
+        },
+        skills: function () {
+          GRU[0].fn = function (u, b) {
+            var t = PICK.farthest(b, u); if (!t) return;
+            if (!b.apply(u, t, 'Stunned', 1, 4)) b.buff(u, u, 'Backfire', 8, { dmgBonus: -0.3, vuln: 0.3 });
+          };
+          GRU[1].fn = function (u, b) { u.flags.sword = true; b.buff(u, u, 'Attack Up', 12, null, { value: 0.3 }); };
+          GRU[2].fn = function (u, b) { var t = PICK.highestAtk(b, u); if (t) b.hit(u, t, { atk: 3.0 }, { tag: 'battle' }); };
+          GRU[3].fn = function (u, b) {
+            var n = 0;
+            b.enemies(u).forEach(function (x) { n += b.dispel(x, 99, 'buff'); b.hit(u, x, { atk: 1.4 }, { tag: 'ult' }); });
+            u.s.dmgBonus += 0.02 * n;
+            u.flags.sword = false;
+            b.buff(u, u, 'Defense Up II', 12);
+          };
+          return GRU;
+        }
+      });
+      return { units: [boss('Soul Devourer Gruentius', st, e, kit)] };
+    }
+  });
+
+  // --------------------------------------- Heretical Ruins: Dead Phoenix - Fyre
+  var FYRE = [
+    skill('Scorch', 'front', 'Single hit that splashes to every Burned hero.', null),
+    skill('Nirvana', 'self', 'Hatches 2 eggs; while they live the Phoenix is Invisible and the eggs heal it.', null),
+    skill('Fire of Dead Phoenix', 'all', 'Heavy hit on every hero and Burn on all.', null)
+  ];
+  S.registerBoss('fyre', {
+    name: 'Dead Phoenix - Fyre', dungeon: 'Heretical Ruins', conf: 'estimated',
+    note: 'Mechanics from the official boss page (dragonheir.info 846, 2025-09-10). Numbers are estimates: 35x hero HP, 2.2x ATK; eggs 2.5x hero HP, each heals 0.5% of the boss max HP per second; hatches at most every 36 s; Invisible up to 12 s.',
+    skills: info(FYRE),
+    mechanics: ['While eggs live the boss is Invisible: heroes must kill the eggs first.', 'Burn stacks on heroes make Scorch splash.', 'Counters: area damage for the eggs, cleanse for Burn.'],
+    make: function (e) {
+      var st = scaled(e, { hpX: 35, atkX: 2.2, defX: 1.2 });
+      var eggSt = scaled(e, { hpX: 2.5, atkX: 0, defX: 1.0 });
+      var eggKit = { conf: 'preset', basic: function () {}, init: function (w) { w.flags.egg = true; } };
+      function eggs(b) { return b.units.filter(function (x) { return x.side === 'B' && x.alive && x.flags.egg; }); }
+      var kit = cycleKit({
+        skills: function () {
+          FYRE[0].fn = function (u, b) {
+            var t = PICK.front(b, u); if (!t) return;
+            b.hit(u, t, { atk: 2.4 }, { tag: 'battle' });
+            b.enemies(u).forEach(function (x) { if (x !== t && b.has(x, 'Burn')) b.hit(u, x, { atk: 0.8 }, { tag: 'battle' }); });
+          };
+          FYRE[1].fn = function (u, b) {
+            // Hatches at most every 36 s (estimated); otherwise it uses Scorch.
+            if (eggs(b).length || b.t - (u.flags.hatchT || -99) < 36) { FYRE[0].fn(u, b); return; }
+            u.flags.hatchT = b.t;
+            for (var i = 0; i < 2; i++) summon(b, u, S.enemyUnit('Phoenix Egg', eggSt, { kit: eggKit, melee: false }));
+            b.apply(u, u, 'Invisibility', 1, 12);
+          };
+          FYRE[2].fn = function (u, b) { b.enemies(u).forEach(function (x) { b.hit(u, x, { atk: 1.5 }, { tag: 'ult', apply: [['Burn', 0.9, 8, { stacks: 2 }]] }); }); };
+          return FYRE;
+        },
+        init: function (u, b) {
+          b.on(u, 'second', function (s) {
+            if (s.u !== u) return;
+            var n = eggs(b).length;
+            if (n) b.heal(u, u, 0.005 * n * b.maxHp(u), { tag: 'boss' });
+            else if (b.has(u, 'Invisibility')) b.remove(u, 'Invisibility');
+          });
+        }
+      });
+      return { units: [boss('Dead Phoenix - Fyre', st, e, kit)] };
+    }
+  });
+
+  // Generic boss gets its skill list too, for the UI.
+  var gen = S.bosses().boss, hard = S.bosses().bossHard;
+  var GEN = [
+    { name: 'Area strike', target: 'area', targetText: TARGET_TEXT.area, text: 'Hits its target and up to 2 nearby heroes.' },
+    { name: 'Triple strike', target: 'front', targetText: TARGET_TEXT.front, text: '3 heavy hits on its target.' },
+    { name: 'Wave', target: 'all', targetText: TARGET_TEXT.all, text: 'Hits every hero.' }
+  ];
+  if (gen) gen.skills = GEN;
+  if (hard) hard.skills = GEN;
+
+  S.TARGET_TEXT = TARGET_TEXT;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+/*
+ * Survival analysis for DHSim (v0.3): the questions "do we live, who dies and
+ * when, how good is our defense, do we need a healer". Everything here is
+ * async and yields between small batches, so a browser page stays smooth
+ * while hundreds of fights run. Works the same in Node.
+ *
+ *   DHSim.survival.run(opts, {runs, onProgress})        -> simulate() result
+ *   DHSim.survival.breakingPoint(opts, {runs})           -> boss strength the team still beats 50% of the time
+ *   DHSim.survival.healerCheck(opts, pool, {runs})       -> team with and without healers, side by side
+ *   DHSim.survival.robustness(opts, {runs})              -> win rate under every assumed-rule extreme
+ *   DHSim.survival.defense(result, opts)                 -> effective HP per hero and seconds to fall alone
+ *   DHSim.survival.fromAccount(json)                     -> loadout specs from a "dragonheir-account" export
+ */
+(function (root) {
+  var S = root.DHSim || (typeof require !== 'undefined' ? require('./sim.js') : null);
+  function tick() { return new Promise(function (r) { setTimeout(r, 0); }); }
+  function withRules(opts, extra) { return Object.assign({}, opts, { rules: Object.assign({}, opts.rules || {}, extra) }); }
+  function rule(opts, k) { var r = opts.rules || {}; return r[k] != null ? r[k] : S.RULE_INFO[k].v; }
+
+  // Monte Carlo in batches. Same seeds as DHSim.simulate, so results match it exactly.
+  async function run(opts, o) {
+    o = o || {};
+    var runs = o.runs || opts.runs || 200, batch = o.batch || 10, all = [];
+    for (var i = 0; i < runs; i += batch) {
+      all = all.concat(S.runBatch(opts, i, Math.min(batch, runs - i)));
+      if (o.onProgress) o.onProgress(all.length / runs);
+      if (o.cancel && o.cancel()) throw new Error('cancelled');
+      await tick();
+    }
+    return S.summarize(all, opts);
+  }
+
+  // Raise or lower the boss strength rule until the team wins half the time.
+  // Answers "how much stronger can this boss get before we lose?"
+  async function breakingPoint(opts, o) {
+    o = o || {};
+    var runs = o.runs || 40, base = rule(opts, 'bossPower'), lo = o.lo || 0.3, hi = o.hi || 4, steps = o.steps || 7, done = 0;
+    var cache = {};
+    async function winAt(p) {
+      if (cache[p] != null) return cache[p];
+      var r = await run(withRules(opts, { bossPower: p }), { runs: runs, batch: 20, cancel: o.cancel });
+      done++; if (o.onProgress) o.onProgress(done / (steps + 2));
+      return (cache[p] = r.winRate);
+    }
+    var wLo = await winAt(lo), wHi = await winAt(hi);
+    if (wLo < 0.5) return { power: lo, margin: lo / base, capped: 'low' };
+    if (wHi >= 0.5) return { power: hi, margin: hi / base, capped: 'high' };
+    for (var i = 0; i < steps; i++) {
+      var mid = Math.round(Math.sqrt(lo * hi) * 1000) / 1000;
+      if ((await winAt(mid)) >= 0.5) lo = mid; else hi = mid;
+    }
+    var p = Math.round((lo + hi) / 2 * 100) / 100;
+    return { power: p, margin: p / base };
+  }
+
+  // Heroes in `pool` (names or ids) that heal or shield, tried in every slot.
+  // The test runs at a harder boss than the current one (`stress`, default the
+  // breaking point) so differences in survival show up.
+  async function healerCheck(opts, pool, o) {
+    o = o || {};
+    var runs = o.runs || 60, stress = o.stress || rule(opts, 'bossPower');
+    var sOpts = withRules(opts, { bossPower: stress });
+    var inTeam = opts.team.map(function (sp) { return S.hero(sp.hero).id; });
+    var base = await run(sOpts, { runs: runs, batch: 20 });
+    var healers = (o.healers || pool).filter(function (n) { return inTeam.indexOf(S.hero(n).id) < 0 && isSustain(n); });
+    // Healers go in for the 2 heroes that add the least (lowest damage share,
+    // never the hero taking most hits or one that already heals or shields).
+    var totalTaken = base.perHero.reduce(function (s, x) { return s + x.taken; }, 0) || 1;
+    var tank = base.perHero.slice().sort(function (a, b) { return b.taken - a.taken; })[0];
+    var slots = o.slots || base.perHero.filter(function (p) { return p !== tank && p.healing + p.shielding < 0.02 * totalTaken; })
+      .sort(function (a, b) { return a.share - b.share; }).slice(0, 2).map(function (p) { return p.slot; });
+    var jobs = [];
+    healers.forEach(function (n) { slots.forEach(function (slot) { jobs.push({ hero: n, slot: slot }); }); });
+    // Also: each sustain hero already in the team taken out for the best damage hero of the pool.
+    var teamSustain = base.perHero.filter(function (p) { return p.healing + p.shielding > 0.02 * totalTaken; });
+    var dps = (o.dps || pool).filter(function (n) { return inTeam.indexOf(S.hero(n).id) < 0 && !isSustain(n); }).slice(0, o.maxDps || 4);
+    teamSustain.forEach(function (p) { dps.forEach(function (n) { jobs.push({ hero: n, slot: p.slot, without: p.name }); }); });
+    var rows = [], done = 0;
+    for (var j = 0; j < jobs.length; j++) {
+      var jb = jobs[j], team = opts.team.slice();
+      team[jb.slot] = { hero: jb.hero, level: opts.team[jb.slot].level || 60 };
+      var r = await run(Object.assign({}, sOpts, { team: team }), { runs: runs, batch: 20, cancel: o.cancel });
+      rows.push({ hero: S.hero(jb.hero).n, out: S.hero(opts.team[jb.slot].hero).n, slot: jb.slot, without: jb.without || null,
+        win: r.winRate, hpLeft: r.teamHpLeft.mean, deaths: r.perHero.reduce(function (s, p) { return s + p.deathRate; }, 0), ttk: r.ttk ? r.ttk.p50 : null,
+        healPs: r.survival.healPs, absorbPs: r.survival.absorbPs });
+      done++; if (o.onProgress) o.onProgress(done / jobs.length);
+    }
+    function score(x) { return x.win * 1000 + x.hpLeft * 100 - x.deaths; }
+    // Best slot per added healer; best replacement per removed healer.
+    var best = {}, removed = {};
+    rows.forEach(function (x) {
+      var key = x.without ? 'w:' + x.without : 'h:' + x.hero, map = x.without ? removed : best;
+      if (!map[key] || score(x) > score(map[key])) map[key] = x;
+    });
+    var cur = { win: base.winRate, hpLeft: base.teamHpLeft.mean, deaths: base.perHero.reduce(function (s, p) { return s + p.deathRate; }, 0), ttk: base.ttk ? base.ttk.p50 : null, healPs: base.survival.healPs, absorbPs: base.survival.absorbPs };
+    var add = Object.keys(best).map(function (k) { return best[k]; }).sort(function (a, b) { return score(b) - score(a); });
+    var drop = Object.keys(removed).map(function (k) { return removed[k]; }).sort(function (a, b) { return score(b) - score(a); });
+    var top = add[0];
+    var verdict = !top ? 'none' : top.win - cur.win > 0.1 ? 'yes' : top.win - cur.win > 0.03 ? 'maybe' : 'no';
+    return { stress: stress, current: cur, add: add, without: drop, verdict: verdict };
+  }
+  // Does this hero heal or shield? Measured once in a reference fight.
+  var SUSTAIN = {};
+  function isSustain(n) {
+    var id = S.hero(n).id;
+    if (SUSTAIN[id] != null) return SUSTAIN[id];
+    var team = ['Auster', 'Hvitar', 'Lossenia', 'Hochadir'].filter(function (x) { return S.hero(x).id !== id; }).slice(0, 4).map(function (x) { return { hero: x, level: 60 }; });
+    team.push({ hero: id, level: 60 });
+    var r = S.simulate({ team: team, enemy: { preset: 'boss', level: 60 }, seconds: 60, runs: 2, rules: { bonds: false } });
+    var p = r.perHero[r.perHero.length - 1];
+    return (SUSTAIN[id] = p.healing + p.shielding > 2000);
+  }
+
+  // Win rate when each assumed rule sits at the end of its range.
+  async function robustness(opts, o) {
+    o = o || {};
+    var runs = o.runs || 60, keys = o.keys || ['bossPower', 'defK', 'frostBurstCap', 'castUlt'], rows = [], done = 0, total = 0;
+    keys.forEach(function (k) { total += (S.RULE_INFO[k].range || []).length; });
+    var base = await run(opts, { runs: runs, batch: 20 });
+    for (var i = 0; i < keys.length; i++) {
+      var k = keys[i], range = S.RULE_INFO[k].range || [];
+      for (var j = 0; j < range.length; j++) {
+        var v = range[j], ex = {}; ex[k] = k === 'bossPower' ? v * rule(opts, 'bossPower') : v;
+        var r = await run(withRules(opts, ex), { runs: runs, batch: 20, cancel: o.cancel });
+        rows.push({ rule: k, value: ex[k], win: r.winRate, hpLeft: r.teamHpLeft.mean, deaths: r.perHero.reduce(function (s, p) { return s + p.deathRate; }, 0) });
+        done++; if (o.onProgress) o.onProgress(done / total);
+      }
+    }
+    var wins = rows.map(function (x) { return x.win; }).concat([base.winRate]);
+    var lo = Math.min.apply(null, wins), hi = Math.max.apply(null, wins);
+    var label = function (w) { return w >= 0.9 ? 'safe' : w >= 0.5 ? 'risky' : 'losing'; };
+    return { base: base.winRate, rows: rows, min: lo, max: hi, robust: label(lo) === label(hi), verdict: label(base.winRate), worst: label(lo) };
+  }
+
+  // Effective HP per hero (HP after DEF, before shields) and how long each one
+  // would last if the boss focused only them at the measured incoming DPS.
+  function defense(res, opts) {
+    var defK = rule(opts, 'defK'), team = opts.team, out = [];
+    var inc = res.survival.incomingDps || 0;
+    res.perHero.forEach(function (p, i) {
+      var st = S.finalStats(S.buildStats(team[i]).s);
+      var ehp = st.hp * (st.def + defK) / defK;
+      var share = res.perHero.reduce(function (s, x) { return s + x.taken; }, 0);
+      out.push({ name: p.name, hp: Math.round(st.hp), def: Math.round(st.def), res: Math.round(st.res), ehp: Math.round(ehp), dmgCut: st.def / (st.def + defK),
+        takenShare: share ? p.taken / share : 0, aloneSeconds: inc ? ehp / inc : null });
+    });
+    return out;
+  }
+
+  // ---- import: "dragonheir-account" export (capture tool v1, Companion v2)
+  function num(v) { if (v == null) return null; var s = String(v).replace(/,/g, '').trim(); var m = /-?\d+(\.\d+)?/.exec(s); if (!m) return null; return /%$/.test(s) ? parseFloat(m[0]) / 100 : parseFloat(m[0]); }
+  var STAT_KEYS = { 'atk': 'atk', 'attack': 'atk', 'hp': 'hp', 'def': 'def', 'defense': 'def', 'crit rate': 'critRate', 'crit damage': 'critDmg', 'crit dmg': 'critDmg', 'accuracy': 'acc', 'resistance': 'res', 'enlightenment': 'ench', 'skill haste': 'haste', 'attack speed': 'atkSpd' };
+  function fromAccount(acc) {
+    if (typeof acc === 'string') acc = JSON.parse(acc);
+    if (!acc || acc.format !== 'dragonheir-account') throw new Error('Not a dragonheir-account export');
+    var arts = {};
+    (acc.artifacts || []).forEach(function (a) { if (a.equipped_on) arts[String(a.equipped_on).toLowerCase()] = a; });
+    var out = {};
+    (acc.heroes || []).forEach(function (h) {
+      var id; try { id = S.hero(h.name).id; } catch (e) { return; }
+      var spec = { hero: id, level: h.level || 60 };
+      if (h.stars) spec.stars = h.stars;
+      var st = {}, any = false;
+      var list = Array.isArray(h.stats) ? h.stats : Object.keys(h.stats || {}).map(function (k) { return { stat: k, value: h.stats[k] }; });
+      list.forEach(function (x) { var k = STAT_KEYS[String(x.stat).toLowerCase()]; var v = num(x.value); if (k && v != null) { st[k] = v; any = true; } });
+      if (any) { st.totals = true; spec.stats = st; }
+      var count = {};
+      (h.gear || []).forEach(function (g) { if (g.set) count[g.set] = (count[g.set] || 0) + 1; });
+      var sets = Object.keys(count).filter(function (n) { return S.setByName(n); }).map(function (n) { return { name: S.setByName(n).n, pieces: count[n] }; });
+      if (sets.length) spec.sets = sets;
+      var a = arts[String(h.name).toLowerCase()];
+      if (a && S.artifactByName(a.name)) spec.artifact = { name: S.artifactByName(a.name).n, level: a.level || 20, tier: Math.max(0, Math.min(5, (a.stars || 1) - 1)) };
+      out[id] = spec;
+    });
+    return out;
+  }
+
+  S.survival = { run: run, breakingPoint: breakingPoint, healerCheck: healerCheck, robustness: robustness, defense: defense, fromAccount: fromAccount, isSustain: isSustain };
 })(typeof window !== 'undefined' ? window : globalThis);
