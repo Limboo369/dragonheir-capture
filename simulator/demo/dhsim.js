@@ -3980,12 +3980,13 @@
   // levels near level 100). Domain levels: one official point, Frost Domain
   // 10 -> Lv105 (Darko's screen, 2026-10-25), stages up to at least 12; the
   // 10 levels per stage step is ASSUMED from the other dungeons. Vortex levels
-  // are not published.
+  // are not published. Grave stage 9 is Lv100 like stage 8 (official screens).
+  // Ruins 10-12 exist; their levels are extrapolated (game: 12 -> Lv300 later).
   var STAGES = {
-    harpy: { label: 'Stage', min: 1, max: 15, lv: function (s) { return 20 + 10 * s; } },
-    xenos: { label: 'Stage', min: 1, max: 15, lv: function (s) { return 20 + 10 * s; } },
-    scavenger: { label: 'Stage', min: 1, max: 15, lv: function (s) { return 20 + 10 * s; } },
-    fyre: { label: 'Stage', min: 1, max: 9, lv: function (s) { return 5 + 20 * s; } },
+    harpy: { label: 'Stage', min: 1, max: 15, lv: function (s) { return s === 9 ? 100 : 20 + 10 * s; } },
+    xenos: { label: 'Stage', min: 1, max: 15, lv: function (s) { return s === 9 ? 100 : 20 + 10 * s; } },
+    scavenger: { label: 'Stage', min: 1, max: 15, lv: function (s) { return s === 9 ? 100 : 20 + 10 * s; } },
+    fyre: { label: 'Stage', min: 1, max: 12, lv: function (s) { return 5 + 20 * s; } },
     gruentius: { label: 'Stage', min: 1, max: 10, lv: function (s) { return 20 + 20 * s; } },
     goblin: { label: 'Stage', min: 1, max: 12, lv: function (s) { return 10 + 10 * s; } },
     flameDomain: { label: 'Stage', min: 1, max: 15, lv: function (s) { return 5 + 10 * s; } },
