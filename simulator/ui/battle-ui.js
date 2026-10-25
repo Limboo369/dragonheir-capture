@@ -762,7 +762,7 @@
         '"artifact": {"name", "level" (enhancement +0..+20), "stars" (effect stars 1-6)}, ' +
         '"gear": {"Helm": set name, "Weapon": set name, "Armor": set name, "Gloves": set name}, ' +
         '"skills": {"battle": battle skill level 1-5, "ult": ultimate skill level 1-5}}\n' +
-        'Use the total values shown on the attribute screen (not base values). Set names: ' + S.BEGINNER_SETS.join('; ') + '.\nArtifact names: ' + arts.join('; ') + '.\nHero names: ' + heroes.join('; ') + '.';
+        'Use the total values shown on the attribute screen (not base values). Set names (the screen may show the name in brackets instead): ' + S.BEGINNER_SETS.map(function (n) { var a = (S.SET_ALIASES || {})[n]; return a && a.length ? n + ' (' + a.join(', ') + ')' : n; }).join('; ') + '.\nArtifact names: ' + arts.join('; ') + '.\nHero names: ' + heroes.join('; ') + '.';
     }
     function norm(x) { return String(x || '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
     function matchName(name, list) {
@@ -770,6 +770,16 @@
       var hit = list.filter(function (x) { return norm(x) === n; })[0];
       if (!hit) hit = list.filter(function (x) { var m = norm(x); return m && (m.indexOf(n) >= 0 || n.indexOf(m) >= 0); })[0];
       return hit || null;
+    }
+    // Gear screens may show the set family or piece name ("Mountain Echo:
+    // Gloves") instead of the effect name; S.SET_ALIASES maps them back.
+    function matchSet(name) {
+      var A = S.SET_ALIASES || {}, n = norm(String(name || '').split(':')[0]);
+      if (!n) return null;
+      var exact = S.BEGINNER_SETS.filter(function (x) { return norm(x) === n; })[0];
+      if (exact) return exact;
+      for (var c in A) if (A[c].some(function (a) { return norm(a) === n; })) return c;
+      return matchName(name, S.BEGINNER_SETS);
     }
     // Apply what one screenshot shows; returns the field names it filled.
     function applyShot(id, js) {
@@ -785,7 +795,7 @@
         if (num(js.artifact.level) != null) c.artifact.level = Math.max(0, Math.min(20, num(js.artifact.level)));
         if (num(js.artifact.stars)) c.artifact.tier = Math.max(0, Math.min(5, num(js.artifact.stars) - 1));
       }
-      if (js.gear) SLOTS.forEach(function (sl) { var n = matchName(js.gear[sl], S.BEGINNER_SETS); if (n) { c.gear[sl] = n; got.push(sl); } });
+      if (js.gear) SLOTS.forEach(function (sl) { var n = matchSet(js.gear[sl]); if (n) { c.gear[sl] = n; got.push(sl); } });
       if (js.skills) ['battle', 'ult'].forEach(function (k2) { var v = num(js.skills[k2]); if (v) { c.skills = c.skills || {}; c.skills[k2] = Math.max(1, Math.min(5, Math.round(v))); got.push(k2 === 'battle' ? 'skb' : 'sku'); } });
       return got;
     }
