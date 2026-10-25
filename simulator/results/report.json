@@ -1,45 +1,51 @@
 {
- "generated": "2026-10-24T23:31:23.698Z",
+ "generated": "2026-10-25T00:03:20.944Z",
  "runs": 30,
- "level": 60,
+ "level": 59,
  "rules": {
   "dt": 0.05,
   "maxTime": 90,
   "ultMax": 100,
-  "energyRegen": 4,
-  "energyPerBasic": 8,
-  "energyPerHitTaken": 1,
+  "ultFull": 20,
+  "ultFirst": 12,
+  "energyRegen": null,
+  "energyPerBasic": 0,
+  "energyPerHitTaken": 0,
   "battleCd": 10,
-  "battleFirst": 2,
+  "battleFirst": 5,
+  "heroTiming": true,
+  "scrolls": "max",
   "castBattle": 0.8,
   "castUlt": 1.5,
   "basicMult": 1,
   "attackFreqMeaning": "perSecond",
-  "hasteMode": "div",
+  "hastePerPoint": 0.002,
   "defK": 1200,
   "dmgRedCap": 0.8,
-  "resScale": 100,
-  "tier1": 0.15,
-  "tier2": 0.3,
-  "tier3": 0.45,
-  "flatTier": 40,
-  "frostAtkSpd": 0.2,
-  "poisonPerStack": 0.08,
+  "accShift": 0,
+  "landCap": 0.97,
+  "tierScale": 1,
+  "flatTier": 50,
+  "frozenDmgTaken": 0.3,
+  "frostAtkSpd": 0,
+  "poisonPerStack": 0.065,
   "poisonMaxStacks": 20,
   "burnPerStack": 0.1,
+  "derivEnch": 200,
   "dotCanCrit": false,
   "derivativeIgnoresDef": false,
   "areaSize": 3,
-  "bossControlMult": 0.5,
-  "rechargePenalty": 0.5,
-  "bondFrost": 0
+  "bossControlMult": 0,
+  "rechargePenalty": 0.7,
+  "bonds": true,
+  "poisonInterval": 3
  },
  "benches": {
   "single": {
    "label": "Single boss, damage in 60 s",
    "main": {
-    "dps": 5682,
-    "dpsSd": 135,
+    "dps": 4853,
+    "dpsSd": 117,
     "winRate": 0,
     "ttk": null,
     "hpLeft": 100,
@@ -47,7 +53,7 @@
     "perHero": [
      {
       "name": "Lossenia",
-      "share": 18.9,
+      "share": 20.9,
       "kit": "hand",
       "death": 0,
       "heal": 0,
@@ -55,7 +61,7 @@
      },
      {
       "name": "Auster",
-      "share": 30.7,
+      "share": 31,
       "kit": "hand",
       "death": 0,
       "heal": 0,
@@ -63,7 +69,7 @@
      },
      {
       "name": "Hvitar",
-      "share": 22.8,
+      "share": 23.1,
       "kit": "hand",
       "death": 0,
       "heal": 0,
@@ -71,15 +77,15 @@
      },
      {
       "name": "Voresh",
-      "share": 13.1,
+      "share": 12.1,
       "kit": "hand",
       "death": 0,
       "heal": 0,
-      "shield": 0
+      "shield": 7007
      },
      {
       "name": "Ergander",
-      "share": 14.4,
+      "share": 12.9,
       "kit": "hand",
       "death": 0,
       "heal": 0,
@@ -93,8 +99,8 @@
   "aoe": {
    "label": "Five targets, damage in 60 s",
    "main": {
-    "dps": 15986,
-    "dpsSd": 261,
+    "dps": 12906,
+    "dpsSd": 202,
     "winRate": 0,
     "ttk": null,
     "hpLeft": 100,
@@ -102,7 +108,7 @@
     "perHero": [
      {
       "name": "Lossenia",
-      "share": 20.3,
+      "share": 23.3,
       "kit": "hand",
       "death": 0,
       "heal": 0,
@@ -110,7 +116,7 @@
      },
      {
       "name": "Auster",
-      "share": 22.5,
+      "share": 22.3,
       "kit": "hand",
       "death": 0,
       "heal": 0,
@@ -118,7 +124,7 @@
      },
      {
       "name": "Hvitar",
-      "share": 34.5,
+      "share": 33.7,
       "kit": "hand",
       "death": 0,
       "heal": 0,
@@ -126,15 +132,15 @@
      },
      {
       "name": "Voresh",
-      "share": 9.7,
+      "share": 9.3,
       "kit": "hand",
       "death": 0,
       "heal": 0,
-      "shield": 0
+      "shield": 7007
      },
      {
       "name": "Ergander",
-      "share": 13,
+      "share": 11.5,
       "kit": "hand",
       "death": 0,
       "heal": 0,
@@ -148,51 +154,106 @@
   "boss": {
    "label": "Boss that fights back (clear in 120 s)",
    "main": {
-    "dps": 4143,
-    "dpsSd": 547,
-    "winRate": 46.7,
-    "ttk": 104.9,
-    "hpLeft": 29,
-    "clear": 1.019,
+    "dps": 4958,
+    "dpsSd": 92,
+    "winRate": 100,
+    "ttk": 95.6,
+    "hpLeft": 59.7,
+    "clear": 1.203,
     "perHero": [
      {
       "name": "Lossenia",
-      "share": 18.2,
+      "share": 19.8,
       "kit": "hand",
-      "death": 96.7,
+      "death": 0,
       "heal": 0,
       "shield": 0
      },
      {
       "name": "Auster",
-      "share": 28.1,
+      "share": 30.2,
       "kit": "hand",
-      "death": 100,
+      "death": 0,
       "heal": 0,
       "shield": 0
      },
      {
       "name": "Hvitar",
-      "share": 21.2,
+      "share": 24.4,
       "kit": "hand",
-      "death": 100,
+      "death": 0,
       "heal": 0,
       "shield": 0
      },
      {
       "name": "Voresh",
-      "share": 12,
+      "share": 12.4,
       "kit": "hand",
-      "death": 93.3,
-      "heal": 23631,
-      "shield": 0
+      "death": 0,
+      "heal": 22603,
+      "shield": 7007
      },
      {
       "name": "Ergander",
-      "share": 20.5,
+      "share": 13.2,
       "kit": "hand",
       "death": 0,
-      "heal": 48773,
+      "heal": 35000,
+      "shield": 0
+     }
+    ],
+    "confidence": "medium",
+    "autoKits": []
+   }
+  },
+  "hard": {
+   "label": "Hard boss (survive and clear in 120 s)",
+   "main": {
+    "dps": 4860,
+    "dpsSd": 183,
+    "winRate": 70,
+    "ttk": 95.8,
+    "hpLeft": 22.8,
+    "clear": 1.12,
+    "perHero": [
+     {
+      "name": "Lossenia",
+      "share": 19.8,
+      "kit": "hand",
+      "death": 30,
+      "heal": 0,
+      "shield": 0
+     },
+     {
+      "name": "Auster",
+      "share": 30.5,
+      "kit": "hand",
+      "death": 30,
+      "heal": 0,
+      "shield": 0
+     },
+     {
+      "name": "Hvitar",
+      "share": 24.6,
+      "kit": "hand",
+      "death": 30,
+      "heal": 0,
+      "shield": 0
+     },
+     {
+      "name": "Voresh",
+      "share": 12.5,
+      "kit": "hand",
+      "death": 30,
+      "heal": 24077,
+      "shield": 7007
+     },
+     {
+      "name": "Ergander",
+      "share": 12.7,
+      "kit": "hand",
+      "death": 30,
+      "heal": 33160,
       "shield": 0
      }
     ],
@@ -203,16 +264,16 @@
   "waves": {
    "label": "Three waves (clear in 150 s)",
    "main": {
-    "dps": 11703,
-    "dpsSd": 193,
+    "dps": 9848,
+    "dpsSd": 296,
     "winRate": 100,
-    "ttk": 71.6,
-    "hpLeft": 83.3,
-    "clear": 1.523,
+    "ttk": 84.3,
+    "hpLeft": 88.1,
+    "clear": 1.438,
     "perHero": [
      {
       "name": "Lossenia",
-      "share": 20.7,
+      "share": 23.1,
       "kit": "hand",
       "death": 0,
       "heal": 0,
@@ -220,7 +281,7 @@
      },
      {
       "name": "Auster",
-      "share": 23.9,
+      "share": 24.5,
       "kit": "hand",
       "death": 0,
       "heal": 0,
@@ -228,7 +289,7 @@
      },
      {
       "name": "Hvitar",
-      "share": 29.6,
+      "share": 29.7,
       "kit": "hand",
       "death": 0,
       "heal": 0,
@@ -236,18 +297,18 @@
      },
      {
       "name": "Voresh",
-      "share": 10.2,
+      "share": 10.1,
       "kit": "hand",
       "death": 0,
-      "heal": 11272,
-      "shield": 0
+      "heal": 6544,
+      "shield": 7007
      },
      {
       "name": "Ergander",
-      "share": 15.6,
+      "share": 12.7,
       "kit": "hand",
       "death": 0,
-      "heal": 30475,
+      "heal": 30526,
       "shield": 0
      }
     ],
@@ -261,9 +322,14 @@
    {
     "slot": 0,
     "current": "Lossenia",
-    "currentRank": 1,
-    "of": 26,
+    "currentRank": 2,
+    "of": 38,
     "top": [
+     {
+      "name": "Eli",
+      "kit": "hand",
+      "deltaPct": 5.4
+     },
      {
       "name": "Lossenia",
       "kit": "hand",
@@ -272,154 +338,149 @@
      {
       "name": "Lothair",
       "kit": "hand",
-      "deltaPct": -8
+      "deltaPct": -9
      },
      {
       "name": "Twitch",
       "kit": "hand",
-      "deltaPct": -8.7
+      "deltaPct": -11.5
      },
      {
       "name": "Durango",
       "kit": "hand",
-      "deltaPct": -10.2
-     },
-     {
-      "name": "Rowena",
-      "kit": "auto",
-      "deltaPct": -12.5
+      "deltaPct": -13.5
      }
     ]
    },
    {
     "slot": 1,
     "current": "Auster",
-    "currentRank": 1,
-    "of": 26,
+    "currentRank": 2,
+    "of": 38,
     "top": [
+     {
+      "name": "Eli",
+      "kit": "hand",
+      "deltaPct": 1.2
+     },
      {
       "name": "Auster",
       "kit": "hand",
       "deltaPct": 0
      },
      {
-      "name": "Twitch",
-      "kit": "hand",
-      "deltaPct": -5.1
-     },
-     {
       "name": "Lothair",
       "kit": "hand",
-      "deltaPct": -5.9
+      "deltaPct": -4.6
+     },
+     {
+      "name": "Twitch",
+      "kit": "hand",
+      "deltaPct": -5.2
      },
      {
       "name": "Durango",
       "kit": "hand",
-      "deltaPct": -6.7
-     },
-     {
-      "name": "Rowena",
-      "kit": "auto",
-      "deltaPct": -7.7
+      "deltaPct": -8
      }
     ]
    },
    {
     "slot": 2,
     "current": "Hvitar",
-    "currentRank": 4,
-    "of": 26,
+    "currentRank": 5,
+    "of": 38,
     "top": [
      {
-      "name": "Durango",
+      "name": "Eli",
       "kit": "hand",
-      "deltaPct": 1.5
-     },
-     {
-      "name": "Twitch",
-      "kit": "hand",
-      "deltaPct": 1.5
+      "deltaPct": 9.5
      },
      {
       "name": "Lothair",
       "kit": "hand",
-      "deltaPct": 1.1
+      "deltaPct": 3.1
+     },
+     {
+      "name": "Twitch",
+      "kit": "hand",
+      "deltaPct": 1.9
+     },
+     {
+      "name": "Durango",
+      "kit": "hand",
+      "deltaPct": 1
      },
      {
       "name": "Hvitar",
       "kit": "hand",
       "deltaPct": 0
-     },
-     {
-      "name": "Rowena",
-      "kit": "auto",
-      "deltaPct": -1.2
      }
     ]
    },
    {
     "slot": 3,
     "current": "Voresh",
-    "currentRank": 12,
-    "of": 26,
+    "currentRank": 21,
+    "of": 38,
     "top": [
      {
-      "name": "Lothair",
+      "name": "Eli",
       "kit": "hand",
-      "deltaPct": 12.6
+      "deltaPct": 20
      },
      {
       "name": "Twitch",
       "kit": "hand",
-      "deltaPct": 12.3
+      "deltaPct": 13.8
+     },
+     {
+      "name": "Lothair",
+      "kit": "hand",
+      "deltaPct": 13.7
      },
      {
       "name": "Durango",
       "kit": "hand",
-      "deltaPct": 11.1
+      "deltaPct": 12.4
      },
      {
-      "name": "Rowena",
-      "kit": "auto",
-      "deltaPct": 9.1
-     },
-     {
-      "name": "Hochadir",
+      "name": "Shink",
       "kit": "hand",
-      "deltaPct": 4.6
+      "deltaPct": 10.8
      }
     ]
    },
    {
     "slot": 4,
     "current": "Ergander",
-    "currentRank": 9,
-    "of": 26,
+    "currentRank": 20,
+    "of": 38,
     "top": [
+     {
+      "name": "Eli",
+      "kit": "hand",
+      "deltaPct": 18.7
+     },
      {
       "name": "Lothair",
       "kit": "hand",
-      "deltaPct": 10.6
+      "deltaPct": 13.4
      },
      {
       "name": "Twitch",
       "kit": "hand",
-      "deltaPct": 10.1
+      "deltaPct": 12.7
      },
      {
       "name": "Durango",
       "kit": "hand",
-      "deltaPct": 9.4
+      "deltaPct": 11
      },
      {
-      "name": "Rowena",
-      "kit": "auto",
-      "deltaPct": 7.2
-     },
-     {
-      "name": "Hochadir",
+      "name": "Olgan",
       "kit": "hand",
-      "deltaPct": 3.2
+      "deltaPct": 10.4
      }
     ]
    }
@@ -429,7 +490,7 @@
     "slot": 0,
     "current": "Lossenia",
     "currentRank": 1,
-    "of": 26,
+    "of": 38,
     "top": [
      {
       "name": "Lossenia",
@@ -439,22 +500,22 @@
      {
       "name": "Hochadir",
       "kit": "hand",
-      "deltaPct": -2.8
+      "deltaPct": -1
+     },
+     {
+      "name": "Eli",
+      "kit": "hand",
+      "deltaPct": -15.9
      },
      {
       "name": "Lothair",
       "kit": "hand",
-      "deltaPct": -14.4
+      "deltaPct": -16.9
      },
      {
-      "name": "Twitch",
+      "name": "Olgan",
       "kit": "hand",
-      "deltaPct": -19.7
-     },
-     {
-      "name": "Rowena",
-      "kit": "auto",
-      "deltaPct": -20.3
+      "deltaPct": -21.6
      }
     ]
    },
@@ -462,12 +523,12 @@
     "slot": 1,
     "current": "Auster",
     "currentRank": 2,
-    "of": 26,
+    "of": 38,
     "top": [
      {
       "name": "Hochadir",
       "kit": "hand",
-      "deltaPct": 13.1
+      "deltaPct": 19.8
      },
      {
       "name": "Auster",
@@ -477,116 +538,116 @@
      {
       "name": "Lothair",
       "kit": "hand",
-      "deltaPct": -2.2
+      "deltaPct": -0.2
      },
      {
       "name": "Twitch",
       "kit": "hand",
-      "deltaPct": -5.9
+      "deltaPct": -5
      },
      {
       "name": "Durango",
       "kit": "hand",
-      "deltaPct": -6.7
+      "deltaPct": -5.8
      }
     ]
    },
    {
     "slot": 2,
     "current": "Hvitar",
-    "currentRank": 1,
-    "of": 26,
+    "currentRank": 2,
+    "of": 38,
     "top": [
+     {
+      "name": "Hochadir",
+      "kit": "hand",
+      "deltaPct": 6.9
+     },
      {
       "name": "Hvitar",
       "kit": "hand",
       "deltaPct": 0
      },
      {
-      "name": "Hochadir",
-      "kit": "hand",
-      "deltaPct": -1.1
-     },
-     {
       "name": "Lothair",
       "kit": "hand",
-      "deltaPct": -14.2
+      "deltaPct": -11.9
+     },
+     {
+      "name": "Vidimir",
+      "kit": "hand",
+      "deltaPct": -12.6
      },
      {
       "name": "Twitch",
       "kit": "hand",
-      "deltaPct": -18.2
-     },
-     {
-      "name": "Durango",
-      "kit": "hand",
-      "deltaPct": -18.2
+      "deltaPct": -16.8
      }
     ]
    },
    {
     "slot": 3,
     "current": "Voresh",
-    "currentRank": 8,
-    "of": 26,
+    "currentRank": 17,
+    "of": 38,
     "top": [
      {
       "name": "Hochadir",
       "kit": "hand",
-      "deltaPct": 24.8
+      "deltaPct": 32.5
      },
      {
       "name": "Lothair",
       "kit": "hand",
-      "deltaPct": 10.9
+      "deltaPct": 12.6
      },
      {
-      "name": "Twitch",
+      "name": "Vidimir",
       "kit": "hand",
-      "deltaPct": 6.9
+      "deltaPct": 12.5
+     },
+     {
+      "name": "Martina",
+      "kit": "hand",
+      "deltaPct": 8.3
      },
      {
       "name": "Durango",
       "kit": "hand",
-      "deltaPct": 6.6
-     },
-     {
-      "name": "Rowena",
-      "kit": "auto",
-      "deltaPct": 6.2
+      "deltaPct": 8.1
      }
     ]
    },
    {
     "slot": 4,
     "current": "Ergander",
-    "currentRank": 6,
-    "of": 26,
+    "currentRank": 14,
+    "of": 38,
     "top": [
      {
       "name": "Hochadir",
       "kit": "hand",
-      "deltaPct": 22.1
+      "deltaPct": 29.7
      },
      {
       "name": "Lothair",
       "kit": "hand",
-      "deltaPct": 7.7
+      "deltaPct": 10.8
+     },
+     {
+      "name": "Vidimir",
+      "kit": "hand",
+      "deltaPct": 10.4
      },
      {
       "name": "Twitch",
       "kit": "hand",
-      "deltaPct": 3.6
+      "deltaPct": 6
      },
      {
-      "name": "Rowena",
-      "kit": "auto",
-      "deltaPct": 3
-     },
-     {
-      "name": "Durango",
+      "name": "Martina",
       "kit": "hand",
-      "deltaPct": 2.9
+      "deltaPct": 5.3
      }
     ]
    }
@@ -595,165 +656,332 @@
    {
     "slot": 0,
     "current": "Lossenia",
-    "currentRank": 13,
-    "of": 26,
+    "currentRank": 2,
+    "of": 38,
     "top": [
      {
-      "name": "Oggok",
+      "name": "Eli",
       "kit": "hand",
-      "deltaPct": 14.3
+      "deltaPct": 3
      },
      {
-      "name": "Gardrus",
+      "name": "Lossenia",
       "kit": "hand",
-      "deltaPct": 14.2
+      "deltaPct": 0
      },
      {
-      "name": "Vinyara",
+      "name": "Twitch",
       "kit": "hand",
-      "deltaPct": 13.9
+      "deltaPct": -8.9
      },
      {
-      "name": "Liko",
-      "kit": "auto",
-      "deltaPct": 11
+      "name": "Vidimir",
+      "kit": "hand",
+      "deltaPct": -12.3
      },
      {
-      "name": "Eurion",
+      "name": "Rowena",
       "kit": "hand",
-      "deltaPct": 10.1
+      "deltaPct": -12.4
      }
     ]
    },
    {
     "slot": 1,
     "current": "Auster",
-    "currentRank": 23,
-    "of": 26,
+    "currentRank": 2,
+    "of": 38,
     "top": [
      {
+      "name": "Eli",
+      "kit": "hand",
+      "deltaPct": 1.4
+     },
+     {
+      "name": "Auster",
+      "kit": "hand",
+      "deltaPct": 0
+     },
+     {
+      "name": "Twitch",
+      "kit": "hand",
+      "deltaPct": -4.5
+     },
+     {
       "name": "Rowena",
-      "kit": "auto",
-      "deltaPct": 17.8
-     },
-     {
-      "name": "Gardrus",
       "kit": "hand",
-      "deltaPct": 17
+      "deltaPct": -10.9
      },
      {
-      "name": "Vinyara",
+      "name": "Horace",
       "kit": "hand",
-      "deltaPct": 16.5
-     },
-     {
-      "name": "Oggok",
-      "kit": "hand",
-      "deltaPct": 15.8
-     },
-     {
-      "name": "Liko",
-      "kit": "auto",
-      "deltaPct": 12.7
+      "deltaPct": -11.3
      }
     ]
    },
    {
     "slot": 2,
     "current": "Hvitar",
-    "currentRank": 25,
-    "of": 26,
+    "currentRank": 3,
+    "of": 38,
     "top": [
      {
-      "name": "Oggok",
+      "name": "Eli",
       "kit": "hand",
-      "deltaPct": 22.8
+      "deltaPct": 4.1
      },
      {
-      "name": "Gardrus",
+      "name": "Twitch",
       "kit": "hand",
-      "deltaPct": 22.6
+      "deltaPct": 0.5
      },
      {
-      "name": "Vinyara",
+      "name": "Hvitar",
       "kit": "hand",
-      "deltaPct": 20.4
+      "deltaPct": 0
      },
      {
-      "name": "Liko",
-      "kit": "auto",
-      "deltaPct": 19.6
+      "name": "Rowena",
+      "kit": "hand",
+      "deltaPct": -4.8
      },
      {
-      "name": "Eurion",
+      "name": "Horace",
       "kit": "hand",
-      "deltaPct": 17.7
+      "deltaPct": -5.6
      }
     ]
    },
    {
     "slot": 3,
     "current": "Voresh",
-    "currentRank": 11,
-    "of": 26,
+    "currentRank": 8,
+    "of": 38,
     "top": [
      {
-      "name": "Oggok",
+      "name": "Eli",
       "kit": "hand",
-      "deltaPct": 30.5
+      "deltaPct": 10.8
      },
      {
-      "name": "Vinyara",
+      "name": "Twitch",
       "kit": "hand",
-      "deltaPct": 29.3
+      "deltaPct": 5.4
      },
      {
-      "name": "Frurbath",
+      "name": "Lethander",
       "kit": "hand",
-      "deltaPct": 26.6
+      "deltaPct": 1.5
      },
      {
-      "name": "Vicuc",
+      "name": "Dorkuraz",
       "kit": "hand",
-      "deltaPct": 26
+      "deltaPct": 0.9
      },
      {
-      "name": "Alphanarsy",
+      "name": "Theodore",
       "kit": "hand",
-      "deltaPct": 25.5
+      "deltaPct": 0.9
      }
     ]
    },
    {
     "slot": 4,
     "current": "Ergander",
-    "currentRank": 7,
-    "of": 26,
+    "currentRank": 1,
+    "of": 38,
     "top": [
+     {
+      "name": "Ergander",
+      "kit": "hand",
+      "deltaPct": 0
+     },
      {
       "name": "Oggok",
       "kit": "hand",
-      "deltaPct": 29.4
+      "deltaPct": -0.2
      },
      {
       "name": "Vinyara",
       "kit": "hand",
-      "deltaPct": 28.6
+      "deltaPct": -1.2
      },
      {
-      "name": "Frurbath",
+      "name": "Thia",
       "kit": "hand",
-      "deltaPct": 26.2
+      "deltaPct": -1.9
      },
      {
-      "name": "Alphanarsy",
+      "name": "Gareth",
       "kit": "hand",
-      "deltaPct": 24.7
+      "deltaPct": -2.3
+     }
+    ]
+   }
+  ],
+  "hard": [
+   {
+    "slot": 0,
+    "current": "Lossenia",
+    "currentRank": 2,
+    "of": 38,
+    "top": [
+     {
+      "name": "Eli",
+      "kit": "hand",
+      "deltaPct": 3.1
+     },
+     {
+      "name": "Lossenia",
+      "kit": "hand",
+      "deltaPct": 0
+     },
+     {
+      "name": "Theodore",
+      "kit": "hand",
+      "deltaPct": -16.3
+     },
+     {
+      "name": "Oggok",
+      "kit": "hand",
+      "deltaPct": -16.4
+     },
+     {
+      "name": "Gardrus",
+      "kit": "hand",
+      "deltaPct": -16.5
+     }
+    ]
+   },
+   {
+    "slot": 1,
+    "current": "Auster",
+    "currentRank": 1,
+    "of": 38,
+    "top": [
+     {
+      "name": "Auster",
+      "kit": "hand",
+      "deltaPct": 0
+     },
+     {
+      "name": "Eli",
+      "kit": "hand",
+      "deltaPct": -2.9
+     },
+     {
+      "name": "Twitch",
+      "kit": "hand",
+      "deltaPct": -7.5
+     },
+     {
+      "name": "Theodore",
+      "kit": "hand",
+      "deltaPct": -11.7
+     },
+     {
+      "name": "Lethander",
+      "kit": "hand",
+      "deltaPct": -11.7
+     }
+    ]
+   },
+   {
+    "slot": 2,
+    "current": "Hvitar",
+    "currentRank": 2,
+    "of": 38,
+    "top": [
+     {
+      "name": "Eli",
+      "kit": "hand",
+      "deltaPct": 3.3
+     },
+     {
+      "name": "Hvitar",
+      "kit": "hand",
+      "deltaPct": 0
+     },
+     {
+      "name": "Twitch",
+      "kit": "hand",
+      "deltaPct": -3
+     },
+     {
+      "name": "Theodore",
+      "kit": "hand",
+      "deltaPct": -6
+     },
+     {
+      "name": "Gardrus",
+      "kit": "hand",
+      "deltaPct": -6.2
+     }
+    ]
+   },
+   {
+    "slot": 3,
+    "current": "Voresh",
+    "currentRank": 3,
+    "of": 38,
+    "top": [
+     {
+      "name": "Oggok",
+      "kit": "hand",
+      "deltaPct": 2.4
+     },
+     {
+      "name": "Vinyara",
+      "kit": "hand",
+      "deltaPct": 1.8
+     },
+     {
+      "name": "Voresh",
+      "kit": "hand",
+      "deltaPct": 0
+     },
+     {
+      "name": "Vicuc",
+      "kit": "hand",
+      "deltaPct": -0.3
+     },
+     {
+      "name": "Soveliss",
+      "kit": "hand",
+      "deltaPct": -0.9
+     }
+    ]
+   },
+   {
+    "slot": 4,
+    "current": "Ergander",
+    "currentRank": 3,
+    "of": 38,
+    "top": [
+     {
+      "name": "Oggok",
+      "kit": "hand",
+      "deltaPct": 2.1
+     },
+     {
+      "name": "Vinyara",
+      "kit": "hand",
+      "deltaPct": 0.8
+     },
+     {
+      "name": "Ergander",
+      "kit": "hand",
+      "deltaPct": 0
      },
      {
       "name": "Torrin",
       "kit": "hand",
-      "deltaPct": 23.3
+      "deltaPct": -8.5
+     },
+     {
+      "name": "Felosia",
+      "kit": "hand",
+      "deltaPct": -10
      }
     ]
    }
@@ -763,7 +991,7 @@
     "slot": 0,
     "current": "Lossenia",
     "currentRank": 1,
-    "of": 26,
+    "of": 38,
     "top": [
      {
       "name": "Lossenia",
@@ -771,24 +999,24 @@
       "deltaPct": 0
      },
      {
+      "name": "Eli",
+      "kit": "hand",
+      "deltaPct": -4.2
+     },
+     {
+      "name": "Vidimir",
+      "kit": "hand",
+      "deltaPct": -6.3
+     },
+     {
       "name": "Hochadir",
       "kit": "hand",
-      "deltaPct": -2.9
+      "deltaPct": -6.4
      },
      {
-      "name": "Lothair",
+      "name": "Olgan",
       "kit": "hand",
-      "deltaPct": -3.2
-     },
-     {
-      "name": "Twitch",
-      "kit": "hand",
-      "deltaPct": -4.7
-     },
-     {
-      "name": "Durango",
-      "kit": "hand",
-      "deltaPct": -5
+      "deltaPct": -7.6
      }
     ]
    },
@@ -796,7 +1024,7 @@
     "slot": 1,
     "current": "Auster",
     "currentRank": 1,
-    "of": 26,
+    "of": 38,
     "top": [
      {
       "name": "Auster",
@@ -804,24 +1032,24 @@
       "deltaPct": 0
      },
      {
-      "name": "Hochadir",
+      "name": "Eli",
       "kit": "hand",
-      "deltaPct": -0.2
+      "deltaPct": -1.4
      },
      {
-      "name": "Lothair",
+      "name": "Hochadir",
       "kit": "hand",
-      "deltaPct": -0.6
+      "deltaPct": -1.5
      },
      {
       "name": "Twitch",
       "kit": "hand",
-      "deltaPct": -0.7
+      "deltaPct": -2.2
      },
      {
-      "name": "Durango",
+      "name": "Lothair",
       "kit": "hand",
-      "deltaPct": -0.9
+      "deltaPct": -2.6
      }
     ]
    },
@@ -829,7 +1057,7 @@
     "slot": 2,
     "current": "Hvitar",
     "currentRank": 1,
-    "of": 26,
+    "of": 38,
     "top": [
      {
       "name": "Hvitar",
@@ -839,88 +1067,88 @@
      {
       "name": "Hochadir",
       "kit": "hand",
-      "deltaPct": -1.2
+      "deltaPct": -1.5
      },
      {
       "name": "Lothair",
       "kit": "hand",
-      "deltaPct": -2.4
+      "deltaPct": -4.5
      },
      {
-      "name": "Twitch",
+      "name": "Vidimir",
       "kit": "hand",
-      "deltaPct": -2.8
+      "deltaPct": -4.7
      },
      {
-      "name": "Durango",
+      "name": "Eli",
       "kit": "hand",
-      "deltaPct": -3.3
+      "deltaPct": -5.3
      }
     ]
    },
    {
     "slot": 3,
     "current": "Voresh",
-    "currentRank": 10,
-    "of": 26,
+    "currentRank": 17,
+    "of": 38,
     "top": [
      {
-      "name": "Hochadir",
+      "name": "Eli",
       "kit": "hand",
-      "deltaPct": 4.1
+      "deltaPct": 3.8
+     },
+     {
+      "name": "Vidimir",
+      "kit": "hand",
+      "deltaPct": 3.5
      },
      {
       "name": "Twitch",
       "kit": "hand",
-      "deltaPct": 3.1
+      "deltaPct": 3.5
      },
      {
-      "name": "Lothair",
+      "name": "Lethander",
       "kit": "hand",
-      "deltaPct": 3
+      "deltaPct": 2.9
      },
      {
-      "name": "Rowena",
-      "kit": "auto",
-      "deltaPct": 2.3
-     },
-     {
-      "name": "Durango",
+      "name": "Hochadir",
       "kit": "hand",
-      "deltaPct": 1.4
+      "deltaPct": 2.8
      }
     ]
    },
    {
     "slot": 4,
     "current": "Ergander",
-    "currentRank": 9,
-    "of": 26,
+    "currentRank": 8,
+    "of": 38,
     "top": [
-     {
-      "name": "Hochadir",
-      "kit": "hand",
-      "deltaPct": 4.2
-     },
      {
       "name": "Twitch",
       "kit": "hand",
-      "deltaPct": 3
+      "deltaPct": 2.7
      },
      {
-      "name": "Lothair",
+      "name": "Lethander",
       "kit": "hand",
-      "deltaPct": 2.1
+      "deltaPct": 2.6
      },
      {
-      "name": "Rowena",
-      "kit": "auto",
-      "deltaPct": 1.8
-     },
-     {
-      "name": "Durango",
+      "name": "Eli",
       "kit": "hand",
-      "deltaPct": 1
+      "deltaPct": 2.3
+     },
+     {
+      "name": "Vidimir",
+      "kit": "hand",
+      "deltaPct": 2.3
+     },
+     {
+      "name": "Hochadir",
+      "kit": "hand",
+      "deltaPct": 1.7
      }
     ]
    }
@@ -929,24 +1157,96 @@
  "optimized": {
   "single": {
    "team": [
-    "Lossenia",
-    "Auster",
-    "Twitch",
+    "Eli",
     "Lothair",
-    "Durango"
+    "Durango",
+    "Twitch",
+    "Auster"
    ],
    "steps": [
-    "Hvitar -> Twitch",
-    "Voresh -> Hvitar",
-    "Hvitar -> Durango",
-    "Durango -> Lothair",
-    "Ergander -> Hvitar",
-    "Hvitar -> Durango"
+    "Lossenia -> Eli",
+    "Auster -> Lothair",
+    "Hvitar -> Auster",
+    "Auster -> Durango",
+    "Voresh -> Auster",
+    "Auster -> Corrin",
+    "Corrin -> Shink",
+    "Shink -> Twitch",
+    "Ergander -> Auster"
    ],
-   "score": 8327.63873260498,
+   "score": 7698.626586100261,
    "result": {
-    "dps": 8328,
-    "dpsSd": 170,
+    "dps": 7699,
+    "dpsSd": 123,
+    "winRate": 0,
+    "ttk": null,
+    "hpLeft": 100,
+    "clear": 0,
+    "perHero": [
+     {
+      "name": "Eli",
+      "share": 19.2,
+      "kit": "hand",
+      "death": 0,
+      "heal": 0,
+      "shield": 0
+     },
+     {
+      "name": "Lothair",
+      "share": 32.5,
+      "kit": "hand",
+      "death": 0,
+      "heal": 0,
+      "shield": 0
+     },
+     {
+      "name": "Durango",
+      "share": 14.2,
+      "kit": "hand",
+      "death": 0,
+      "heal": 0,
+      "shield": 0
+     },
+     {
+      "name": "Twitch",
+      "share": 17.3,
+      "kit": "hand",
+      "death": 0,
+      "heal": 0,
+      "shield": 0
+     },
+     {
+      "name": "Auster",
+      "share": 16.8,
+      "kit": "hand",
+      "death": 0,
+      "heal": 0,
+      "shield": 0
+     }
+    ],
+    "confidence": "medium",
+    "autoKits": []
+   }
+  },
+  "aoe": {
+   "team": [
+    "Lossenia",
+    "Hochadir",
+    "Hvitar",
+    "Vidimir",
+    "Olgan"
+   ],
+   "steps": [
+    "Auster -> Hochadir",
+    "Voresh -> Auster",
+    "Ergander -> Durango",
+    "Durango -> Olgan",
+    "Auster -> Vidimir"
+   ],
+   "score": 18609.68691589355,
+   "result": {
+    "dps": 18610,
+    "dpsSd": 351,
     "winRate": 0,
     "ttk": null,
     "hpLeft": 100,
@@ -954,7 +1254,208 @@
     "perHero": [
      {
       "name": "Lossenia",
-      "share": 13,
+      "share": 17.7,
+      "kit": "hand",
+      "death": 0,
+      "heal": 0,
+      "shield": 0
+     },
+     {
+      "name": "Hochadir",
+      "share": 29.7,
+      "kit": "hand",
+      "death": 0,
+      "heal": 0,
+      "shield": 0
+     },
+     {
+      "name": "Hvitar",
+      "share": 28.4,
+      "kit": "hand",
+      "death": 0,
+      "heal": 0,
+      "shield": 0
+     },
+     {
+      "name": "Vidimir",
+      "share": 16.8,
+      "kit": "hand",
+      "death": 0,
+      "heal": 0,
+      "shield": 0
+     },
+     {
+      "name": "Olgan",
+      "share": 7.4,
+      "kit": "hand",
+      "death": 0,
+      "heal": 0,
+      "shield": 0
+     }
+    ],
+    "confidence": "medium",
+    "autoKits": []
+   }
+  },
+  "boss": {
+   "team": [
+    "Eli",
+    "Auster",
+    "Twitch",
+    "Hvitar",
+    "Ergander"
+   ],
+   "steps": [
+    "Lossenia -> Eli",
+    "Hvitar -> Twitch",
+    "Voresh -> Hvitar"
+   ],
+   "score": 1.3322916666666664,
+   "result": {
+    "dps": 5928,
+    "dpsSd": 250,
+    "winRate": 100,
+    "ttk": 80.1,
+    "hpLeft": 30.9,
+    "clear": 1.332,
+    "perHero": [
+     {
+      "name": "Eli",
+      "share": 25.7,
+      "kit": "hand",
+      "death": 5,
+      "heal": 0,
+      "shield": 0
+     },
+     {
+      "name": "Auster",
+      "share": 23,
+      "kit": "hand",
+      "death": 10,
+      "heal": 0,
+      "shield": 0
+     },
+     {
+      "name": "Twitch",
+      "share": 21.6,
+      "kit": "hand",
+      "death": 0,
+      "heal": 0,
+      "shield": 0
+     },
+     {
+      "name": "Hvitar",
+      "share": 19.2,
+      "kit": "hand",
+      "death": 10,
+      "heal": 0,
+      "shield": 0
+     },
+     {
+      "name": "Ergander",
+      "share": 10.5,
+      "kit": "hand",
+      "death": 0,
+      "heal": 29731,
+      "shield": 0
+     }
+    ],
+    "confidence": "medium",
+    "autoKits": []
+   }
+  },
+  "hard": {
+   "team": [
+    "Lossenia",
+    "Eli",
+    "Auster",
+    "Vinyara",
+    "Twitch"
+   ],
+   "steps": [
+    "Auster -> Eli",
+    "Hvitar -> Auster",
+    "Voresh -> Vinyara",
+    "Ergander -> Twitch"
+   ],
+   "score": 1.2639025981329848,
+   "result": {
+    "dps": 5443,
+    "dpsSd": 604,
+    "winRate": 95,
+    "ttk": 86.6,
+    "hpLeft": 29.1,
+    "clear": 1.264,
+    "perHero": [
+     {
+      "name": "Lossenia",
+      "share": 16.4,
+      "kit": "hand",
+      "death": 35,
+      "heal": 0,
+      "shield": 0
+     },
+     {
+      "name": "Eli",
+      "share": 26.8,
+      "kit": "hand",
+      "death": 25,
+      "heal": 0,
+      "shield": 0
+     },
+     {
+      "name": "Auster",
+      "share": 25.1,
+      "kit": "hand",
+      "death": 30,
+      "heal": 0,
+      "shield": 0
+     },
+     {
+      "name": "Vinyara",
+      "share": 10.6,
+      "kit": "hand",
+      "death": 5,
+      "heal": 0,
+      "shield": 81640
+     },
+     {
+      "name": "Twitch",
+      "share": 21,
+      "kit": "hand",
+      "death": 30,
+      "heal": 0,
+      "shield": 0
+     }
+    ],
+    "confidence": "medium",
+    "autoKits": []
+   }
+  },
+  "waves": {
+   "team": [
+    "Lossenia",
+    "Auster",
+    "Hvitar",
+    "Vidimir",
+    "Ergander"
+   ],
+   "steps": [
+    "Voresh -> Hochadir",
+    "Hochadir -> Vidimir"
+   ],
+   "score": 1.4973999999999998,
+   "result": {
+    "dps": 11203,
+    "dpsSd": 196,
+    "winRate": 100,
+    "ttk": 75.4,
+    "hpLeft": 78.9,
+    "clear": 1.497,
+    "perHero": [
+     {
+      "name": "Lossenia",
+      "share": 19.3,
       "kit": "hand",
       "death": 0,
       "heal": 0,
@@ -969,232 +1470,27 @@
       "shield": 0
      },
      {
-      "name": "Twitch",
-      "share": 18.1,
-      "kit": "hand",
-      "death": 0,
-      "heal": 0,
-      "shield": 0
-     },
-     {
-      "name": "Lothair",
-      "share": 32,
-      "kit": "hand",
-      "death": 0,
-      "heal": 0,
-      "shield": 0
-     },
-     {
-      "name": "Durango",
-      "share": 16.3,
-      "kit": "hand",
-      "death": 0,
-      "heal": 0,
-      "shield": 0
-     }
-    ],
-    "confidence": "medium",
-    "autoKits": []
-   }
-  },
-  "aoe": {
-   "team": [
-    "Lossenia",
-    "Hochadir",
-    "Hvitar",
-    "Durango",
-    "Lothair"
-   ],
-   "steps": [
-    "Auster -> Hochadir",
-    "Voresh -> Auster",
-    "Ergander -> Durango",
-    "Durango -> Lothair",
-    "Auster -> Durango"
-   ],
-   "score": 22145.290637207036,
-   "result": {
-    "dps": 22145,
-    "dpsSd": 392,
-    "winRate": 0,
-    "ttk": null,
-    "hpLeft": 100,
-    "clear": 0,
-    "perHero": [
-     {
-      "name": "Lossenia",
-      "share": 15.3,
-      "kit": "hand",
-      "death": 0,
-      "heal": 0,
-      "shield": 0
-     },
-     {
-      "name": "Hochadir",
-      "share": 23.7,
-      "kit": "hand",
-      "death": 0,
-      "heal": 0,
-      "shield": 0
-     },
-     {
       "name": "Hvitar",
-      "share": 27.4,
+      "share": 25,
       "kit": "hand",
       "death": 0,
       "heal": 0,
       "shield": 0
      },
      {
-      "name": "Durango",
-      "share": 12.1,
+      "name": "Vidimir",
+      "share": 24.3,
       "kit": "hand",
       "death": 0,
-      "heal": 0,
-      "shield": 0
-     },
-     {
-      "name": "Lothair",
-      "share": 21.4,
-      "kit": "hand",
-      "death": 0,
-      "heal": 0,
-      "shield": 0
-     }
-    ],
-    "confidence": "medium",
-    "autoKits": []
-   }
-  },
-  "boss": {
-   "team": [
-    "Oggok",
-    "Auster",
-    "Twitch",
-    "Lothair",
-    "Durango"
-   ],
-   "steps": [
-    "Lossenia -> Vinyara",
-    "Vinyara -> Oggok",
-    "Hvitar -> Twitch",
-    "Voresh -> Hvitar",
-    "Hvitar -> Lothair",
-    "Ergander -> Hvitar",
-    "Hvitar -> Durango"
-   ],
-   "score": 1.4529166666666666,
-   "result": {
-    "dps": 7359,
-    "dpsSd": 348,
-    "winRate": 100,
-    "ttk": 65.6,
-    "hpLeft": 92.1,
-    "clear": 1.453,
-    "perHero": [
-     {
-      "name": "Oggok",
-      "share": 9.7,
-      "kit": "hand",
-      "death": 0,
-      "heal": 104354,
-      "shield": 0
-     },
-     {
-      "name": "Auster",
-      "share": 19.8,
-      "kit": "hand",
-      "death": 0,
-      "heal": 0,
-      "shield": 0
-     },
-     {
-      "name": "Twitch",
-      "share": 19.6,
-      "kit": "hand",
-      "death": 0,
-      "heal": 0,
-      "shield": 0
-     },
-     {
-      "name": "Lothair",
-      "share": 34,
-      "kit": "hand",
-      "death": 0,
-      "heal": 0,
-      "shield": 0
-     },
-     {
-      "name": "Durango",
-      "share": 16.8,
-      "kit": "hand",
-      "death": 0,
-      "heal": 0,
-      "shield": 0
-     }
-    ],
-    "confidence": "medium",
-    "autoKits": []
-   }
-  },
-  "waves": {
-   "team": [
-    "Lossenia",
-    "Auster",
-    "Hvitar",
-    "Hochadir",
-    "Ergander"
-   ],
-   "steps": [
-    "Voresh -> Hochadir"
-   ],
-   "score": 1.5781999999999998,
-   "result": {
-    "dps": 13302,
-    "dpsSd": 630,
-    "winRate": 100,
-    "ttk": 63.3,
-    "hpLeft": 54.6,
-    "clear": 1.578,
-    "perHero": [
-     {
-      "name": "Lossenia",
-      "share": 19,
-      "kit": "hand",
-      "death": 0,
-      "heal": 0,
-      "shield": 0
-     },
-     {
-      "name": "Auster",
-      "share": 21.2,
-      "kit": "hand",
-      "death": 0,
-      "heal": 0,
-      "shield": 0
-     },
-     {
-      "name": "Hvitar",
-      "share": 22.7,
-      "kit": "hand",
-      "death": 0,
-      "heal": 0,
-      "shield": 0
-     },
-     {
-      "name": "Hochadir",
-      "share": 25.7,
-      "kit": "hand",
-      "death": 45,
       "heal": 0,
       "shield": 0
      },
      {
       "name": "Ergander",
-      "share": 11.4,
+      "share": 10.8,
       "kit": "hand",
       "death": 0,
-      "heal": 18812,
+      "heal": 28494,
       "shield": 0
      }
     ],
@@ -1205,27 +1501,27 @@
  },
  "captains": {
   "Lossenia": {
-   "dps": 5682,
+   "dps": 4853,
    "effect": "Increases all allies' Attack by 24% in all battles.",
    "active": true
   },
   "Auster": {
-   "dps": 4913,
+   "dps": 4191,
    "effect": "In Fey Meander and Trial Breakthrough battles, increases all allies' Defense by 30%.",
    "active": false
   },
   "Hvitar": {
-   "dps": 4913,
+   "dps": 4191,
    "effect": "Increases all allies' Attack by 30% in Grand Gladiator Arena battles.",
    "active": false
   },
   "Voresh": {
-   "dps": 4913,
+   "dps": 4191,
    "effect": null,
    "active": false
   },
   "Ergander": {
-   "dps": 4913,
+   "dps": 4191,
    "effect": "Increases all allies' Defense by 30% in Grand Gladiator Arena battles.",
    "active": false
   }
@@ -1234,989 +1530,899 @@
   "Auster@single": [
    {
     "artifact": "Ring of Winter",
-    "deltaPct": 6,
-    "heroDamage": 126939
-   },
-   {
-    "artifact": "Rift Hourglass",
-    "deltaPct": 5.5,
-    "heroDamage": 123490
+    "deltaPct": 7.2,
+    "heroDamage": 113145
    },
    {
     "artifact": "Witch's Remains",
-    "deltaPct": 3.5,
-    "heroDamage": 108486
-   },
-   {
-    "artifact": "Misty Conch",
-    "deltaPct": 3.2,
-    "heroDamage": 109662
+    "deltaPct": 3.1,
+    "heroDamage": 93464
    },
    {
     "artifact": "Eyeball of the Giant",
-    "deltaPct": 2.2,
-    "heroDamage": 111838
+    "deltaPct": 2.1,
+    "heroDamage": 97994
    },
    {
     "artifact": "Manticore Statue",
-    "deltaPct": 1.9,
-    "heroDamage": 111067
+    "deltaPct": 2,
+    "heroDamage": 97685
    },
    {
-    "artifact": "Arcana Cube",
+    "artifact": "Rift Hourglass",
     "deltaPct": 0.9,
-    "heroDamage": 108139
-   },
-   {
-    "artifact": "Lost Pearl in Desert",
-    "deltaPct": 0.5,
-    "heroDamage": 106908
+    "heroDamage": 96147
    },
    {
     "artifact": "Meditator's Pipe",
     "deltaPct": 0.4,
-    "heroDamage": 105950
+    "heroDamage": 93315
    },
    {
     "artifact": "Spiritual Incense Burner",
+    "deltaPct": 0.3,
+    "heroDamage": 92200
+   },
+   {
+    "artifact": "Arcana Cube",
     "deltaPct": 0.1,
-    "heroDamage": 104890
+    "heroDamage": 92751
    },
    {
     "artifact": "none",
     "deltaPct": 0,
-    "heroDamage": 104516
+    "heroDamage": 92032
    },
    {
     "artifact": "Frost Globe",
     "deltaPct": 0,
-    "heroDamage": 104516
+    "heroDamage": 92032
    },
    {
     "artifact": "Illuya's Fang",
     "deltaPct": 0,
-    "heroDamage": 104516
+    "heroDamage": 92032
    },
    {
     "artifact": "Orb of Oblivion",
     "deltaPct": 0,
-    "heroDamage": 104516
+    "heroDamage": 92032
    },
    {
     "artifact": "Ivaran's Arrow",
     "deltaPct": 0,
-    "heroDamage": 104516
+    "heroDamage": 92032
    },
    {
     "artifact": "Lunar Harp",
     "deltaPct": 0,
-    "heroDamage": 104516
+    "heroDamage": 92032
    },
    {
     "artifact": "A Guide to Magic by Elminster",
     "deltaPct": 0,
-    "heroDamage": 104516
+    "heroDamage": 92032
    },
    {
     "artifact": "Mirror of the Living",
     "deltaPct": 0,
-    "heroDamage": 104516
+    "heroDamage": 92032
    }
   ],
-  "Auster@boss": [
+  "Auster@hard": [
    {
     "artifact": "Ring of Winter",
-    "deltaPct": 12.4,
-    "heroDamage": 153815
-   },
-   {
-    "artifact": "Rift Hourglass",
-    "deltaPct": 6.2,
-    "heroDamage": 144282
+    "deltaPct": 4.8,
+    "heroDamage": 168045
    },
    {
     "artifact": "Witch's Remains",
-    "deltaPct": 6.1,
-    "heroDamage": 132357
-   },
-   {
-    "artifact": "Misty Conch",
-    "deltaPct": 6.1,
-    "heroDamage": 136487
+    "deltaPct": 1.4,
+    "heroDamage": 144715
    },
    {
     "artifact": "Eyeball of the Giant",
-    "deltaPct": 3.4,
-    "heroDamage": 139665
+    "deltaPct": 1.2,
+    "heroDamage": 150531
    },
    {
     "artifact": "Manticore Statue",
-    "deltaPct": 3.1,
-    "heroDamage": 138931
-   },
-   {
-    "artifact": "A Guide to Magic by Elminster",
-    "deltaPct": 1.1,
-    "heroDamage": 131332
-   },
-   {
-    "artifact": "Lost Pearl in Desert",
-    "deltaPct": 0.6,
-    "heroDamage": 134651
+    "deltaPct": 1.2,
+    "heroDamage": 150422
    },
    {
     "artifact": "Meditator's Pipe",
     "deltaPct": 0.3,
-    "heroDamage": 133031
+    "heroDamage": 144169
+   },
+   {
+    "artifact": "Rift Hourglass",
+    "deltaPct": 0.2,
+    "heroDamage": 145976
+   },
+   {
+    "artifact": "A Guide to Magic by Elminster",
+    "deltaPct": 0.1,
+    "heroDamage": 142967
+   },
+   {
+    "artifact": "Lunar Harp",
+    "deltaPct": 0,
+    "heroDamage": 142977
+   },
+   {
+    "artifact": "Mirror of the Living",
+    "deltaPct": 0,
+    "heroDamage": 142977
    },
    {
     "artifact": "none",
     "deltaPct": 0,
-    "heroDamage": 131370
-   },
-   {
-    "artifact": "Mirror of the Living",
-    "deltaPct": -0.1,
-    "heroDamage": 131563
-   },
-   {
-    "artifact": "Spiritual Incense Burner",
-    "deltaPct": -0.1,
-    "heroDamage": 131815
-   },
-   {
-    "artifact": "Frost Globe",
-    "deltaPct": -0.1,
-    "heroDamage": 131573
-   },
-   {
-    "artifact": "Illuya's Fang",
-    "deltaPct": -0.1,
-    "heroDamage": 131573
-   },
-   {
-    "artifact": "Orb of Oblivion",
-    "deltaPct": -0.1,
-    "heroDamage": 131573
+    "heroDamage": 142569
    },
    {
     "artifact": "Ivaran's Arrow",
-    "deltaPct": -0.1,
-    "heroDamage": 132195
+    "deltaPct": 0,
+    "heroDamage": 142569
    },
    {
-    "artifact": "Lunar Harp",
-    "deltaPct": -0.5,
-    "heroDamage": 131710
+    "artifact": "Frost Globe",
+    "deltaPct": 0,
+    "heroDamage": 142922
+   },
+   {
+    "artifact": "Illuya's Fang",
+    "deltaPct": 0,
+    "heroDamage": 142922
+   },
+   {
+    "artifact": "Orb of Oblivion",
+    "deltaPct": 0,
+    "heroDamage": 142922
    },
    {
     "artifact": "Arcana Cube",
-    "deltaPct": -1.9,
-    "heroDamage": 134930
+    "deltaPct": -0.2,
+    "heroDamage": 145905
+   },
+   {
+    "artifact": "Spiritual Incense Burner",
+    "deltaPct": -0.5,
+    "heroDamage": 142309
    }
   ],
   "Hvitar@single": [
    {
     "artifact": "Ring of Winter",
-    "deltaPct": 6.1,
-    "heroDamage": 99046
+    "deltaPct": 5.9,
+    "heroDamage": 85547
    },
    {
-    "artifact": "Rift Hourglass",
-    "deltaPct": 2.8,
-    "heroDamage": 86575
-   },
-   {
-    "artifact": "Misty Conch",
-    "deltaPct": 2.7,
-    "heroDamage": 81777
-   },
-   {
-    "artifact": "Eyeball of the Giant",
-    "deltaPct": 1.9,
-    "heroDamage": 83831
+    "artifact": "Witch's Remains",
+    "deltaPct": 1.8,
+    "heroDamage": 67663
    },
    {
     "artifact": "Manticore Statue",
     "deltaPct": 1.8,
-    "heroDamage": 83552
-   },
-   {
-    "artifact": "Witch's Remains",
-    "deltaPct": 1.7,
-    "heroDamage": 78973
-   },
-   {
-    "artifact": "Arcana Cube",
-    "deltaPct": 0.8,
-    "heroDamage": 79865
-   },
-   {
-    "artifact": "Lost Pearl in Desert",
-    "deltaPct": 0.4,
-    "heroDamage": 80160
-   },
-   {
-    "artifact": "Meditator's Pipe",
-    "deltaPct": 0.4,
-    "heroDamage": 79325
-   },
-   {
-    "artifact": "none",
-    "deltaPct": 0,
-    "heroDamage": 78289
-   },
-   {
-    "artifact": "Frost Globe",
-    "deltaPct": 0,
-    "heroDamage": 78289
-   },
-   {
-    "artifact": "Illuya's Fang",
-    "deltaPct": 0,
-    "heroDamage": 78289
-   },
-   {
-    "artifact": "Orb of Oblivion",
-    "deltaPct": 0,
-    "heroDamage": 78289
-   },
-   {
-    "artifact": "Ivaran's Arrow",
-    "deltaPct": 0,
-    "heroDamage": 78289
-   },
-   {
-    "artifact": "Lunar Harp",
-    "deltaPct": 0,
-    "heroDamage": 78289
-   },
-   {
-    "artifact": "A Guide to Magic by Elminster",
-    "deltaPct": 0,
-    "heroDamage": 78289
-   },
-   {
-    "artifact": "Mirror of the Living",
-    "deltaPct": 0,
-    "heroDamage": 78289
-   },
-   {
-    "artifact": "Spiritual Incense Burner",
-    "deltaPct": -0.1,
-    "heroDamage": 77884
-   }
-  ],
-  "Hvitar@boss": [
-   {
-    "artifact": "Ring of Winter",
-    "deltaPct": 11.4,
-    "heroDamage": 125565
-   },
-   {
-    "artifact": "Witch's Remains",
-    "deltaPct": 4.8,
-    "heroDamage": 102274
-   },
-   {
-    "artifact": "Misty Conch",
-    "deltaPct": 4,
-    "heroDamage": 103300
-   },
-   {
-    "artifact": "Manticore Statue",
-    "deltaPct": 2.9,
-    "heroDamage": 106306
+    "heroDamage": 71971
    },
    {
     "artifact": "Eyeball of the Giant",
-    "deltaPct": 2.8,
-    "heroDamage": 106197
-   },
-   {
-    "artifact": "Spiritual Incense Burner",
-    "deltaPct": 2.2,
-    "heroDamage": 101359
+    "deltaPct": 1.8,
+    "heroDamage": 71820
    },
    {
     "artifact": "Rift Hourglass",
-    "deltaPct": 1.3,
-    "heroDamage": 107437
-   },
-   {
-    "artifact": "Lost Pearl in Desert",
-    "deltaPct": 1.2,
-    "heroDamage": 102082
+    "deltaPct": 1,
+    "heroDamage": 71071
    },
    {
     "artifact": "Meditator's Pipe",
-    "deltaPct": 0.3,
-    "heroDamage": 100350
+    "deltaPct": 0.7,
+    "heroDamage": 69090
+   },
+   {
+    "artifact": "Arcana Cube",
+    "deltaPct": 0.5,
+    "heroDamage": 68423
    },
    {
     "artifact": "A Guide to Magic by Elminster",
-    "deltaPct": 0.3,
-    "heroDamage": 100012
+    "deltaPct": 0.1,
+    "heroDamage": 67781
    },
    {
     "artifact": "none",
     "deltaPct": 0,
-    "heroDamage": 99015
+    "heroDamage": 67387
+   },
+   {
+    "artifact": "Frost Globe",
+    "deltaPct": 0,
+    "heroDamage": 67387
+   },
+   {
+    "artifact": "Illuya's Fang",
+    "deltaPct": 0,
+    "heroDamage": 67387
+   },
+   {
+    "artifact": "Orb of Oblivion",
+    "deltaPct": 0,
+    "heroDamage": 67387
    },
    {
     "artifact": "Ivaran's Arrow",
     "deltaPct": 0,
-    "heroDamage": 99760
-   },
-   {
-    "artifact": "Frost Globe",
-    "deltaPct": -0.3,
-    "heroDamage": 101235
-   },
-   {
-    "artifact": "Illuya's Fang",
-    "deltaPct": -0.3,
-    "heroDamage": 101235
-   },
-   {
-    "artifact": "Orb of Oblivion",
-    "deltaPct": -0.3,
-    "heroDamage": 101235
+    "heroDamage": 67387
    },
    {
     "artifact": "Lunar Harp",
-    "deltaPct": -0.3,
-    "heroDamage": 99469
+    "deltaPct": 0,
+    "heroDamage": 67387
    },
    {
     "artifact": "Mirror of the Living",
-    "deltaPct": -0.4,
-    "heroDamage": 100482
+    "deltaPct": 0,
+    "heroDamage": 67387
+   },
+   {
+    "artifact": "Spiritual Incense Burner",
+    "deltaPct": -0.5,
+    "heroDamage": 65389
+   }
+  ],
+  "Hvitar@hard": [
+   {
+    "artifact": "Ring of Winter",
+    "deltaPct": 4.3,
+    "heroDamage": 132943
    },
    {
     "artifact": "Arcana Cube",
-    "deltaPct": -0.8,
-    "heroDamage": 100065
+    "deltaPct": 2.3,
+    "heroDamage": 118566
+   },
+   {
+    "artifact": "Rift Hourglass",
+    "deltaPct": 2,
+    "heroDamage": 117256
+   },
+   {
+    "artifact": "Witch's Remains",
+    "deltaPct": 1.4,
+    "heroDamage": 113929
+   },
+   {
+    "artifact": "Manticore Statue",
+    "deltaPct": 1.1,
+    "heroDamage": 121149
+   },
+   {
+    "artifact": "Eyeball of the Giant",
+    "deltaPct": 1.1,
+    "heroDamage": 121059
+   },
+   {
+    "artifact": "Meditator's Pipe",
+    "deltaPct": 0.7,
+    "heroDamage": 118653
+   },
+   {
+    "artifact": "A Guide to Magic by Elminster",
+    "deltaPct": 0.2,
+    "heroDamage": 116249
+   },
+   {
+    "artifact": "Frost Globe",
+    "deltaPct": 0,
+    "heroDamage": 115519
+   },
+   {
+    "artifact": "Illuya's Fang",
+    "deltaPct": 0,
+    "heroDamage": 115519
+   },
+   {
+    "artifact": "Orb of Oblivion",
+    "deltaPct": 0,
+    "heroDamage": 115519
+   },
+   {
+    "artifact": "none",
+    "deltaPct": 0,
+    "heroDamage": 115744
+   },
+   {
+    "artifact": "Lunar Harp",
+    "deltaPct": 0,
+    "heroDamage": 115386
+   },
+   {
+    "artifact": "Mirror of the Living",
+    "deltaPct": 0,
+    "heroDamage": 115386
+   },
+   {
+    "artifact": "Ivaran's Arrow",
+    "deltaPct": 0,
+    "heroDamage": 115591
+   },
+   {
+    "artifact": "Spiritual Incense Burner",
+    "deltaPct": -2.7,
+    "heroDamage": 114069
    }
   ],
   "Lossenia@single": [
    {
-    "artifact": "Misty Conch",
-    "deltaPct": 8.1,
-    "heroDamage": 72199
-   },
-   {
     "artifact": "Ring of Winter",
-    "deltaPct": 4.3,
-    "heroDamage": 80943
-   },
-   {
-    "artifact": "Rift Hourglass",
-    "deltaPct": 2.1,
-    "heroDamage": 73385
-   },
-   {
-    "artifact": "Lost Pearl in Desert",
-    "deltaPct": 1.9,
-    "heroDamage": 72553
+    "deltaPct": 4.9,
+    "heroDamage": 75517
    },
    {
     "artifact": "Witch's Remains",
-    "deltaPct": 1.7,
-    "heroDamage": 66472
-   },
-   {
-    "artifact": "Spiritual Incense Burner",
-    "deltaPct": 1.4,
-    "heroDamage": 69970
+    "deltaPct": 1.6,
+    "heroDamage": 61856
    },
    {
     "artifact": "Eyeball of the Giant",
-    "deltaPct": 1.2,
-    "heroDamage": 69462
+    "deltaPct": 1.4,
+    "heroDamage": 63940
    },
    {
     "artifact": "Manticore Statue",
-    "deltaPct": 1.1,
-    "heroDamage": 69189
-   },
-   {
-    "artifact": "Arcana Cube",
-    "deltaPct": 0.6,
-    "heroDamage": 65053
+    "deltaPct": 1.2,
+    "heroDamage": 63393
    },
    {
     "artifact": "Meditator's Pipe",
     "deltaPct": 0.2,
-    "heroDamage": 65870
+    "heroDamage": 60523
    },
    {
     "artifact": "none",
     "deltaPct": 0,
-    "heroDamage": 65256
+    "heroDamage": 59916
    },
    {
     "artifact": "Ivaran's Arrow",
     "deltaPct": 0,
-    "heroDamage": 65256
+    "heroDamage": 59916
    },
    {
     "artifact": "Lunar Harp",
     "deltaPct": 0,
-    "heroDamage": 65256
+    "heroDamage": 59916
    },
    {
     "artifact": "A Guide to Magic by Elminster",
     "deltaPct": 0,
-    "heroDamage": 65256
+    "heroDamage": 59916
    },
    {
     "artifact": "Mirror of the Living",
     "deltaPct": 0,
-    "heroDamage": 65256
+    "heroDamage": 59916
    },
    {
     "artifact": "Frost Globe",
-    "deltaPct": -0.1,
-    "heroDamage": 65224
+    "deltaPct": 0,
+    "heroDamage": 59923
    },
    {
     "artifact": "Illuya's Fang",
-    "deltaPct": -0.1,
-    "heroDamage": 65224
+    "deltaPct": 0,
+    "heroDamage": 59923
    },
    {
     "artifact": "Orb of Oblivion",
+    "deltaPct": 0,
+    "heroDamage": 59923
+   },
+   {
+    "artifact": "Arcana Cube",
     "deltaPct": -0.1,
-    "heroDamage": 65224
+    "heroDamage": 61094
+   },
+   {
+    "artifact": "Rift Hourglass",
+    "deltaPct": -0.1,
+    "heroDamage": 60780
+   },
+   {
+    "artifact": "Spiritual Incense Burner",
+    "deltaPct": -0.5,
+    "heroDamage": 59001
    }
   ],
-  "Lossenia@boss": [
+  "Lossenia@hard": [
    {
-    "artifact": "Misty Conch",
-    "deltaPct": 15.2,
-    "heroDamage": 90482
+    "artifact": "Ring of Winter",
+    "deltaPct": 3.4,
+    "heroDamage": 111948
    },
    {
     "artifact": "Witch's Remains",
-    "deltaPct": 8.9,
-    "heroDamage": 84930
-   },
-   {
-    "artifact": "Ring of Winter",
-    "deltaPct": 4.6,
-    "heroDamage": 99559
-   },
-   {
-    "artifact": "Eyeball of the Giant",
-    "deltaPct": 2.2,
-    "heroDamage": 89283
-   },
-   {
-    "artifact": "Manticore Statue",
-    "deltaPct": 1.7,
-    "heroDamage": 88245
+    "deltaPct": 3.1,
+    "heroDamage": 92193
    },
    {
     "artifact": "Arcana Cube",
-    "deltaPct": 0.6,
-    "heroDamage": 84151
+    "deltaPct": 1.2,
+    "heroDamage": 92831
+   },
+   {
+    "artifact": "Spiritual Incense Burner",
+    "deltaPct": 0.9,
+    "heroDamage": 93428
+   },
+   {
+    "artifact": "Eyeball of the Giant",
+    "deltaPct": 0.8,
+    "heroDamage": 96063
+   },
+   {
+    "artifact": "Manticore Statue",
+    "deltaPct": 0.8,
+    "heroDamage": 95665
+   },
+   {
+    "artifact": "Frost Globe",
+    "deltaPct": 0.7,
+    "heroDamage": 91887
+   },
+   {
+    "artifact": "Illuya's Fang",
+    "deltaPct": 0.7,
+    "heroDamage": 91887
+   },
+   {
+    "artifact": "Orb of Oblivion",
+    "deltaPct": 0.7,
+    "heroDamage": 91887
    },
    {
     "artifact": "Meditator's Pipe",
-    "deltaPct": 0.2,
-    "heroDamage": 84323
+    "deltaPct": 0.1,
+    "heroDamage": 92244
+   },
+   {
+    "artifact": "Lunar Harp",
+    "deltaPct": 0,
+    "heroDamage": 91673
    },
    {
     "artifact": "Mirror of the Living",
-    "deltaPct": 0.1,
-    "heroDamage": 85151
+    "deltaPct": 0,
+    "heroDamage": 91673
    },
    {
     "artifact": "none",
     "deltaPct": 0,
-    "heroDamage": 83531
-   },
-   {
-    "artifact": "Frost Globe",
-    "deltaPct": 0,
-    "heroDamage": 83825
-   },
-   {
-    "artifact": "Illuya's Fang",
-    "deltaPct": 0,
-    "heroDamage": 83825
-   },
-   {
-    "artifact": "Orb of Oblivion",
-    "deltaPct": 0,
-    "heroDamage": 83825
+    "heroDamage": 91589
    },
    {
     "artifact": "Ivaran's Arrow",
-    "deltaPct": -0.6,
-    "heroDamage": 84002
-   },
-   {
-    "artifact": "Lunar Harp",
-    "deltaPct": -0.7,
-    "heroDamage": 84660
+    "deltaPct": 0,
+    "heroDamage": 91589
    },
    {
     "artifact": "A Guide to Magic by Elminster",
-    "deltaPct": -0.8,
-    "heroDamage": 84145
-   },
-   {
-    "artifact": "Lost Pearl in Desert",
-    "deltaPct": -2.2,
-    "heroDamage": 85463
+    "deltaPct": 0,
+    "heroDamage": 91589
    },
    {
     "artifact": "Rift Hourglass",
-    "deltaPct": -2.4,
-    "heroDamage": 91621
-   },
-   {
-    "artifact": "Spiritual Incense Burner",
-    "deltaPct": -2.5,
-    "heroDamage": 85070
+    "deltaPct": -1.6,
+    "heroDamage": 95433
    }
   ],
   "Voresh@single": [
    {
-    "artifact": "Witch's Remains",
-    "deltaPct": 3.3,
-    "heroDamage": 46118
-   },
-   {
     "artifact": "Ring of Winter",
-    "deltaPct": 3.3,
-    "heroDamage": 56517
+    "deltaPct": 3.8,
+    "heroDamage": 46280
    },
    {
-    "artifact": "Rift Hourglass",
-    "deltaPct": 2.3,
-    "heroDamage": 50369
+    "artifact": "Witch's Remains",
+    "deltaPct": 3.8,
+    "heroDamage": 36606
    },
    {
     "artifact": "Manticore Statue",
-    "deltaPct": 1.1,
-    "heroDamage": 48726
+    "deltaPct": 1,
+    "heroDamage": 38306
    },
    {
     "artifact": "Eyeball of the Giant",
-    "deltaPct": 1,
-    "heroDamage": 48338
+    "deltaPct": 0.9,
+    "heroDamage": 38169
    },
    {
-    "artifact": "Misty Conch",
-    "deltaPct": 0.4,
-    "heroDamage": 46366
-   },
-   {
-    "artifact": "Spiritual Incense Burner",
-    "deltaPct": 0.3,
-    "heroDamage": 45378
+    "artifact": "Rift Hourglass",
+    "deltaPct": 0.5,
+    "heroDamage": 37032
    },
    {
     "artifact": "Meditator's Pipe",
     "deltaPct": 0.2,
-    "heroDamage": 45710
+    "heroDamage": 36173
    },
    {
-    "artifact": "Arcana Cube",
-    "deltaPct": 0.2,
-    "heroDamage": 45658
-   },
-   {
-    "artifact": "Lost Pearl in Desert",
-    "deltaPct": 0.1,
-    "heroDamage": 44919
+    "artifact": "Spiritual Incense Burner",
+    "deltaPct": 0,
+    "heroDamage": 35607
    },
    {
     "artifact": "none",
     "deltaPct": 0,
-    "heroDamage": 44875
+    "heroDamage": 35503
    },
    {
     "artifact": "Frost Globe",
     "deltaPct": 0,
-    "heroDamage": 44875
+    "heroDamage": 35503
    },
    {
     "artifact": "Illuya's Fang",
     "deltaPct": 0,
-    "heroDamage": 44875
+    "heroDamage": 35503
    },
    {
     "artifact": "Orb of Oblivion",
     "deltaPct": 0,
-    "heroDamage": 44875
+    "heroDamage": 35503
    },
    {
     "artifact": "Ivaran's Arrow",
     "deltaPct": 0,
-    "heroDamage": 44875
+    "heroDamage": 35503
    },
    {
     "artifact": "Lunar Harp",
     "deltaPct": 0,
-    "heroDamage": 44875
+    "heroDamage": 35503
    },
    {
     "artifact": "A Guide to Magic by Elminster",
     "deltaPct": 0,
-    "heroDamage": 44875
+    "heroDamage": 35503
    },
    {
     "artifact": "Mirror of the Living",
     "deltaPct": 0,
-    "heroDamage": 44875
+    "heroDamage": 35503
+   },
+   {
+    "artifact": "Arcana Cube",
+    "deltaPct": -0.2,
+    "heroDamage": 36053
    }
   ],
-  "Voresh@boss": [
-   {
-    "artifact": "Ring of Winter",
-    "deltaPct": 11.5,
-    "heroDamage": 71481
-   },
-   {
-    "artifact": "Rift Hourglass",
-    "deltaPct": 9,
-    "heroDamage": 66273
-   },
-   {
-    "artifact": "Spiritual Incense Burner",
-    "deltaPct": 6.4,
-    "heroDamage": 61169
-   },
-   {
-    "artifact": "Lost Pearl in Desert",
-    "deltaPct": 5.6,
-    "heroDamage": 60654
-   },
+  "Voresh@hard": [
    {
     "artifact": "Witch's Remains",
-    "deltaPct": 5.1,
-    "heroDamage": 62363
-   },
-   {
-    "artifact": "Manticore Statue",
-    "deltaPct": 4,
-    "heroDamage": 62922
+    "deltaPct": 3.2,
+    "heroDamage": 58350
    },
    {
     "artifact": "Mirror of the Living",
-    "deltaPct": 4,
-    "heroDamage": 59874
+    "deltaPct": 1.6,
+    "heroDamage": 58104
    },
    {
-    "artifact": "Eyeball of the Giant",
-    "deltaPct": 3.9,
-    "heroDamage": 62531
+    "artifact": "Ring of Winter",
+    "deltaPct": 1.3,
+    "heroDamage": 72690
    },
    {
     "artifact": "Arcana Cube",
-    "deltaPct": 2.8,
-    "heroDamage": 61307
+    "deltaPct": 0.7,
+    "heroDamage": 59718
    },
    {
-    "artifact": "Ivaran's Arrow",
-    "deltaPct": 0.4,
-    "heroDamage": 60448
+    "artifact": "Manticore Statue",
+    "deltaPct": 0.7,
+    "heroDamage": 62158
    },
    {
-    "artifact": "Misty Conch",
+    "artifact": "Eyeball of the Giant",
+    "deltaPct": 0.7,
+    "heroDamage": 61955
+   },
+   {
+    "artifact": "Rift Hourglass",
+    "deltaPct": 0.6,
+    "heroDamage": 59034
+   },
+   {
+    "artifact": "Meditator's Pipe",
     "deltaPct": 0.2,
-    "heroDamage": 61003
+    "heroDamage": 59158
    },
    {
     "artifact": "A Guide to Magic by Elminster",
     "deltaPct": 0.1,
-    "heroDamage": 59546
+    "heroDamage": 58163
+   },
+   {
+    "artifact": "Frost Globe",
+    "deltaPct": 0,
+    "heroDamage": 58190
+   },
+   {
+    "artifact": "Illuya's Fang",
+    "deltaPct": 0,
+    "heroDamage": 58190
+   },
+   {
+    "artifact": "Orb of Oblivion",
+    "deltaPct": 0,
+    "heroDamage": 58190
+   },
+   {
+    "artifact": "Lunar Harp",
+    "deltaPct": 0,
+    "heroDamage": 58190
    },
    {
     "artifact": "none",
     "deltaPct": 0,
-    "heroDamage": 60578
+    "heroDamage": 58315
    },
    {
-    "artifact": "Lunar Harp",
-    "deltaPct": -0.2,
-    "heroDamage": 59094
+    "artifact": "Ivaran's Arrow",
+    "deltaPct": 0,
+    "heroDamage": 58315
    },
    {
-    "artifact": "Frost Globe",
-    "deltaPct": -0.2,
-    "heroDamage": 58296
-   },
-   {
-    "artifact": "Illuya's Fang",
-    "deltaPct": -0.2,
-    "heroDamage": 58296
-   },
-   {
-    "artifact": "Orb of Oblivion",
-    "deltaPct": -0.2,
-    "heroDamage": 58296
-   },
-   {
-    "artifact": "Meditator's Pipe",
-    "deltaPct": -0.5,
-    "heroDamage": 59409
+    "artifact": "Spiritual Incense Burner",
+    "deltaPct": -0.8,
+    "heroDamage": 58415
    }
   ],
   "Ergander@single": [
    {
     "artifact": "Ring of Winter",
-    "deltaPct": 2.3,
-    "heroDamage": 58263
-   },
-   {
-    "artifact": "Rift Hourglass",
-    "deltaPct": 2.1,
-    "heroDamage": 56380
+    "deltaPct": 2.6,
+    "heroDamage": 45474
    },
    {
     "artifact": "Witch's Remains",
-    "deltaPct": 1.9,
-    "heroDamage": 50114
+    "deltaPct": 2.3,
+    "heroDamage": 38426
+   },
+   {
+    "artifact": "Rift Hourglass",
+    "deltaPct": 1.1,
+    "heroDamage": 40110
    },
    {
     "artifact": "Eyeball of the Giant",
-    "deltaPct": 1,
-    "heroDamage": 52910
+    "deltaPct": 0.9,
+    "heroDamage": 40114
    },
    {
     "artifact": "Manticore Statue",
-    "deltaPct": 1,
-    "heroDamage": 52788
-   },
-   {
-    "artifact": "Arcana Cube",
-    "deltaPct": 0.3,
-    "heroDamage": 50304
-   },
-   {
-    "artifact": "Misty Conch",
-    "deltaPct": 0.3,
-    "heroDamage": 50423
-   },
-   {
-    "artifact": "A Guide to Magic by Elminster",
-    "deltaPct": 0.2,
-    "heroDamage": 50010
+    "deltaPct": 0.8,
+    "heroDamage": 39760
    },
    {
     "artifact": "Meditator's Pipe",
     "deltaPct": 0.2,
-    "heroDamage": 49979
-   },
-   {
-    "artifact": "Mirror of the Living",
-    "deltaPct": 0.2,
-    "heroDamage": 49969
-   },
-   {
-    "artifact": "Frost Globe",
-    "deltaPct": 0.1,
-    "heroDamage": 49861
-   },
-   {
-    "artifact": "Illuya's Fang",
-    "deltaPct": 0.1,
-    "heroDamage": 49861
-   },
-   {
-    "artifact": "Orb of Oblivion",
-    "deltaPct": 0.1,
-    "heroDamage": 49861
+    "heroDamage": 37862
    },
    {
     "artifact": "Spiritual Incense Burner",
     "deltaPct": 0.1,
-    "heroDamage": 50486
+    "heroDamage": 37643
+   },
+   {
+    "artifact": "A Guide to Magic by Elminster",
+    "deltaPct": 0.1,
+    "heroDamage": 37811
+   },
+   {
+    "artifact": "Mirror of the Living",
+    "deltaPct": 0.1,
+    "heroDamage": 37776
+   },
+   {
+    "artifact": "Frost Globe",
+    "deltaPct": 0.1,
+    "heroDamage": 37708
+   },
+   {
+    "artifact": "Illuya's Fang",
+    "deltaPct": 0.1,
+    "heroDamage": 37708
+   },
+   {
+    "artifact": "Orb of Oblivion",
+    "deltaPct": 0.1,
+    "heroDamage": 37708
    },
    {
     "artifact": "Lunar Harp",
     "deltaPct": 0.1,
-    "heroDamage": 49762
-   },
-   {
-    "artifact": "Lost Pearl in Desert",
-    "deltaPct": 0.1,
-    "heroDamage": 50333
+    "heroDamage": 37639
    },
    {
     "artifact": "none",
     "deltaPct": 0,
-    "heroDamage": 49414
+    "heroDamage": 37398
    },
    {
     "artifact": "Ivaran's Arrow",
     "deltaPct": 0,
-    "heroDamage": 49414
+    "heroDamage": 37398
+   },
+   {
+    "artifact": "Arcana Cube",
+    "deltaPct": -0.1,
+    "heroDamage": 38311
    }
   ],
-  "Ergander@boss": [
+  "Ergander@hard": [
    {
-    "artifact": "Rift Hourglass",
-    "deltaPct": 25.4,
-    "heroDamage": 74175
+    "artifact": "Spiritual Incense Burner",
+    "deltaPct": 2.2,
+    "heroDamage": 61857
    },
    {
     "artifact": "Witch's Remains",
-    "deltaPct": 6.1,
-    "heroDamage": 87978
+    "deltaPct": 1.4,
+    "heroDamage": 60848
+   },
+   {
+    "artifact": "Arcana Cube",
+    "deltaPct": 1.3,
+    "heroDamage": 61650
+   },
+   {
+    "artifact": "Rift Hourglass",
+    "deltaPct": 0.9,
+    "heroDamage": 62051
+   },
+   {
+    "artifact": "Mirror of the Living",
+    "deltaPct": 0.8,
+    "heroDamage": 61634
+   },
+   {
+    "artifact": "Eyeball of the Giant",
+    "deltaPct": 0.7,
+    "heroDamage": 64113
+   },
+   {
+    "artifact": "Manticore Statue",
+    "deltaPct": 0.6,
+    "heroDamage": 63758
+   },
+   {
+    "artifact": "A Guide to Magic by Elminster",
+    "deltaPct": 0.1,
+    "heroDamage": 61242
+   },
+   {
+    "artifact": "Frost Globe",
+    "deltaPct": 0.1,
+    "heroDamage": 61078
+   },
+   {
+    "artifact": "Illuya's Fang",
+    "deltaPct": 0.1,
+    "heroDamage": 61078
+   },
+   {
+    "artifact": "Orb of Oblivion",
+    "deltaPct": 0.1,
+    "heroDamage": 61078
+   },
+   {
+    "artifact": "Meditator's Pipe",
+    "deltaPct": 0.1,
+    "heroDamage": 61301
+   },
+   {
+    "artifact": "Lunar Harp",
+    "deltaPct": 0.1,
+    "heroDamage": 60973
    },
    {
     "artifact": "Ring of Winter",
-    "deltaPct": 5.6,
-    "heroDamage": 100404
-   },
-   {
-    "artifact": "Eyeball of the Giant",
-    "deltaPct": 2.4,
-    "heroDamage": 96235
-   },
-   {
-    "artifact": "Manticore Statue",
-    "deltaPct": 1.9,
-    "heroDamage": 95690
-   },
-   {
-    "artifact": "Spiritual Incense Burner",
-    "deltaPct": 1.3,
-    "heroDamage": 91965
-   },
-   {
-    "artifact": "Lost Pearl in Desert",
-    "deltaPct": 0.8,
-    "heroDamage": 91774
-   },
-   {
-    "artifact": "Misty Conch",
-    "deltaPct": 0.4,
-    "heroDamage": 92789
-   },
-   {
-    "artifact": "A Guide to Magic by Elminster",
-    "deltaPct": 0.2,
-    "heroDamage": 92254
-   },
-   {
-    "artifact": "Meditator's Pipe",
-    "deltaPct": 0.2,
-    "heroDamage": 92211
-   },
-   {
-    "artifact": "Mirror of the Living",
-    "deltaPct": 0.2,
-    "heroDamage": 92198
-   },
-   {
-    "artifact": "Frost Globe",
-    "deltaPct": 0.2,
-    "heroDamage": 92051
-   },
-   {
-    "artifact": "Illuya's Fang",
-    "deltaPct": 0.2,
-    "heroDamage": 92051
-   },
-   {
-    "artifact": "Orb of Oblivion",
-    "deltaPct": 0.2,
-    "heroDamage": 92051
-   },
-   {
-    "artifact": "Lunar Harp",
-    "deltaPct": 0.2,
-    "heroDamage": 92062
-   },
-   {
-    "artifact": "Arcana Cube",
-    "deltaPct": 0,
-    "heroDamage": 94071
-   },
-   {
-    "artifact": "none",
-    "deltaPct": 0,
-    "heroDamage": 91569
+    "deltaPct": 0.1,
+    "heroDamage": 71203
    },
    {
     "artifact": "Ivaran's Arrow",
     "deltaPct": 0,
-    "heroDamage": 91569
+    "heroDamage": 60619
+   },
+   {
+    "artifact": "none",
+    "deltaPct": 0,
+    "heroDamage": 60619
    }
   ]
  },
  "weights": {
   "Auster": {
    "atkP": 5.8,
-   "critRate": 6.7,
+   "critRate": 6.4,
    "critDmg": 4.8,
    "ench": 0,
-   "haste": 13.1,
-   "atkF": 9.8,
+   "haste": -0.9,
+   "atkF": 10,
    "acc": 0
   },
   "Hvitar": {
    "atkP": 5.8,
-   "critRate": 5.1,
+   "critRate": 6.3,
    "critDmg": 4.3,
-   "ench": 0,
-   "haste": 9,
-   "atkF": 9.5,
+   "ench": 1.7,
+   "haste": 0.3,
+   "atkF": 9.6,
    "acc": 0
   },
   "Lossenia": {
-   "atkP": 3.9,
+   "atkP": 4.1,
    "critRate": 6.3,
-   "critDmg": 4.9,
+   "critDmg": 5,
    "ench": 0,
-   "haste": 9,
-   "atkF": 7.7,
-   "acc": 0
+   "haste": -1.5,
+   "atkF": 8.2,
+   "acc": -0.1
   }
  },
  "sensitivity": {
   "Hvitar vs Hochadir (single boss)": {
    "better": "first",
-   "deltaPct": -6.1,
+   "deltaPct": -3.7,
    "robust": true,
    "flips": []
   },
   "Hvitar vs Hochadir (boss clear)": {
-   "better": "second",
-   "deltaPct": 7.6,
+   "better": "first",
+   "deltaPct": -9.5,
+   "robust": true,
+   "flips": []
+  },
+  "Hvitar vs Vinyara (hard boss)": {
+   "better": "first",
+   "deltaPct": -5,
    "robust": false,
    "flips": [
-    "energyRegen=2",
-    "energyRegen=6",
-    "energyPerBasic=4",
-    "energyPerBasic=12",
-    "energyPerHitTaken=0",
-    "battleFirst=0",
-    "castBattle=1.2",
-    "defK=600",
-    "bossControlMult=0"
+    "defK=2400"
    ]
+  },
+  "Hvitar vs Eli (boss clear)": {
+   "better": "second",
+   "deltaPct": 4.1,
+   "robust": true,
+   "flips": []
+  },
+  "Auster vs Hochadir (five targets)": {
+   "better": "second",
+   "deltaPct": 17.9,
+   "robust": true,
+   "flips": []
   },
   "Ergander vs Alphanarsy (waves)": {
    "better": "first",
-   "deltaPct": -2.3,
+   "deltaPct": -3.3,
    "robust": true,
    "flips": []
   },
   "Hvitar: Rift Hourglass vs Eyeball of the Giant": {
-   "better": "first",
-   "deltaPct": -1.1,
+   "better": "second",
+   "deltaPct": 0.3,
    "robust": false,
    "flips": [
-    "energyRegen=2",
-    "castBattle=1.2"
+    "castBattle=0.5",
+    "castUlt=1"
    ]
   }
  },
@@ -2231,51 +2437,113 @@
     "Ergander"
    ],
    "result": {
-    "dps": 4143,
-    "dpsSd": 547,
-    "winRate": 46.7,
-    "ttk": 104.9,
-    "hpLeft": 29,
-    "clear": 1.019,
+    "dps": 4958,
+    "dpsSd": 92,
+    "winRate": 100,
+    "ttk": 95.6,
+    "hpLeft": 59.7,
+    "clear": 1.203,
     "perHero": [
      {
       "name": "Lossenia",
-      "share": 18.2,
+      "share": 19.8,
       "kit": "hand",
-      "death": 96.7,
+      "death": 0,
       "heal": 0,
       "shield": 0
      },
      {
       "name": "Auster",
-      "share": 28.1,
+      "share": 30.2,
       "kit": "hand",
-      "death": 100,
+      "death": 0,
       "heal": 0,
       "shield": 0
      },
      {
       "name": "Hvitar",
-      "share": 21.2,
+      "share": 24.4,
       "kit": "hand",
-      "death": 100,
+      "death": 0,
       "heal": 0,
       "shield": 0
      },
      {
       "name": "Voresh",
-      "share": 12,
+      "share": 12.4,
       "kit": "hand",
-      "death": 93.3,
-      "heal": 23631,
-      "shield": 0
+      "death": 0,
+      "heal": 22603,
+      "shield": 7007
      },
      {
       "name": "Ergander",
-      "share": 20.5,
+      "share": 13.2,
       "kit": "hand",
       "death": 0,
-      "heal": 48773,
+      "heal": 35000,
+      "shield": 0
+     }
+    ],
+    "confidence": "medium",
+    "autoKits": []
+   }
+  },
+  "Main on the hard boss": {
+   "bench": "hard",
+   "team": [
+    "Lossenia",
+    "Auster",
+    "Hvitar",
+    "Voresh",
+    "Ergander"
+   ],
+   "result": {
+    "dps": 4860,
+    "dpsSd": 183,
+    "winRate": 70,
+    "ttk": 95.8,
+    "hpLeft": 22.8,
+    "clear": 1.12,
+    "perHero": [
+     {
+      "name": "Lossenia",
+      "share": 19.8,
+      "kit": "hand",
+      "death": 30,
+      "heal": 0,
+      "shield": 0
+     },
+     {
+      "name": "Auster",
+      "share": 30.5,
+      "kit": "hand",
+      "death": 30,
+      "heal": 0,
+      "shield": 0
+     },
+     {
+      "name": "Hvitar",
+      "share": 24.6,
+      "kit": "hand",
+      "death": 30,
+      "heal": 0,
+      "shield": 0
+     },
+     {
+      "name": "Voresh",
+      "share": 12.5,
+      "kit": "hand",
+      "death": 30,
+      "heal": 24077,
+      "shield": 7007
+     },
+     {
+      "name": "Ergander",
+      "share": 12.7,
+      "kit": "hand",
+      "death": 30,
+      "heal": 33160,
       "shield": 0
      }
     ],
@@ -2293,51 +2561,51 @@
     "Ergander"
    ],
    "result": {
-    "dps": 4934,
-    "dpsSd": 552,
-    "winRate": 86.7,
-    "ttk": 95.1,
-    "hpLeft": 30.4,
-    "clear": 1.175,
+    "dps": 4381,
+    "dpsSd": 313,
+    "winRate": 80,
+    "ttk": 105.7,
+    "hpLeft": 52.6,
+    "clear": 1.094,
     "perHero": [
      {
       "name": "Lossenia",
-      "share": 20.3,
+      "share": 22.7,
       "kit": "hand",
-      "death": 60,
+      "death": 0,
       "heal": 0,
       "shield": 0
      },
      {
       "name": "Auster",
-      "share": 32,
+      "share": 35,
       "kit": "hand",
-      "death": 73.3,
+      "death": 0,
       "heal": 0,
       "shield": 0
      },
      {
       "name": "Hochadir",
-      "share": 16.9,
+      "share": 13.9,
       "kit": "hand",
-      "death": 63.3,
+      "death": 36.7,
       "heal": 0,
       "shield": 0
      },
      {
       "name": "Voresh",
-      "share": 13.7,
+      "share": 13.8,
       "kit": "hand",
-      "death": 46.7,
-      "heal": 28205,
-      "shield": 0
+      "death": 0,
+      "heal": 27023,
+      "shield": 7390
      },
      {
       "name": "Ergander",
-      "share": 17.2,
+      "share": 14.7,
       "kit": "hand",
       "death": 0,
-      "heal": 40644,
+      "heal": 36541,
       "shield": 0
      }
     ],
@@ -2355,16 +2623,16 @@
     "Alphanarsy"
    ],
    "result": {
-    "dps": 10808,
-    "dpsSd": 240,
+    "dps": 9204,
+    "dpsSd": 224,
     "winRate": 100,
-    "ttk": 76.9,
-    "hpLeft": 83.8,
-    "clear": 1.487,
+    "ttk": 89.5,
+    "hpLeft": 77.5,
+    "clear": 1.404,
     "perHero": [
      {
       "name": "Lossenia",
-      "share": 23.8,
+      "share": 24.5,
       "kit": "hand",
       "death": 0,
       "heal": 0,
@@ -2372,7 +2640,7 @@
      },
      {
       "name": "Auster",
-      "share": 26,
+      "share": 26.3,
       "kit": "hand",
       "death": 0,
       "heal": 0,
@@ -2380,7 +2648,7 @@
      },
      {
       "name": "Hvitar",
-      "share": 33,
+      "share": 33.4,
       "kit": "hand",
       "death": 0,
       "heal": 0,
@@ -2388,19 +2656,19 @@
      },
      {
       "name": "Voresh",
-      "share": 11.8,
+      "share": 10.8,
       "kit": "hand",
       "death": 0,
-      "heal": 5649,
-      "shield": 0
+      "heal": 15188,
+      "shield": 6849
      },
      {
       "name": "Alphanarsy",
-      "share": 5.4,
+      "share": 5.1,
       "kit": "hand",
       "death": 0,
       "heal": 0,
-      "shield": 126613
+      "shield": 102249
      }
     ],
     "confidence": "medium",
@@ -2417,16 +2685,16 @@
     "Ergander"
    ],
    "result": {
-    "dps": 11703,
-    "dpsSd": 193,
+    "dps": 9848,
+    "dpsSd": 296,
     "winRate": 100,
-    "ttk": 71.6,
-    "hpLeft": 83.3,
-    "clear": 1.523,
+    "ttk": 84.3,
+    "hpLeft": 88.1,
+    "clear": 1.438,
     "perHero": [
      {
       "name": "Lossenia",
-      "share": 20.7,
+      "share": 23.1,
       "kit": "hand",
       "death": 0,
       "heal": 0,
@@ -2434,7 +2702,7 @@
      },
      {
       "name": "Auster",
-      "share": 23.9,
+      "share": 24.5,
       "kit": "hand",
       "death": 0,
       "heal": 0,
@@ -2442,7 +2710,7 @@
      },
      {
       "name": "Hvitar",
-      "share": 29.6,
+      "share": 29.7,
       "kit": "hand",
       "death": 0,
       "heal": 0,
@@ -2450,18 +2718,18 @@
      },
      {
       "name": "Voresh",
-      "share": 10.2,
+      "share": 10.1,
       "kit": "hand",
       "death": 0,
-      "heal": 11272,
-      "shield": 0
+      "heal": 6544,
+      "shield": 7007
      },
      {
       "name": "Ergander",
-      "share": 15.6,
+      "share": 12.7,
       "kit": "hand",
       "death": 0,
-      "heal": 30475,
+      "heal": 30526,
       "shield": 0
      }
     ],
@@ -2470,7 +2738,7 @@
    }
   },
   "Killer boss: Vinyara for Hvitar": {
-   "bench": "boss",
+   "bench": "hard",
    "team": [
     "Lossenia",
     "Auster",
@@ -2479,16 +2747,16 @@
     "Ergander"
    ],
    "result": {
-    "dps": 5154,
-    "dpsSd": 79,
+    "dps": 4252,
+    "dpsSd": 64,
     "winRate": 100,
-    "ttk": 93.5,
-    "hpLeft": 95.4,
-    "clear": 1.221,
+    "ttk": 111.5,
+    "hpLeft": 82.3,
+    "clear": 1.071,
     "perHero": [
      {
       "name": "Lossenia",
-      "share": 22.3,
+      "share": 21.8,
       "kit": "hand",
       "death": 0,
       "heal": 0,
@@ -2496,7 +2764,7 @@
      },
      {
       "name": "Auster",
-      "share": 34.8,
+      "share": 35.4,
       "kit": "hand",
       "death": 0,
       "heal": 0,
@@ -2504,26 +2772,88 @@
      },
      {
       "name": "Vinyara",
-      "share": 12,
+      "share": 13.2,
       "kit": "hand",
       "death": 0,
       "heal": 0,
-      "shield": 126606
+      "shield": 114168
      },
      {
       "name": "Voresh",
-      "share": 14.6,
+      "share": 14.3,
       "kit": "hand",
       "death": 0,
-      "heal": 26127,
+      "heal": 16156,
       "shield": 0
      },
      {
       "name": "Ergander",
-      "share": 16.2,
+      "share": 15.2,
       "kit": "hand",
       "death": 0,
-      "heal": 32597,
+      "heal": 39535,
+      "shield": 0
+     }
+    ],
+    "confidence": "medium",
+    "autoKits": []
+   }
+  },
+  "If losing: Alphanarsy for Hvitar": {
+   "bench": "hard",
+   "team": [
+    "Lossenia",
+    "Auster",
+    "Alphanarsy",
+    "Voresh",
+    "Ergander"
+   ],
+   "result": {
+    "dps": 3959,
+    "dpsSd": 114,
+    "winRate": 53.3,
+    "ttk": 116.9,
+    "hpLeft": 57.2,
+    "clear": 1.002,
+    "perHero": [
+     {
+      "name": "Lossenia",
+      "share": 24.4,
+      "kit": "hand",
+      "death": 0,
+      "heal": 0,
+      "shield": 0
+     },
+     {
+      "name": "Auster",
+      "share": 37,
+      "kit": "hand",
+      "death": 0,
+      "heal": 0,
+      "shield": 0
+     },
+     {
+      "name": "Alphanarsy",
+      "share": 6.7,
+      "kit": "hand",
+      "death": 36.7,
+      "heal": 0,
+      "shield": 113451
+     },
+     {
+      "name": "Voresh",
+      "share": 15.3,
+      "kit": "hand",
+      "death": 0,
+      "heal": 26388,
+      "shield": 0
+     },
+     {
+      "name": "Ergander",
+      "share": 16.6,
+      "kit": "hand",
+      "death": 0,
+      "heal": 36357,
       "shield": 0
      }
     ],
@@ -2541,16 +2871,16 @@
     "Frurbath"
    ],
    "result": {
-    "dps": 6255,
-    "dpsSd": 227,
+    "dps": 5026,
+    "dpsSd": 162,
     "winRate": 100,
-    "ttk": 77.2,
-    "hpLeft": 95.5,
-    "clear": 1.357,
+    "ttk": 94.4,
+    "hpLeft": 97,
+    "clear": 1.213,
     "perHero": [
      {
       "name": "Durango",
-      "share": 19.7,
+      "share": 20.1,
       "kit": "hand",
       "death": 0,
       "heal": 0,
@@ -2558,7 +2888,7 @@
      },
      {
       "name": "Twitch",
-      "share": 22.6,
+      "share": 23,
       "kit": "hand",
       "death": 0,
       "heal": 0,
@@ -2566,7 +2896,7 @@
      },
      {
       "name": "Lothair",
-      "share": 39.7,
+      "share": 39.4,
       "kit": "hand",
       "death": 0,
       "heal": 0,
@@ -2574,18 +2904,80 @@
      },
      {
       "name": "Oggok",
-      "share": 11.6,
+      "share": 10.7,
       "kit": "hand",
       "death": 0,
-      "heal": 51171,
-      "shield": 0
+      "heal": 51866,
+      "shield": 7693
      },
      {
       "name": "Frurbath",
-      "share": 6.3,
+      "share": 6.8,
       "kit": "hand",
       "death": 0,
-      "heal": 69802,
+      "heal": 29537,
+      "shield": 0
+     }
+    ],
+    "confidence": "medium",
+    "autoKits": []
+   }
+  },
+  "Poison team on the hard boss": {
+   "bench": "hard",
+   "team": [
+    "Durango",
+    "Twitch",
+    "Lothair",
+    "Oggok",
+    "Frurbath"
+   ],
+   "result": {
+    "dps": 5026,
+    "dpsSd": 162,
+    "winRate": 100,
+    "ttk": 94.4,
+    "hpLeft": 95,
+    "clear": 1.213,
+    "perHero": [
+     {
+      "name": "Durango",
+      "share": 20.1,
+      "kit": "hand",
+      "death": 0,
+      "heal": 0,
+      "shield": 0
+     },
+     {
+      "name": "Twitch",
+      "share": 23,
+      "kit": "hand",
+      "death": 0,
+      "heal": 0,
+      "shield": 0
+     },
+     {
+      "name": "Lothair",
+      "share": 39.4,
+      "kit": "hand",
+      "death": 0,
+      "heal": 0,
+      "shield": 0
+     },
+     {
+      "name": "Oggok",
+      "share": 10.7,
+      "kit": "hand",
+      "death": 0,
+      "heal": 65303,
+      "shield": 7693
+     },
+     {
+      "name": "Frurbath",
+      "share": 6.8,
+      "kit": "hand",
+      "death": 0,
+      "heal": 39128,
       "shield": 0
      }
     ],

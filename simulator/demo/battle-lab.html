@@ -368,7 +368,9 @@ select, input[type="search"] { font: 15px var(--font); color: var(--fg); backgro
       $('weights').innerHTML = rows.map(function (r) {
         return '<div class="bar wide"><span class="who">' + STEP_LABEL[r[0]] + '</span><span class="track"><span style="width:' + (Math.max(0, r[1]) / mx * 100).toFixed(1) + '%;background:var(--accent)"></span></span><span class="pct">' + (r[1] >= 0 ? '+' : '') + pct(r[1], 1) + '</span></div>';
       }).join('');
-      var arts = S.artifactsCoded().map(function (n) { return { label: n, patch: { artifact: { name: n, level: 20, tier: 0 } } }; });
+      // Beginner Season servers only have Season 1 artifacts.
+      var arts = S.artifactsCoded().filter(function (n) { var a = S.artifactByName(n); return a && (!a.season || a.season === 's1'); })
+        .map(function (n) { return { label: n, patch: { artifact: { name: n, level: 20, tier: 0 } } }; });
       arts.unshift({ label: 'No artifact', patch: { artifact: undefined } });
       var rk = S.rankVariants(o, slot, arts, { runs: 40, objective: enemyCfg().objective });
       var none = rk.filter(function (x) { return x.label === 'No artifact'; })[0];

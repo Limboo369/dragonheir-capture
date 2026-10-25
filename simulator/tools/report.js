@@ -68,8 +68,9 @@ MAIN.forEach(function (n, i) {
   out.captains[n] = { dps: Math.round(r.dps.mean), effect: r.captain && r.captain.effect, active: r.captain && r.captain.active };
 });
 
-// 5. Artifacts per hero (coded effects only; tier 0, +20).
-var ARTS = S.artifactsCoded();
+// 5. Artifacts per hero (coded effects only; tier 0, +20). Darko's server is in
+// its Beginner Season, so only Season 1 artifacts can drop or be bought.
+var ARTS = S.artifactsCoded().filter(function (n) { var a = S.artifactByName(n); return a && (!a.season || a.season === 's1'); });
 ['Auster', 'Hvitar', 'Lossenia', 'Voresh', 'Ergander'].forEach(function (n) {
   var slot = MAIN.indexOf(n);
   var variants = [{ label: 'none', patch: { artifact: undefined } }].concat(ARTS.map(function (a) { return { label: a, patch: { artifact: { name: a, level: 20, tier: 0 } } }; }));
@@ -114,6 +115,8 @@ function sens(label, a, b, objective) {
 sens('Hvitar vs Hochadir (single boss)', opts('single', MAIN), opts('single', ['Lossenia', 'Auster', 'Hochadir', 'Voresh', 'Ergander']), 'dps');
 sens('Hvitar vs Hochadir (boss clear)', opts('boss', MAIN), opts('boss', ['Lossenia', 'Auster', 'Hochadir', 'Voresh', 'Ergander']), 'clear');
 sens('Hvitar vs Vinyara (hard boss)', opts('hard', MAIN), opts('hard', ['Lossenia', 'Auster', 'Vinyara', 'Voresh', 'Ergander']), 'clear');
+sens('Hvitar vs Eli (boss clear)', opts('boss', MAIN), opts('boss', ['Lossenia', 'Auster', 'Eli', 'Voresh', 'Ergander']), 'clear');
+sens('Auster vs Hochadir (five targets)', opts('aoe', MAIN), opts('aoe', ['Lossenia', 'Hochadir', 'Hvitar', 'Voresh', 'Ergander']), 'dps');
 sens('Ergander vs Alphanarsy (waves)', opts('waves', MAIN), opts('waves', ['Lossenia', 'Auster', 'Hvitar', 'Voresh', 'Alphanarsy']), 'clear');
 var withArt = function (art) { var o = opts('single', MAIN); o.team = o.team.slice(); o.team[2] = Object.assign({}, o.team[2], { artifact: { name: art, level: 20, tier: 0 } }); return o; };
 sens('Hvitar: Rift Hourglass vs Eyeball of the Giant', withArt('Rift Hourglass'), withArt('Eyeball of the Giant'), 'dps');
@@ -140,7 +143,7 @@ md.push('`*` = rough kit (damage parts only).', '', '## Local-search optimum', '
 Object.keys(out.optimized).forEach(function (k) { md.push('- ' + BENCHES[k].label + ': ' + out.optimized[k].team.join(', ') + (out.optimized[k].steps.length ? ' (swaps: ' + out.optimized[k].steps.join('; ') + ')' : ' (no swap beats the main team by 1%)')); });
 md.push('', '## Captain (single boss, dungeon)', '');
 Object.keys(out.captains).forEach(function (n) { var c = out.captains[n]; md.push('- ' + n + ': ' + c.dps + ' DPS (' + (c.active ? 'active' : 'inactive') + ': ' + (c.effect || 'no captain skill') + ')'); });
-md.push('', '## Artifacts (team score change vs no artifact)', '');
+md.push('', '## Artifacts (team score change vs no artifact; Season 1 artifacts only: ' + ARTS.join(', ') + ')', '');
 Object.keys(out.artifacts).forEach(function (k) { md.push('- ' + k + ': ' + out.artifacts[k].slice(0, 6).map(function (a) { return a.artifact + ' ' + (a.deltaPct > 0 ? '+' : '') + a.deltaPct + '%'; }).join(', ')); });
 md.push('', '## Stat priority (hero damage gain per step)', '');
 Object.keys(out.weights).forEach(function (n) { var w = out.weights[n]; md.push('- ' + n + ': ' + Object.keys(w).sort(function (a, b) { return w[b] - w[a]; }).map(function (k) { return k + ' +' + w[k] + '%'; }).join(', ')); });
