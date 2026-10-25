@@ -3977,7 +3977,10 @@
   // against a boss of level L + 40 (Venom 8 at level 60 is normal day-4
   // content, dragonheir.info 570). Each 10 boss levels above or below that
   // multiplies boss HP and ATK by 1.12 (estimated: hero stat growth per 10
-  // levels near level 100). Domain and Vortex levels are not published.
+  // levels near level 100). Domain levels: one official point, Frost Domain
+  // 10 -> Lv105 (Darko's screen, 2026-10-25), stages up to at least 12; the
+  // 10 levels per stage step is ASSUMED from the other dungeons. Vortex levels
+  // are not published.
   var STAGES = {
     harpy: { label: 'Stage', min: 1, max: 15, lv: function (s) { return 20 + 10 * s; } },
     xenos: { label: 'Stage', min: 1, max: 15, lv: function (s) { return 20 + 10 * s; } },
@@ -3985,9 +3988,9 @@
     fyre: { label: 'Stage', min: 1, max: 9, lv: function (s) { return 5 + 20 * s; } },
     gruentius: { label: 'Stage', min: 1, max: 10, lv: function (s) { return 20 + 20 * s; } },
     goblin: { label: 'Stage', min: 1, max: 12, lv: function (s) { return 10 + 10 * s; } },
-    flameDomain: { label: 'Stage', min: 1, max: 9, lv: function (s) { return 40 + 15 * s; } },
-    tempestDomain: { label: 'Stage', min: 1, max: 9, lv: function (s) { return 40 + 15 * s; } },
-    frostDomain: { label: 'Stage', min: 1, max: 9, lv: function (s) { return 40 + 15 * s; } },
+    flameDomain: { label: 'Stage', min: 1, max: 15, lv: function (s) { return 5 + 10 * s; } },
+    tempestDomain: { label: 'Stage', min: 1, max: 15, lv: function (s) { return 5 + 10 * s; } },
+    frostDomain: { label: 'Stage', min: 1, max: 15, lv: function (s) { return 5 + 10 * s; } },
     vortex: { label: 'Difficulty', min: 1, max: 4, lv: function (s) { return 40 + 20 * s; } }
   };
   function stageFactor(id, e) {
