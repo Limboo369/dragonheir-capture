@@ -89,7 +89,9 @@
       b.on(u, 'second', function (e) {
         var t = e.u;
         if (t.side === u.side || b.t > u.flags.icewind || !b.has(t, 'Frost')) return;
-        b.hit(u, t, { atk: 0.22 }, { el: 'Derivative', tag: 'passive' });
+        // Per Frost stack (Reborn Frost stacks up to 5). Reading chosen on 2026-10-25: it
+        // raised her in Darko's full Frost-team fights and left the solo fight unchanged.
+        b.hit(u, t, { atk: 0.22 * Math.max(1, b.stacks(t, 'Frost')) }, { el: 'Derivative', tag: 'passive' });
       });
       b.on(u, 'damaged', function (e) {
         var t = e.tgt;
