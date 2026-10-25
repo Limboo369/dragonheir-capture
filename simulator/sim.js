@@ -564,6 +564,7 @@
     var ctx = { src: src, tgt: tgt, amount: amt, o: o };
     this.emit('modifyHeal', ctx);
     var mh = this.maxHp(tgt), eff = Math.min(ctx.amount, mh - tgt.hp);
+    src.rec.healRaw = (src.rec.healRaw || 0) + ctx.amount; // overheal included
     tgt.hp += eff;
     src.rec.heal += eff;
     if (this.trace && eff > 0.5) this.tr('h', { s: src.uid, g: tgt.uid, a: Math.round(eff) });
@@ -1001,7 +1002,7 @@
       var total = 0;
       aUnits.forEach(function (u, i) {
         var p = per[i];
-        p.damage += u.rec.dmg; p.healing += u.rec.heal; p.shielding += u.rec.shield; p.shieldUsed += u.rec.shieldUsed || 0; p.taken += u.rec.taken; p.takenHp += u.rec.takenHp;
+        p.damage += u.rec.dmg; p.healing += u.rec.heal; p.shielding += u.rec.shield; p.shieldUsed += u.rec.shieldUsed || 0; p.healRaw = (p.healRaw || 0) + (u.rec.healRaw || 0); p.taken += u.rec.taken; p.takenHp += u.rec.takenHp;
         p.ults += u.rec.ults; p.battles += u.rec.battles; p.basics += u.rec.basics;
         p.absorbed += u.rec.absorbed; p.debuffTries += u.rec.dTry; p.debuffLanded += u.rec.dLand; p.resisted += u.rec.dResisted;
         p.minHp.push(u.alive ? u.rec.minHp : 0);
@@ -1024,7 +1025,7 @@
     var totalDmg = per.reduce(function (s, p) { return s + p.damage; }, 0) || 1;
     per.forEach(function (p) {
       p.share = p.damage / totalDmg;
-      p.damage /= n; p.healing /= n; p.shielding /= n; p.shieldUsed /= n; p.taken /= n; p.takenHp /= n; p.deathRate = p.deaths / n; delete p.deaths;
+      p.damage /= n; p.healing /= n; p.shielding /= n; p.shieldUsed /= n; p.healRaw = (p.healRaw || 0) / n; p.taken /= n; p.takenHp /= n; p.deathRate = p.deaths / n; delete p.deaths;
       p.ults /= n; p.battles /= n; p.basics /= n; p.absorbed /= n;
       for (var k in p.by) p.by[k] /= n;
       for (var k4 in p.takenBy) p.takenBy[k4] /= n;
