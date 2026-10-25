@@ -306,8 +306,12 @@
       });
     },
     battle: function (u, b) {
-      // ASSUMED: "each ally within range" = the whole team.
-      b.allies(u, true).forEach(function (a) {
+      // "Each ally within range": an area of 3 allies (random; she can be one).
+      // CALIBRATED on Darko's Vortex statistics (2026-10-25, Felosia team: HP
+      // damage taken 230k in game; the whole-team reading gave 74k).
+      var pool = b.allies(u, true).slice();
+      for (var k = pool.length - 1; k > 0; k--) { var j = Math.floor(b.rand() * (k + 1)); var tmp = pool[k]; pool[k] = pool[j]; pool[j] = tmp; }
+      pool.slice(0, b.R.areaSize).forEach(function (a) {
         b.shield(u, a, { thp: 0.10, ench: 15.0 }, 10);
         b.apply(u, a, 'Defense Up I', 1, 5, { undispellable: u.insp >= 5 });
       });

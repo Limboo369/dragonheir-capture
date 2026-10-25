@@ -358,7 +358,7 @@
       heroId: built.h ? built.h.id : null, s: built.s, alive: true, isBoss: !!spec.isBoss,
       melee: built.h ? built.h.melee : !!spec.melee, sts: [], shields: [], flags: {}, energy: 0,
       cdBattle: this.R.battleFirst, basicT: 0.2 + 0.3 * this.rand(), castUntil: 0, insp: spec.insp || 0,
-      rec: { dmg: 0, by: {}, heal: 0, shield: 0, taken: 0, absorbed: 0, deathAt: null, ults: 0, battles: 0, basics: 0, dTry: 0, dLand: 0, dResisted: 0, minHp: 1, takenBy: {} }
+      rec: { dmg: 0, by: {}, heal: 0, shield: 0, taken: 0, takenHp: 0, absorbed: 0, deathAt: null, ults: 0, battles: 0, basics: 0, dTry: 0, dLand: 0, dResisted: 0, minHp: 1, takenBy: {} }
     };
     if (extra) for (var k in extra) u[k] = extra[k];
     var fs = finalStats(u.s);
@@ -539,6 +539,7 @@
     }
     var lost = before - tgt.hp;
     tgt.rec.taken += lost + (ctx.amount - amount);
+    tgt.rec.takenHp += lost; // what the game's Statistics screen calls Damage Taken (shields excluded)
     if (src) { var sk = (o && o.tag) || 'skill'; tgt.rec.takenBy[sk] = (tgt.rec.takenBy[sk] || 0) + lost + (ctx.amount - amount); }
     var frac = tgt.hp / this.maxHp(tgt);
     if (frac < tgt.rec.minHp) tgt.rec.minHp = frac;
@@ -994,14 +995,14 @@
     var n = battles.length, first = battles[0];
     var A = first.units.filter(function (u) { return u.side === 'A'; });
     var wins = 0, ttk = [], dps = [], hpLeft = [], deaths = 0, clear = [];
-    var per = A.map(function (u) { return { slot: u.slot, heroId: u.heroId, name: u.name, kit: u.kit.conf || 'hand', damage: 0, by: {}, healing: 0, shielding: 0, taken: 0, deaths: 0, ults: 0, battles: 0, basics: 0,
+    var per = A.map(function (u) { return { slot: u.slot, heroId: u.heroId, name: u.name, kit: u.kit.conf || 'hand', damage: 0, by: {}, healing: 0, shielding: 0, taken: 0, takenHp: 0, deaths: 0, ults: 0, battles: 0, basics: 0,
       absorbed: 0, debuffTries: 0, debuffLanded: 0, resisted: 0, minHp: [], deathTimes: [], maxHp: Math.round(u.maxHp0), takenBy: {} }; });
     battles.forEach(function (b) {
       var aUnits = b.units.filter(function (u) { return u.side === 'A'; });
       var total = 0;
       aUnits.forEach(function (u, i) {
         var p = per[i];
-        p.damage += u.rec.dmg; p.healing += u.rec.heal; p.shielding += u.rec.shield; p.taken += u.rec.taken;
+        p.damage += u.rec.dmg; p.healing += u.rec.heal; p.shielding += u.rec.shield; p.taken += u.rec.taken; p.takenHp += u.rec.takenHp;
         p.ults += u.rec.ults; p.battles += u.rec.battles; p.basics += u.rec.basics;
         p.absorbed += u.rec.absorbed; p.debuffTries += u.rec.dTry; p.debuffLanded += u.rec.dLand; p.resisted += u.rec.dResisted;
         p.minHp.push(u.alive ? u.rec.minHp : 0);
@@ -1024,7 +1025,7 @@
     var totalDmg = per.reduce(function (s, p) { return s + p.damage; }, 0) || 1;
     per.forEach(function (p) {
       p.share = p.damage / totalDmg;
-      p.damage /= n; p.healing /= n; p.shielding /= n; p.taken /= n; p.deathRate = p.deaths / n; delete p.deaths;
+      p.damage /= n; p.healing /= n; p.shielding /= n; p.taken /= n; p.takenHp /= n; p.deathRate = p.deaths / n; delete p.deaths;
       p.ults /= n; p.battles /= n; p.basics /= n; p.absorbed /= n;
       for (var k in p.by) p.by[k] /= n;
       for (var k4 in p.takenBy) p.takenBy[k4] /= n;
@@ -1587,8 +1588,12 @@
       });
     },
     battle: function (u, b) {
-      // ASSUMED: "each ally within range" = the whole team.
-      b.allies(u, true).forEach(function (a) {
+      // "Each ally within range": an area of 3 allies (random; she can be one).
+      // CALIBRATED on Darko's Vortex statistics (2026-10-25, Felosia team: HP
+      // damage taken 230k in game; the whole-team reading gave 74k).
+      var pool = b.allies(u, true).slice();
+      for (var k = pool.length - 1; k > 0; k--) { var j = Math.floor(b.rand() * (k + 1)); var tmp = pool[k]; pool[k] = pool[j]; pool[j] = tmp; }
+      pool.slice(0, b.R.areaSize).forEach(function (a) {
         b.shield(u, a, { thp: 0.10, ench: 15.0 }, 10);
         b.apply(u, a, 'Defense Up I', 1, 5, { undispellable: u.insp >= 5 });
       });
