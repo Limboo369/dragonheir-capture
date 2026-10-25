@@ -80,16 +80,6 @@ body { background: var(--wall); color: var(--label); font: 400 14px/1.4 var(--fo
       var v = JSON.parse(snap.data().json || 'null');
       if (v && JSON.stringify(v) !== JSON.stringify(lsGet(KEY))) { lsSet(KEY, v); ui.setState(v); }
     }).catch(function () { });
-    // Another tab may change the setup while this one is open: take its newer copy
-    // instead of later saving this tab's stale one over it.
-    db().then(function (d) {
-      if (!d) return;
-      d.doc(KEY).onSnapshot(function (snap) {
-        if (!snap.exists || snap.metadata.hasPendingWrites || snap.metadata.fromCache || timer || Date.now() - localAt < 8000) return;
-        var v = null; try { v = JSON.parse(snap.data().json || 'null'); } catch (e) { }
-        if (v && v.team && JSON.stringify(v) !== JSON.stringify(ui.state())) { lsSet(KEY, v); ui.setState(v); }
-      }, function () { });
-    });
   }
   if (window.DHSim && window.DHBattleUI) go(); else window.addEventListener('load', go);
 })();

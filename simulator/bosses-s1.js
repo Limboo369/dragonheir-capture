@@ -49,9 +49,9 @@
   // are not published. Grave stage 9 is Lv100 like stage 8 (official screens).
   // Ruins 10-12 exist; their levels are extrapolated (game: 12 -> Lv300 later).
   var STAGES = {
-    harpy: { label: 'Stage', min: 1, max: 15, lv: function (s) { return s === 9 ? 100 : 20 + 10 * s; } },
-    xenos: { label: 'Stage', min: 1, max: 15, lv: function (s) { return s === 9 ? 100 : 20 + 10 * s; } },
-    scavenger: { label: 'Stage', min: 1, max: 15, lv: function (s) { return s === 9 ? 100 : 20 + 10 * s; } },
+    harpy: { label: 'Stage', min: 1, max: 20, lv: function (s) { return s === 9 ? 100 : 20 + 10 * s; } },
+    xenos: { label: 'Stage', min: 1, max: 20, lv: function (s) { return s === 9 ? 100 : 20 + 10 * s; } },
+    scavenger: { label: 'Stage', min: 1, max: 20, lv: function (s) { return s === 9 ? 100 : 20 + 10 * s; } },
     fyre: { label: 'Stage', min: 1, max: 12, lv: function (s) { return 5 + 20 * s; } },
     gruentius: { label: 'Stage', min: 1, max: 10, lv: function (s) { return 20 + 20 * s; } },
     goblin: { label: 'Stage', min: 1, max: 12, lv: function (s) { return 10 + 10 * s; } },
