@@ -363,7 +363,8 @@
       return '<div class="bs-hc"><div class="top">' + avatar(id) + '<div style="min-width:0"><div class="nm">' + E(p.name) + '</div><div class="dr" style="color:' + c + '">' + (dr ? 'Dies in ' + pct(dr) + (p.deathTime ? ' · ~' + mmss(p.deathTime.p50) : '') : 'Never dies') + '</div></div></div>' +
         '<div><div class="bs-small" style="display:flex;justify-content:space-between"><span>Lowest HP</span><span>' + pct(minHp) + '</span></div><div class="bs-meter"><i style="width:' + Math.max(2, minHp * 100) + '%;background:' + c + '"></i></div></div>' +
         '<dl class="bs-kv"><dt>Damage</dt><dd>' + k(p.damage) + ' · ' + pct(p.share) + '</dd><dt>Taken</dt><dd>' + k(p.takenHp != null ? p.takenHp : p.taken) + '</dd>' +
-        (p.healing ? '<dt>Healed</dt><dd class="bs-up">' + k(p.healing) + '</dd>' : '') + (p.shielding ? '<dt>Shields</dt><dd style="color:var(--bs-shield)">' + k(p.shielding) + '</dd>' : '') +
+        // Like the game's Statistics screen, Healed counts heals plus shield that actually blocked damage.
+        (p.healing || p.shieldUsed ? '<dt>Healed</dt><dd class="bs-up">' + k((p.healing || 0) + (p.shieldUsed || 0)) + '</dd>' : '') + (p.shieldUsed ? '<dt>by shields</dt><dd style="color:var(--bs-shield)">' + k(p.shieldUsed) + '</dd>' : '') +
         '<dt>Debuffs</dt><dd title="landed / tried">' + land + '</dd></dl></div>';
     }
     function chart(sv) {

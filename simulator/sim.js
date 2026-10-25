@@ -525,6 +525,7 @@
     for (var i = 0; i < tgt.shields.length && amount > 0; i++) {
       var sh = tgt.shields[i], take = Math.min(sh.amt, amount);
       sh.amt -= take; amount -= take; tgt.rec.absorbed += take;
+      if (sh.src && sh.src.rec) sh.src.rec.shieldUsed = (sh.src.rec.shieldUsed || 0) + take; // the game books this as Healing
     }
     tgt.shields = tgt.shields.filter(function (x) { return x.amt > 0.01; });
     var floor = this.has(tgt, 'Immortality') ? 1 : 0;
@@ -993,14 +994,14 @@
     var n = battles.length, first = battles[0];
     var A = first.units.filter(function (u) { return u.side === 'A'; });
     var wins = 0, ttk = [], dps = [], hpLeft = [], deaths = 0, clear = [];
-    var per = A.map(function (u) { return { slot: u.slot, heroId: u.heroId, name: u.name, kit: u.kit.conf || 'hand', damage: 0, by: {}, healing: 0, shielding: 0, taken: 0, takenHp: 0, deaths: 0, ults: 0, battles: 0, basics: 0,
+    var per = A.map(function (u) { return { slot: u.slot, heroId: u.heroId, name: u.name, kit: u.kit.conf || 'hand', damage: 0, by: {}, healing: 0, shielding: 0, shieldUsed: 0, taken: 0, takenHp: 0, deaths: 0, ults: 0, battles: 0, basics: 0,
       absorbed: 0, debuffTries: 0, debuffLanded: 0, resisted: 0, minHp: [], deathTimes: [], maxHp: Math.round(u.maxHp0), takenBy: {} }; });
     battles.forEach(function (b) {
       var aUnits = b.units.filter(function (u) { return u.side === 'A'; });
       var total = 0;
       aUnits.forEach(function (u, i) {
         var p = per[i];
-        p.damage += u.rec.dmg; p.healing += u.rec.heal; p.shielding += u.rec.shield; p.taken += u.rec.taken; p.takenHp += u.rec.takenHp;
+        p.damage += u.rec.dmg; p.healing += u.rec.heal; p.shielding += u.rec.shield; p.shieldUsed += u.rec.shieldUsed || 0; p.taken += u.rec.taken; p.takenHp += u.rec.takenHp;
         p.ults += u.rec.ults; p.battles += u.rec.battles; p.basics += u.rec.basics;
         p.absorbed += u.rec.absorbed; p.debuffTries += u.rec.dTry; p.debuffLanded += u.rec.dLand; p.resisted += u.rec.dResisted;
         p.minHp.push(u.alive ? u.rec.minHp : 0);
@@ -1023,7 +1024,7 @@
     var totalDmg = per.reduce(function (s, p) { return s + p.damage; }, 0) || 1;
     per.forEach(function (p) {
       p.share = p.damage / totalDmg;
-      p.damage /= n; p.healing /= n; p.shielding /= n; p.taken /= n; p.takenHp /= n; p.deathRate = p.deaths / n; delete p.deaths;
+      p.damage /= n; p.healing /= n; p.shielding /= n; p.shieldUsed /= n; p.taken /= n; p.takenHp /= n; p.deathRate = p.deaths / n; delete p.deaths;
       p.ults /= n; p.battles /= n; p.basics /= n; p.absorbed /= n;
       for (var k in p.by) p.by[k] /= n;
       for (var k4 in p.takenBy) p.takenBy[k4] /= n;
