@@ -94,10 +94,10 @@
       b.on(u, 'damaged', function (e) {
         var t = e.tgt;
         if (t.side === u.side || !t.alive || b.t > u.flags.icewind || !b.has(t, 'Frost')) return;
-        // An endless score boss (Temporal Vortex) runs through HP bars, so it is
-        // "below 15%" again and again. CALIBRATED on Darko's Vortex statistics
-        // (2026-10-25): the 600% fires once per Icewind window there.
-        if (!(t.isBoss && t.flags.endless) && t.hp / b.maxHp(t) >= 0.15) return;
+        // Bosses only take the 600% below 15% HP, as the text says. (A per-window
+        // proc on the endless Vortex boss was tried on 2026-10-25 and dropped:
+        // Darko's Hvitar-without-Frost-team fight showed it over-rated her.)
+        if (t.hp / b.maxHp(t) >= 0.15) return;
         if (!t.isBoss) { b.kill(t, u); u.rec.executes = (u.rec.executes || 0) + 1; }
         else if (u.flags.bossExecUsed !== u.flags.icewind) {
           u.flags.bossExecUsed = u.flags.icewind;
