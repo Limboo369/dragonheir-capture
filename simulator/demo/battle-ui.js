@@ -758,11 +758,11 @@
       return 'This is a screenshot from the game Dragonheir: Silent Gods (a hero screen: attributes, gear, artifact or skills). Read ONLY what is visible; never guess. ' +
         'Answer with one JSON object, leaving out any key you cannot read:\n' +
         '{"hero": exact hero name, "level": number, "stars": 1-5, ' +
-        '"stats": {"hp", "atk", "def", "critRate" (percent number, 35.5 for 35.5%), "critDmg" (percent), "acc" (Accuracy / Effect Hit), "res" (Resistance), "ench" (Enlightenment), "haste" (Skill Haste), "atkSpd" (Attack Speed percent)}, ' +
-        '"artifact": {"name", "level" (enhancement +0..+20), "stars" (effect stars 1-6)}, ' +
+        '"stats": {"hp", "atk", "def", "critRate" (percent number, 35.5 for 35.5%), "critDmg" (percent), "acc" (Accuracy / Effect Hit), "res" (Resistance), "ench" (Enlightenment), "haste" (Skill Haste), "atkSpd" (Attack Speed percent; NOT "ATK Interval", which is seconds: leave atkSpd out if only ATK Interval is shown)}, ' +
+        '"artifact": {"name" (ONLY if the artifact name is written as text on the screen; never name it from its icon), "level" (enhancement +0..+20, e.g. "+12" -> 12), "stars" (effect stars 1-6)}, ' +
         '"gear": {"Helm": set name, "Weapon": set name, "Armor": set name, "Gloves": set name}, ' +
         '"skills": {"battle": battle skill level 1-5, "ult": ultimate skill level 1-5}}\n' +
-        'Use the total values shown on the attribute screen (not base values). Set names (the screen may show the name in brackets instead): ' + S.BEGINNER_SETS.map(function (n) { var a = (S.SET_ALIASES || {})[n]; return a && a.length ? n + ' (' + a.join(', ') + ')' : n; }).join('; ') + '.\nArtifact names: ' + arts.join('; ') + '.\nHero names: ' + heroes.join('; ') + '.';
+        'The attribute screen often shows each stat as a base number followed by a green "+bonus" number (for example "HP 13489 +8610"). Then give that stat as {"base": 13489, "bonus": 8610}; give a plain number only when a single value is shown. Never add them yourself and never drop the bonus. A stat shown as 0 is 0. Skill levels: read the small level number on each skill icon; the first active skill is "battle", the ultimate is "ult". Set names (the screen may show the name in brackets instead): ' + S.BEGINNER_SETS.map(function (n) { var a = (S.SET_ALIASES || {})[n]; return a && a.length ? n + ' (' + a.join(', ') + ')' : n; }).join('; ') + '.\nArtifact names: ' + arts.join('; ') + '.\nHero names: ' + heroes.join('; ') + '.';
     }
     function norm(x) { return String(x || '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
     function matchName(name, list) {
@@ -785,15 +785,22 @@
     function applyShot(id, js) {
       var c = state.heroes[id] = state.heroes[id] || {}, got = [];
       c.stats = c.stats || {}; c.gear = c.gear || {}; c.artifact = c.artifact || {};
-      var num = function (v) { v = typeof v === 'string' ? +v.replace(/[%,\s+]/g, '') : +v; return isFinite(v) ? v : null; };
+      // A stat may come back as {base, bonus} (the attribute screen shows "13489 +8610") or as one number.
+      var one = function (v) { v = typeof v === 'string' ? +v.replace(/[%,\s+]/g, '') : +v; return isFinite(v) ? v : null; };
+      var num = function (v) {
+        if (v && typeof v === 'object') { var b = one(v.base), x = one(v.bonus); if (b == null && x == null) return one(v.total); return Math.round(((b || 0) + (x || 0)) * 10) / 10; }
+        if (typeof v === 'string' && /\d\s*\+\s*\d/.test(v)) return v.split('+').reduce(function (a, p) { var q = one(p); return q == null ? a : a + q; }, 0);
+        return one(v);
+      };
       if (num(js.level)) { c.level = Math.max(1, Math.min(100, num(js.level))); got.push('level'); }
       if (num(js.stars)) { c.stars = Math.max(1, Math.min(5, num(js.stars))); got.push('stars'); }
       if (js.stats) STATS.forEach(function (st) { var v = num(js.stats[st[0]]); if (v != null) { c.stats[st[0]] = v; got.push(st[0]); } });
-      if (js.artifact && js.artifact.name) {
-        var D = S.data(), an = matchName(js.artifact.name, Object.keys(D.artifacts).map(function (x) { return D.artifacts[x].n; }));
+      if (js.artifact && typeof js.artifact === 'object') {
+        var D = S.data(), an = js.artifact.name && matchName(js.artifact.name, Object.keys(D.artifacts).map(function (x) { return D.artifacts[x].n; }));
         if (an) { c.artifact.name = an; got.push('artifact'); }
-        if (num(js.artifact.level) != null) c.artifact.level = Math.max(0, Math.min(20, num(js.artifact.level)));
-        if (num(js.artifact.stars)) c.artifact.tier = Math.max(0, Math.min(5, num(js.artifact.stars) - 1));
+        // Level and stars only change the artifact the hero already has (or the one just read).
+        if (c.artifact.name && num(js.artifact.level) != null) { c.artifact.level = Math.max(0, Math.min(20, num(js.artifact.level))); got.push('artlv'); }
+        if (c.artifact.name && num(js.artifact.stars)) { c.artifact.tier = Math.max(0, Math.min(5, num(js.artifact.stars) - 1)); got.push('arttier'); }
       }
       if (js.gear) SLOTS.forEach(function (sl) { var n = matchSet(js.gear[sl]); if (n) { c.gear[sl] = n; got.push(sl); } });
       if (js.skills) ['battle', 'ult'].forEach(function (k2) { var v = num(js.skills[k2]); if (v) { c.skills = c.skills || {}; c.skills[k2] = Math.max(1, Math.min(5, Math.round(v))); got.push(k2 === 'battle' ? 'skb' : 'sku'); } });
@@ -825,9 +832,9 @@
       }
       save(); render();
       if (who == null) { msg('Nothing readable found.'); return; }
-      if (!sh || +sh.dataset.hero !== slot) heroSheet(slot);
+      heroSheet(slot); // always redraw so the inputs show the new values
       filled.forEach(function (f) {
-        var n = sh && (sh.querySelector('#bs-st-' + f) || sh.querySelector('#bs-g-' + f) || sh.querySelector(f === 'level' ? '#bs-lv' : f === 'stars' ? '#bs-stars' : f === 'artifact' ? '#bs-art' : f === 'skb' ? '#bs-skb' : f === 'sku' ? '#bs-sku' : null));
+        var n = sh && (sh.querySelector('#bs-st-' + f) || sh.querySelector('#bs-g-' + f) || sh.querySelector(f === 'level' ? '#bs-lv' : f === 'stars' ? '#bs-stars' : f === 'artifact' ? '#bs-art' : f === 'artlv' ? '#bs-artlv' : f === 'arttier' ? '#bs-arttier' : f === 'skb' ? '#bs-skb' : f === 'sku' ? '#bs-sku' : null));
         if (n) n.classList.add('bs-filled');
       });
       var m2 = sh && sh.querySelector('#bs-shotmsg');
