@@ -94,7 +94,10 @@
       b.on(u, 'damaged', function (e) {
         var t = e.tgt;
         if (t.side === u.side || !t.alive || b.t > u.flags.icewind || !b.has(t, 'Frost')) return;
-        if (t.hp / b.maxHp(t) >= 0.15) return;
+        // An endless score boss (Temporal Vortex) runs through HP bars, so it is
+        // "below 15%" again and again. CALIBRATED on Darko's Vortex statistics
+        // (2026-10-25): the 600% fires once per Icewind window there.
+        if (!(t.isBoss && t.flags.endless) && t.hp / b.maxHp(t) >= 0.15) return;
         if (!t.isBoss) { b.kill(t, u); u.rec.executes = (u.rec.executes || 0) + 1; }
         else if (u.flags.bossExecUsed !== u.flags.icewind) {
           u.flags.bossExecUsed = u.flags.icewind;
@@ -423,8 +426,12 @@
     }
   });
 
-  // Oggok: every heal dispels 1 debuff. Battle skill: a wave bouncing 6 times
-  // (ASSUMED: alternating enemy, ally, enemy...).
+  // Oggok: every heal dispels 1 debuff. Battle skill: a wave hitting 6 times,
+  // starting on his target and bouncing each time to a random other unit
+  // (enemy or ally). CALIBRATED: against one boss this gives ~1.8 hits and
+  // ~4.2 heals, which matches Darko's in-game Temporal Vortex statistics
+  // (2026-10-25: Oggok 7.8% of damage, 85% of healing); the old "alternating
+  // 3 + 3" rule gave him too much damage and too little healing.
   K(21700, {
     init: function (u, b) {
       std(u, b);
@@ -434,11 +441,12 @@
       });
     },
     battle: function (u, b) {
-      for (var i = 0; i < 6; i++) {
-        if (i % 2 === 0) {
-          var t = b.target(u);
-          if (t) b.hit(u, t, { atk: 1.5, ench: 12.0 }, { el: POI, tag: 'battle', apply: [['Attack Penalty II', 0.85, 5, { skill: 'battle', ignoreRes: u.insp >= 5 }]] });
-        } else b.heal(u, b.lowestHp(b.allies(u, true)), { atk: 1.5, ench: 12.0 }, { tag: 'battle' });
+      var cur = b.target(u);
+      for (var i = 0; i < 6 && cur; i++) {
+        if (cur.side !== u.side) b.hit(u, cur, { atk: 1.5, ench: 12.0 }, { el: POI, tag: 'battle', apply: [['Attack Penalty II', 0.85, 5, { skill: 'battle', ignoreRes: u.insp >= 5 }]] });
+        else b.heal(u, cur, { atk: 1.5, ench: 12.0 }, { tag: 'battle' });
+        var last = cur, pool = b.enemies(u).concat(b.allies(u, true)).filter(function (x) { return x !== last && x.alive; });
+        cur = pool[Math.floor(b.rand() * pool.length)];
       }
     },
     ult: function (u, b) {

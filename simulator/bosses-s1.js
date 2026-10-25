@@ -480,29 +480,38 @@
   // guides stack 60-70k HP on one hero to take it). Skill every 5 s (20 s
   // cycle, HellHades 2025-07-30). "Early boss attack damage is pretty low"
   // (dragonheir.info 586). Good teams survive about 8 minutes (1597).
-  // Estimated: boss never dies, ramp +12% damage per cycle.
+  // CALIBRATED 2026-10-25 on Darko's in-game Statistics screen (Difficulty I,
+  // 8:00, nobody died; Lv59 Auster/Hvitar/Hochadir/Oggok/Ergander, total
+  // 5,533,656; damage taken 150-240k on EVERY hero, Oggok healing 695k):
+  // boss DEF 0.6x, takes +30% damage, ATK 4.0x, Riptide 350% on all,
+  // Call of Lightning 200%, basics and Tidal Slam on random heroes (taunt
+  // wins), +4% damage per 20 s cycle. The sim now gives 5.53M with every
+  // hero within 20% of the game. One fight only: re-check with more.
   var VORTEX = [
-    skill('Tidal Slam', 'front', 'Hit on its target.', null),
+    skill('Tidal Slam', 'random', 'Hit on a random hero (the taunter while Taunt lasts).', null),
     skill('Call of Lightning', 'highestHp', 'Hits the hero with the HIGHEST HP; grows stronger every cycle.', null),
-    skill('Riptide', 'all', 'Hits every hero.', null),
+    skill('Riptide', 'all', 'Hits every hero: most of the damage in this fight.', null),
     skill('Call of Lightning', 'highestHp', 'Again on the highest-HP hero.', null)
   ];
   TARGET_TEXT.highestHp = 'Highest HP hero';
   S.registerBoss('vortex', {
     name: 'Sea King', dungeon: 'Temporal Vortex', conf: 'estimated', seconds: 480, score: true,
-    note: 'Score boss: the result is total damage before the team falls or 8 minutes pass. Mechanics from dragonheir.info 570, 586, 1149, 1597: Call of Lightning on the highest-HP hero, damage low early and rising. Numbers are estimates: boss cannot die in the sim, 1.4x ATK, +15% damage per 20 s cycle, compounding.',
+    note: 'Score boss: the result is total damage before the team falls or 8 minutes pass. Mechanics from dragonheir.info 570, 586, 1149, 1597: Call of Lightning on the highest-HP hero, damage low early and rising. Numbers calibrated on one real in-game fight (Difficulty I, Lv59 team, 5.53M): boss cannot die, hits spread over all heroes, Riptide is the main damage, +4% damage per 20 s cycle.',
     skills: info(VORTEX),
     mechanics: ['Score = damage dealt. The fight goes on until your team falls (or 8 minutes).', 'Call of Lightning always hits your highest-HP hero: give one tanky hero the most HP.', 'The boss gets stronger every 20 s.'],
     make: function (e) {
-      var st = scaled(e, { hpX: 100000, atkX: 1.4, defX: 1.0 });
-      function ramp(u, b) { return Math.pow(1.15, Math.floor(b.t / 20)) - 1; }
+      var st = scaled(e, { hpX: 100000, atkX: 4.0, defX: 0.6 });
+      function ramp(u, b) { return Math.pow(1.04, Math.floor(b.t / 20)) - 1; }
       function highestHp(b, u) { var best = null; b.targetable(u).forEach(function (x) { if (!best || b.maxHp(x) > b.maxHp(best)) best = x; }); return best; }
       var kit = cycleKit({
         step: 5,
+        // Basic attacks spread over the team (CALIBRATED: in game every hero takes 16-26% of the damage).
+        basic: function (u, b, t) { var x = b.has(u, 'Taunt') ? t : PICK.random(b, u); if (x) b.hit(u, x, { atk: 1.0 }, { tag: 'basic', bonus: ramp(u, b) }); },
+        init: function (u) { u.flags.endless = true; u.s.vuln = (u.s.vuln || 0) + 0.3; },
         skills: function () {
-          VORTEX[0].fn = function (u, b) { var t = PICK.front(b, u); if (t) b.hit(u, t, { atk: 1.8 }, { tag: 'battle', bonus: ramp(u, b) }); };
-          VORTEX[1].fn = VORTEX[3].fn = function (u, b) { var t = highestHp(b, u); if (t) b.hit(u, t, { atk: 3.0 }, { tag: 'battle', bonus: ramp(u, b) }); };
-          VORTEX[2].fn = function (u, b) { b.enemies(u).forEach(function (x) { b.hit(u, x, { atk: 0.9 }, { tag: 'ult', bonus: ramp(u, b) }); }); };
+          VORTEX[0].fn = function (u, b) { var t = b.has(u, 'Taunt') ? PICK.front(b, u) : PICK.random(b, u); if (t) b.hit(u, t, { atk: 1.8 }, { tag: 'battle', bonus: ramp(u, b) }); };
+          VORTEX[1].fn = VORTEX[3].fn = function (u, b) { var t = highestHp(b, u); if (t) b.hit(u, t, { atk: 2.0 }, { tag: 'battle', bonus: ramp(u, b) }); };
+          VORTEX[2].fn = function (u, b) { b.enemies(u).forEach(function (x) { b.hit(u, x, { atk: 3.5 }, { tag: 'ult', bonus: ramp(u, b) }); }); };
           return VORTEX;
         }
       });

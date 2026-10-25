@@ -241,6 +241,28 @@ var tests = [
     var r = S.simulate(opts({ enemy: { preset: 'vortex', level: 59, stage: 4 }, seconds: 480, runs: 5 }));
     assert.strictEqual(r.winRate, 0);
     assert.ok(r.survival.wipeAt != null && r.survival.wipeAt < 480, 'team falls at ' + r.survival.wipeAt);
+  }],
+  ['Vortex calibration: Darko\'s in-game Statistics (2026-10-25, Difficulty I, 8:00)', function () {
+    // Typed totals from his attribute screens (Companion sim/loadout, same day).
+    var T = [[21700, { hp: 22099, atk: 974, def: 704, critRate: 0.414, critDmg: 0.673, acc: 73, res: 36, ench: 72, haste: 0 }, 'Rift Hourglass'],
+      [21030, { hp: 17430, atk: 1497, def: 1068, critRate: 0.582, critDmg: 0.5, acc: 23, res: 58, ench: 85, haste: 0 }, 'Ring of Winter'],
+      [20120, { hp: 21538, atk: 1460, def: 648, critRate: 0.564, critDmg: 0.5, acc: 66, res: 14, ench: 13, haste: 0 }, "Witch's Remains"],
+      [21010, { hp: 37337, atk: 820, def: 973, critRate: 0.1, critDmg: 0.579, acc: 78, res: 0, ench: 47, haste: 0 }, "Illuya's Fang"],
+      [22230, { hp: 22313, atk: 1478, def: 642, critRate: 0.284, critDmg: 0.831, acc: 70, res: 12, ench: 55, haste: 20 }, 'Frost Globe']];
+    var team = T.map(function (x) { return { hero: x[0], level: 59, stats: Object.assign({ totals: true }, x[1]), artifact: { name: x[2], level: 12, tier: 3 } }; });
+    var r = S.simulate({ team: team, captain: 0, enemy: { preset: 'vortex', level: 59, stage: 1 }, seconds: 480, runs: 30, seed: 20261025, score: true });
+    // Game: damage share, damage taken, healing.
+    var G = { Auster: [0.385, 167081, 0], Hvitar: [0.266, 164898, 0], Hochadir: [0.158, 149549, 0], Oggok: [0.078, 202296, 695198], Ergander: [0.113, 240792, 119020] };
+    var tot = 0, taken = 0, heal = 0; r.perHero.forEach(function (p) { tot += p.damage; taken += p.taken; heal += p.healing || 0; });
+    near(tot / 1e6, 5.53, 0.85, 'total damage (M)');
+    r.perHero.forEach(function (p) {
+      near(p.damage / tot, G[p.name][0], 0.05, p.name + ' damage share');
+      assert.ok(p.taken / taken > 0.1, p.name + ' takes a real part of the damage: ' + p.taken);
+      assert.ok(p.deathRate <= 0.1, p.name + ' survives 8:00 (died in ' + p.deathRate + ')');
+    });
+    near(taken / 1e3, 924, 280, 'damage taken (k)');
+    var og = r.perHero.filter(function (p) { return p.name === 'Oggok'; })[0];
+    assert.ok(og.healing / heal > 0.7, 'Oggok does most of the healing');
   }]
 ];
 
