@@ -77,9 +77,11 @@
   });
 
   // Hvitar: Icewind weather (15s at start and on ult). Under Icewind, Frosted
-  // enemies take 22% ATK Derivative over time (ASSUMED: per second); enemies
-  // under 15% HP are executed, bosses take 600% ATK Derivative instead
-  // (ASSUMED: once per Icewind window).
+  // enemies take 22% ATK Derivative over time (ASSUMED: per second and per
+  // Frost stack; the text says neither, per-stack was chosen because it fits
+  // Darko's two full Frost-team Vortex fights). Enemies under 15% HP are
+  // executed; bosses under 15% HP take 600% ATK Derivative instead, as the
+  // text says (ASSUMED: once per Icewind window).
   K(20120, {
     init: function (u, b) {
       std(u, b);
