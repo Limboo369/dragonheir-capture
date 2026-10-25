@@ -1360,9 +1360,11 @@
   });
 
   // Hvitar: Icewind weather (15s at start and on ult). Under Icewind, Frosted
-  // enemies take 22% ATK Derivative over time (ASSUMED: per second); enemies
-  // under 15% HP are executed, bosses take 600% ATK Derivative instead
-  // (ASSUMED: once per Icewind window).
+  // enemies take 22% ATK Derivative over time (ASSUMED: per second and per
+  // Frost stack; the text says neither, per-stack was chosen because it fits
+  // Darko's two full Frost-team Vortex fights). Enemies under 15% HP are
+  // executed; bosses under 15% HP take 600% ATK Derivative instead, as the
+  // text says (ASSUMED: once per Icewind window).
   K(20120, {
     init: function (u, b) {
       std(u, b);
@@ -1472,8 +1474,12 @@
     init: function (u, b) {
       std(u, b);
       b.on(u, 'hit', function (e) {
-        if (e.src !== u || e.amount <= 0 || u.flags.healT === b.t) return;
-        u.flags.healT = b.t;
+        // Every damage instance heals; only an attack that hits several targets
+        // at once heals once. (Was once per moment, which dropped 2 of the 3
+        // hits of each skill on a lone boss: Darko's Vortex statistics showed
+        // Voresh healing 272k vs 71k in the sim, 2026-10-25.)
+        if (e.src !== u || e.amount <= 0 || (u.flags.healT === b.t && u.flags.healTgt !== e.tgt)) return;
+        u.flags.healT = b.t; u.flags.healTgt = e.tgt;
         b.heal(u, b.lowestCurHp(b.allies(u, true)), { atk: 0.7 }, { tag: 'passive' });
       });
     },

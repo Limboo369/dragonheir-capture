@@ -301,6 +301,18 @@ var tests = [
     var tot = 0; r.perHero.forEach(function (p) { tot += p.damage; });
     near(tot / 1e6, 4.59, 0.6, 'total damage (M)');
     r.perHero.forEach(function (p) { assert.ok(p.deathRate <= 0.1, p.name + ' survives 8:00'); });
+  }],
+  ['Vortex hold-out: Oggok/Ergander/Auster/Voresh/Vicuc, Voresh skills Lv5 (2026-10-25, game 4,415,508)', function () {
+    var T = [[21700, { hp: 23786, atk: 846, def: 811, critRate: 0.306, critDmg: 0.742, acc: 103, res: 14, ench: 46, haste: 20 }, 'Rift Hourglass', 3],
+      [21010, { hp: 35037, atk: 820, def: 973, critRate: 0.1, critDmg: 0.579, acc: 46, res: 0, ench: 47, haste: 0 }, "Illuya's Fang", 3],
+      [21030, { hp: 16036, atk: 1614, def: 719, critRate: 0.414, critDmg: 0.849, acc: 21, res: 24, ench: 53, haste: 0 }, 'Ring of Winter', 0],
+      [22290, { hp: 22017, atk: 1216, def: 967, critRate: 0.142, critDmg: 0.667, acc: 73, res: 59, ench: 85, haste: 0 }, "Witch's Remains", 3],
+      [23190, { hp: 21006, atk: 1011, def: 539, critRate: 0.452, critDmg: 0.575, acc: 58, res: 0, ench: 44, haste: 0 }, "Illuya's Fang", 3]];
+    var team = T.map(function (x) { var sp = { hero: x[0], level: 59, stats: Object.assign({ totals: true }, x[1]), artifact: { name: x[2], level: 12, tier: x[3] } }; if (x[0] === 22290) sp.skills = { battle: 5, ult: 5 }; return sp; });
+    var r = S.simulate({ team: team, captain: 2, enemy: { preset: 'vortex', level: 59, stage: 1 }, seconds: 480, runs: 30, seed: 20261025, score: true });
+    var tot = 0; r.perHero.forEach(function (p) { tot += p.damage; });
+    near(tot / 1e6, 4.42, 0.6, 'total damage (M)');
+    r.perHero.forEach(function (p) { assert.ok(p.deathRate <= 0.1, p.name + ' survives 8:00'); });
   }]
 ];
 
