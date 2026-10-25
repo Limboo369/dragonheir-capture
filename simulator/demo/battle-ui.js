@@ -44,6 +44,21 @@
     '.bs-chip small{display:block;font:500 11px var(--font);color:var(--label-3)}',
     '.bs-chip[aria-pressed="true"]{background:var(--accent-bg);color:var(--on-accent)}',
     '.bs-chip[aria-pressed="true"] small{color:inherit;opacity:.8}',
+    '.bs-s1{font:700 9.5px/16px var(--font);font-style:normal;padding:0 5px;border-radius:5px;background:var(--good-soft);color:var(--good);align-self:flex-start}',
+    '.bs-chip[aria-pressed="true"] .bs-s1{background:rgba(255,255,255,.22);color:inherit}',
+    '.bs-dg{display:grid;grid-template-columns:62px minmax(0,1fr);gap:8px;align-items:start}',
+    '.bs-dgl{font:650 11px/36px var(--font);color:var(--label-3);text-transform:uppercase;letter-spacing:.05em}',
+    '@media (max-width:560px){.bs-dg{grid-template-columns:1fr;gap:2px}.bs-dgl{line-height:18px}}',
+    '.bs-step{display:inline-flex;align-items:center;background:var(--fill);border-radius:12px;padding:2px}',
+    '.bs-step button{width:36px;height:36px;border-radius:10px;font:600 18px var(--font)}',
+    '.bs-step button:hover{background:var(--card)}',
+    '.bs-step span{display:grid;justify-items:center;min-width:64px;font-variant-numeric:tabular-nums}',
+    '.bs-step small{font:600 10px var(--font);color:var(--label-3);text-transform:uppercase;letter-spacing:.05em}',
+    '.bs-step b{font:700 17px/1.1 var(--font-d)}',
+    '.bs-drop{border:1.5px dashed var(--sep-2);border-radius:14px;padding:14px;display:grid;gap:8px;justify-items:center;text-align:center;color:var(--label-2);font-size:13px;transition:background .15s}',
+    '.bs-drop.on{background:var(--accent-soft);border-color:var(--accent)}',
+    '.bs-drop .bs-small{max-width:46ch}',
+    '.bs-filled{box-shadow:inset 0 0 0 2px var(--good)!important}',
     '.bs-seg{display:inline-grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--fill);border-radius:10px;padding:2px;gap:2px}',
     '.bs-seg button{padding:7px 12px;border-radius:8px;font:600 12.5px var(--font);white-space:nowrap}',
     '.bs-seg button[aria-pressed="true"]{background:var(--card);box-shadow:var(--shadow-sm)}',
@@ -172,11 +187,16 @@
   function initials(n) { return String(n || '?').split(/[\s'-]+/).filter(Boolean).slice(0, 2).map(function (w) { return w[0]; }).join('').toUpperCase(); }
   function heroOf(id) { try { return S.hero(id); } catch (e) { return null; } }
 
+  // Dungeons as the game names them (Adventure > Equip / Growth, and the
+  // Temporal Vortex banner). All of them exist on a Season 1 server.
   var BOSSES = [
-    { k: 'harpy', mode: 'grave_of_venom' }, { k: 'xenos', mode: 'grave_of_curse' }, { k: 'scavenger', mode: 'grave_of_rot' },
-    { k: 'gruentius', mode: 'ancient_battlefield' }, { k: 'fyre', mode: 'heretical_ruins' }, { k: 'boss', mode: 'grave', label: 'Training boss', dungeon: 'Generic test boss' }
+    { k: 'harpy', mode: 'grave_of_venom', g: 'Gear' }, { k: 'xenos', mode: 'grave_of_curse', g: 'Gear' }, { k: 'scavenger', mode: 'grave_of_rot', g: 'Gear' },
+    { k: 'fyre', mode: 'heretical_ruins', g: 'Runes' }, { k: 'gruentius', mode: 'ancient_battlefield', g: 'Runes' },
+    { k: 'goblin', mode: 'goblin_lair', g: 'Growth' }, { k: 'flameDomain', mode: 'talent', g: 'Growth' }, { k: 'tempestDomain', mode: 'talent', g: 'Growth' }, { k: 'frostDomain', mode: 'talent', g: 'Growth' },
+    { k: 'vortex', mode: 'temporal_vortex', g: 'Daily' }
   ];
-  var STRENGTH = [['Easy', 0.8], ['Normal', 1], ['Hard', 1.3], ['Brutal', 1.6]];
+  // Boss HP and damage are never published: this corrects our estimate, it is not a game difficulty.
+  var ESTIMATE = [['−20%', 0.8], ['Estimate', 1], ['+30%', 1.3], ['+60%', 1.6]];
   var STATS = [['hp', 'HP', 1], ['atk', 'ATK', 1], ['def', 'DEF', 1], ['critRate', 'Crit Rate %', 100], ['critDmg', 'Crit DMG %', 100], ['acc', 'Accuracy', 1], ['res', 'Resistance', 1], ['ench', 'Enlightenment', 1], ['haste', 'Skill Haste', 1], ['atkSpd', 'Attack Speed %', 100]];
   var SLOTS = ['Helm', 'Weapon', 'Armor', 'Gloves'];
   var SHORT = { 'Frost': 'FRO', 'Frozen': 'FRZ', 'Cold': 'CLD', 'Poison': 'PSN', 'Burn': 'BRN', 'Stunned': 'STN', 'Devoured': 'EAT', 'Immortality': 'IMM', 'Invisibility': 'INV', 'Invincibility': 'INV', 'Taunt': 'TNT', 'Buff Prohibition': 'NOB', 'Healing Prohibition': 'NOH', 'Healing Reduction': 'HR', 'Recharging Speed Penalty': 'RCH', 'Damage Reduction': 'DR', 'Backfire': 'BKF', 'Austerity': 'AUS', 'Brotherhood': 'BRO' };
@@ -195,7 +215,7 @@
     // Darko's artifacts (project memory, 2026-10-24); he can change them per hero.
     var heroes = {}, ARTS = host.defaultArtifacts || { Lossenia: "Witch's Remains", Auster: 'Ring of Winter', Hvitar: 'Rift Hourglass' };
     Object.keys(ARTS).forEach(function (n) { var h = heroOf(n); if (h) heroes[h.id] = { artifact: { name: ARTS[n], level: 20, tier: 0 } }; });
-    return { v: VERSION_UI, team: defaultTeam(host), captain: 0, boss: 'harpy', strength: 1, stage9: false, level: 59, runs: 200, seconds: 180, heroes: heroes };
+    return { v: VERSION_UI, team: defaultTeam(host), captain: 0, boss: 'harpy', strength: 1, stages: {}, level: 59, runs: 200, seconds: 180, heroes: heroes };
   }
 
   // --------------------------------------------------------------- mount --
@@ -218,6 +238,7 @@
     function heroSpec(id) {
       var c = state.heroes[id] || {}, sp = { hero: +id, level: c.level || state.level };
       if (c.stars) sp.stars = c.stars;
+      if (c.skills && (c.skills.battle > 1 || c.skills.ult > 1)) sp.skills = { battle: +c.skills.battle || 1, ult: +c.skills.ult || 1 };
       var typed = {}, any = false;
       STATS.forEach(function (s) { var v = c.stats && c.stats[s[0]]; if (v !== '' && v != null && !isNaN(+v)) { typed[s[0]] = +v / s[2]; any = true; } });
       if (any) { typed.totals = true; sp.stats = typed; }
@@ -230,9 +251,16 @@
       }
       return sp;
     }
+    function bossEntry() { return BOSSES.filter(function (x) { return x.k === state.boss; })[0] || BOSSES[0]; }
+    function stageOf(k) {
+      var p = S.bosses()[k], st = state.stages && state.stages[k];
+      if (!p || !p.stages) return null;
+      return st != null ? Math.max(p.stages.min, Math.min(p.stages.max, st)) : S.normalStage(k, state.level);
+    }
+    function secondsFor(k) { var p = S.bosses()[k]; return (p && p.seconds) || state.seconds; }
     function buildOpts() {
-      var b = BOSSES.filter(function (x) { return x.k === state.boss; })[0] || BOSSES[0];
-      return { team: state.team.map(heroSpec), captain: state.captain, enemy: { preset: b.k, level: state.level, stage9: !!state.stage9 }, mode: b.mode, seconds: state.seconds, runs: state.runs, seed: 20261025, rules: { bossPower: state.strength } };
+      var b = bossEntry(), stg = stageOf(b.k);
+      return { team: state.team.map(heroSpec), captain: state.captain, enemy: { preset: b.k, level: state.level, stage: stg, stage9: b.k === 'xenos' && stg >= 9 }, mode: b.mode, seconds: secondsFor(b.k), runs: state.runs, seed: 20261025, rules: { bossPower: state.strength }, score: !!(S.bosses()[b.k] || {}).score };
     }
 
     // ------------------------------------------------------------ render --
@@ -250,14 +278,17 @@
             '<span class="nm">' + E(h ? h.n : '?') + '</span><span class="sub">Lv ' + E(c.level || state.level) + (c.artifact && c.artifact.name ? ' · ' + E(c.artifact.name.split(' ').slice(-1)[0]) : '') + '</span></button>';
         }).join('') + '</div></section>';
       // boss
-      html += '<section class="bs-card"><div class="bs-ct"><span>Boss</span><button class="r bs-btn" data-a="bossinfo">Skills and targets</button></div><div class="bs-row">' +
-        BOSSES.map(function (b) {
-          var p = bp[b.k]; if (!p) return '';
-          return '<button class="bs-chip" data-a="boss" data-k="' + b.k + '" aria-pressed="' + (state.boss === b.k) + '"><span>' + E(b.label || p.name) + '<small>' + E(b.dungeon || p.dungeon || '') + '</small></span></button>';
-        }).join('') + '</div>' +
-        '<div class="bs-row"><div class="bs-seg" role="group" aria-label="Boss strength">' + STRENGTH.map(function (s) { return '<button data-a="str" data-v="' + s[1] + '" aria-pressed="' + (state.strength === s[1]) + '">' + s[0] + '</button>'; }).join('') + '</div>' +
-        (state.boss === 'xenos' ? '<button class="bs-chip" data-a="stage9" aria-pressed="' + !!state.stage9 + '">Stage 9+</button>' : '') +
-        '<button class="bs-btn" data-a="more">' + E(state.runs) + ' fights · ' + mmss(state.seconds) + ' limit · Lv ' + E(state.level) + '</button></div></section>';
+      var cur = bp[state.boss] || {}, stg = stageOf(state.boss), groups = ['Gear', 'Runes', 'Growth', 'Daily'];
+      html += '<section class="bs-card"><div class="bs-ct"><span>Dungeon</span><button class="r bs-btn" data-a="bossinfo">Skills and targets</button></div>' +
+        groups.map(function (g) {
+          return '<div class="bs-dg"><span class="bs-dgl">' + g + '</span><div class="bs-row">' + BOSSES.filter(function (b) { return b.g === g; }).map(function (b) {
+            var p = bp[b.k]; if (!p) return '';
+            return '<button class="bs-chip" data-a="boss" data-k="' + b.k + '" aria-pressed="' + (state.boss === b.k) + '"><span>' + E(p.dungeon) + '<small>' + E(p.name) + ' · ' + E(p.farm || '') + '</small></span>' + (p.s1 ? '<em class="bs-s1" title="Available on Season 1 servers">S1</em>' : '') + '</button>';
+          }).join('') + '</div></div>';
+        }).join('') +
+        '<div class="bs-row">' + (cur.stages ? '<div class="bs-step" role="group" aria-label="' + E(cur.stages.label) + '"><button data-a="stg" data-v="-1" aria-label="Lower">−</button><span><small>' + E(cur.stages.label) + '</small><b>' + stg + '</b></span><button data-a="stg" data-v="1" aria-label="Higher">+</button></div>' : '') +
+        '<span class="bs-small">' + (cur.altName ? 'In game also "' + E(cur.altName) + '". ' : '') + (cur.score ? 'Score fight: damage before your team falls.' : cur.stars ? '3 stars = more than 50 s left.' : '') + '</span>' +
+        '<button class="bs-btn" data-a="more" style="margin-left:auto">' + E(state.runs) + ' fights · Lv ' + E(state.level) + (state.strength !== 1 ? ' · boss ' + (state.strength > 1 ? '+' : '−') + Math.round(Math.abs(state.strength - 1) * 100) + '%' : '') + '</button></div></section>';
       // run
       html += '<div class="bs-go"><button class="bs-run" data-a="run"' + (busy ? ' disabled' : '') + '><i style="width:' + (busy ? Math.round(busy.p * 100) : 0) + '%"></i><span>' + (busy ? E(busy.label) + ' ' + Math.round(busy.p * 100) + '%' : 'Simulate ' + E(state.runs) + ' fights') + '</span></button></div>';
       html += '<div id="bs-out">' + (result ? results() : '') + '</div>';
@@ -273,17 +304,41 @@
       var deaths = r.perHero.reduce(function (s, p) { return s + p.deathRate; }, 0);
       var ring = 2 * Math.PI * 50, col = v === 'safe' ? 'var(--good)' : v === 'risky' ? 'var(--warn)' : 'var(--bad)';
       var h = '<div style="display:grid;gap:16px">';
+      if (opts.score) return h + scoreCard() + resultsTail(true) + '</div>';
+      var pre = S.bosses()[opts.enemy.preset] || {}, stars = '';
+      if (pre.stars && r.ttk) {
+        var left = opts.seconds - r.ttk.p50, n = 0;
+        pre.stars.forEach(function (x) { if (!n && left > x[0]) n = x[1]; });
+        stars = kpi('Stars', '<span style="color:var(--gold)">' + '★★★'.slice(0, n) + '</span><span style="color:var(--fill-3)">' + '★★★'.slice(n) + '</span>');
+      }
       // verdict
       h += '<section class="bs-card"><div class="bs-verdict"><div class="bs-ring"><svg viewBox="0 0 116 116"><circle cx="58" cy="58" r="50" fill="none" stroke="var(--fill)" stroke-width="10"/>' +
         '<circle cx="58" cy="58" r="50" fill="none" stroke="' + col + '" stroke-width="10" stroke-linecap="round" stroke-dasharray="' + (ring * r.winRate).toFixed(1) + ' ' + ring.toFixed(1) + '"/></svg>' +
         '<div class="v"><b>' + pct(r.winRate) + '</b><span>wins</span></div></div><div class="bs-vt"><div class="bs-row"><span class="bs-pill ' + v + '">' + VERDICT[v] + '</span>' +
         '<span class="bs-small">' + E(r.runs) + ' fights vs ' + E(r.enemy && r.enemy.name) + '</span></div>' +
         '<div class="bs-kpis">' +
-        kpi('Clear time', r.ttk ? mmss(r.ttk.p50) : 'never') +
+        kpi('Clear time', r.ttk ? mmss(r.ttk.p50) : 'never') + stars +
         kpi('Heroes lost', deaths.toFixed(1) + ' / fight') +
         kpi('First death', sv.firstDeath != null ? mmss(sv.firstDeath) + ' (' + pct(sv.anyDeath) + ')' : 'none') +
         kpi('Wipes', pct(sv.loss)) + (sv.timeout ? kpi('Out of time', pct(sv.timeout)) : '') +
         '</div></div></div></section>';
+      return h + resultsTail(false) + '</div>';
+    }
+    // Temporal Vortex: the result is the damage dealt before the team falls.
+    function scoreCard() {
+      var r = result, sv = r.survival;
+      var dmg = r.perHero.reduce(function (s, p) { return s + p.damage; }, 0);
+      var lasts = sv.wipeAt != null ? sv.wipeAt : null;
+      return '<section class="bs-card"><div class="bs-verdict"><div class="bs-ring"><svg viewBox="0 0 116 116"><circle cx="58" cy="58" r="50" fill="none" stroke="var(--accent-bg)" stroke-width="10"/></svg>' +
+        '<div class="v"><b>' + k(dmg) + '</b><span>score</span></div></div><div class="bs-vt"><div class="bs-row"><span class="bs-pill safe">Damage score</span>' +
+        '<span class="bs-small">' + E(r.runs) + ' fights vs ' + E(r.enemy && r.enemy.name) + '</span></div><div class="bs-kpis">' +
+        kpi('Team lasts', lasts != null ? mmss(lasts) : 'all ' + mmss(opts.seconds)) +
+        kpi('First death', sv.firstDeath != null ? mmss(sv.firstDeath) : 'none') +
+        kpi('Damage / s', k(r.dps.p50)) +
+        '</div><div class="bs-small">Higher score = higher daily ranking. Longer survival raises the score as much as more damage.</div></div></div></section>';
+    }
+    function resultsTail(score) {
+      var r = result, sv = r.survival, h = '';
       // chart
       h += '<section class="bs-card"><div class="bs-ct"><span>Team HP over the fight</span><span class="r">' + E(r.runs) + ' fights</span></div>' + chart(sv) +
         '<div class="bs-legend"><span><i style="background:color-mix(in srgb,var(--good) 25%,transparent)"></i>Middle 80% of fights</span><span><i style="background:var(--good)"></i>Typical fight</span><span><i style="background:var(--bad)"></i>Heroes alive</span></div></section>';
@@ -294,9 +349,9 @@
       // heroes
       h += '<section class="bs-card"><div class="bs-ct"><span>Heroes</span><span class="r">Average per fight</span></div><div class="bs-heroes">' + r.perHero.map(heroCard).join('') + '</div></section>';
       // defense + healer
+      if (score) return h + defenseCard(true);
       h += '<div class="bs-two">' + defenseCard() + healerCard() + '</div>';
       h += sureCard();
-      h += '</div>';
       return h;
     }
     function kpi(k1, n) { return '<div class="bs-kpi"><div class="k">' + E(k1) + '</div><div class="n">' + n + '</div></div>'; }
@@ -327,7 +382,7 @@
         '<polyline points="' + mid + '" fill="none" stroke="var(--good)" stroke-width="2.5" stroke-linejoin="round"/>' +
         '<polyline points="' + al + '" fill="none" stroke="var(--bad)" stroke-width="1.5" stroke-dasharray="4 3"/></svg>';
     }
-    function defenseCard() {
+    function defenseCard(noLimit) {
       var r = result, sv = r.survival, d = extra.defense || S.survival.defense(r, opts), b = extra.bp;
       var cover = sv.incomingDps ? (sv.healPs + sv.absorbPs) / sv.incomingDps : 0;
       var h = '<section class="bs-card"><div class="bs-ct"><span>Defense</span></div>';
@@ -335,7 +390,7 @@
         var m = Math.min(3, b.margin), pos = Math.max(0, Math.min(100, (m - 0.5) / 2.5 * 100));
         h += '<div><div class="bs-muted">The boss can get <b style="color:var(--label)">' + (b.capped === 'high' ? 'more than ' : '') + b.margin.toFixed(1) + '×</b> stronger before you lose half your fights.</div>' +
           '<div class="bs-gauge"><b style="left:' + pos + '%"></b></div><div class="bs-scale"><span>0.5×</span><span>1×</span><span>2×</span><span>3×</span></div></div>';
-      } else h += '<button class="bs-btn pri" data-a="bp"' + (busy ? ' disabled' : '') + '>Find my limit</button>';
+      } else if (!noLimit) h += '<button class="bs-btn pri" data-a="bp"' + (busy ? ' disabled' : '') + '>Find my limit</button>';
       h += '<div><div class="bs-small" style="display:flex;justify-content:space-between"><span>Boss damage healed or shielded</span><span>' + pct(cover) + '</span></div><div class="bs-meter"><i style="width:' + Math.min(100, cover * 100) + '%;background:var(--good)"></i></div>' +
         '<div class="bs-small" style="margin-top:4px">' + k(sv.incomingDps) + ' damage/s in · ' + k(sv.healPs) + ' heal/s · ' + k(sv.absorbPs) + ' shield/s</div></div>';
       var maxE = Math.max.apply(null, d.map(function (x) { return x.ehp; }));
@@ -469,7 +524,7 @@
     function toast(txt) {
       if (!rp.toast) return;
       rp.toast.textContent = txt; rp.toast.classList.add('on');
-      clearTimeout(rp.toastT); rp.toastT = setTimeout(function () { rp.toast && rp.toast.classList.remove('on'); }, 1100);
+      clearTimeout(rp.toastT); rp.toastT = setTimeout(function () { rp && rp.toast && rp.toast.classList.remove('on'); }, 1100);
     }
     function seek(t) {
       rp.t = Math.max(0, Math.min(rp.data.t, t));
@@ -540,8 +595,11 @@
       var act = a.dataset.a;
       if (act === 'run') run();
       else if (act === 'boss') { state.boss = a.dataset.k; save(); render(); }
-      else if (act === 'str') { state.strength = +a.dataset.v; save(); render(); }
-      else if (act === 'stage9') { state.stage9 = !state.stage9; save(); render(); }
+      else if (act === 'stg') {
+        var p = S.bosses()[state.boss]; state.stages = state.stages || {};
+        state.stages[state.boss] = Math.max(p.stages.min, Math.min(p.stages.max, stageOf(state.boss) + (+a.dataset.v)));
+        save(); render();
+      }
       else if (act === 'hero') heroSheet(+a.dataset.i);
       else if (act === 'bossinfo') bossSheet();
       else if (act === 'honesty') honestySheet();
@@ -592,8 +650,12 @@
       var fmt = function (key, mul) { var v = calc[key]; if (v == null) return ''; v = v * mul; return mul === 100 ? v.toFixed(0) : Math.round(v); };
       var html = '<div class="hd">' + avatar(id) + '<div><h3>' + E(h.n) + '</h3><div class="bs-small">' + E(h.r) + ' · ' + E(h.sc) + ' · ' + E(h.el) + '</div></div><button class="x" data-a="close" aria-label="Close">×</button></div>' +
         '<div class="bs-row"><button class="bs-btn" data-h="swap">Change hero</button><button class="bs-chip" data-h="cap" aria-pressed="' + (state.captain === i) + '">Captain</button></div>' +
+        shotZone() +
         '<div class="bs-grid"><label class="bs-f">Level<input id="bs-lv" type="number" min="1" max="100" inputmode="numeric" value="' + E(c.level || state.level) + '"></label>' +
-        '<label class="bs-f">Stars<input id="bs-stars" type="number" min="1" max="5" inputmode="numeric" placeholder="auto" value="' + E(c.stars || '') + '"></label></div>' +
+        '<label class="bs-f">Stars<input id="bs-stars" type="number" min="1" max="5" inputmode="numeric" placeholder="auto" value="' + E(c.stars || '') + '"></label>' +
+        '<label class="bs-f">Battle skill level<input id="bs-skb" type="number" min="1" max="5" inputmode="numeric" value="' + E((c.skills && c.skills.battle) || 1) + '"></label>' +
+        '<label class="bs-f">Ultimate level<input id="bs-sku" type="number" min="1" max="5" inputmode="numeric" value="' + E((c.skills && c.skills.ult) || 1) + '"></label></div>' +
+        '<div class="bs-small">Skill levels 1-5 from the hero\'s skill screen (raised with scrolls). Each level adds damage, effect chance or a faster recharge.</div>' +
         '<div class="bs-ct" style="margin-top:4px"><span>Stats from the hero screen</span><button class="r bs-btn" data-h="clear">Clear</button></div>' +
         '<div class="bs-note">Type the totals the game shows on the hero\'s attribute screen. They already include gear, set stats and the artifact, so nothing is added twice. Empty fields use the estimate shown in grey.</div>' +
         '<div class="bs-grid">' + STATS.map(function (s) { var v = c.stats[s[0]]; return '<label class="bs-f">' + E(s[1]) + '<input data-st="' + s[0] + '" id="bs-st-' + s[0] + '" type="number" step="any" inputmode="decimal" placeholder="' + E(fmt(s[0], s[2])) + '" value="' + E(v == null ? '' : v) + '"></label>'; }).join('') + '</div>' +
@@ -608,6 +670,7 @@
         var t = e.target;
         if (e.type === 'click') {
           var b = t.closest('[data-h]'); if (!b) return;
+          if (b.dataset.h === 'shot') return;
           if (b.dataset.h === 'cap') { state.captain = i; b.setAttribute('aria-pressed', 'true'); save(); render(); }
           else if (b.dataset.h === 'clear') { c.stats = {}; s.querySelectorAll('[data-st]').forEach(function (n) { n.value = ''; }); save(); render(); }
           else if (b.dataset.h === 'swap') pickSheet(i);
@@ -617,12 +680,16 @@
         else if (t.dataset.gear) c.gear[t.dataset.gear] = t.value;
         else if (t.id === 'bs-lv') c.level = Math.max(1, Math.min(100, +t.value || state.level));
         else if (t.id === 'bs-stars') c.stars = t.value === '' ? null : Math.max(1, Math.min(5, +t.value));
+        else if (t.id === 'bs-skb' || t.id === 'bs-sku') { c.skills = c.skills || {}; c.skills[t.id === 'bs-skb' ? 'battle' : 'ult'] = Math.max(1, Math.min(5, Math.round(+t.value) || 1)); }
+        else if (t.id === 'bs-shot' && e.type === 'change' && t.files && t.files.length) { readShots([].slice.call(t.files), i); t.value = ''; return; }
         else if (t.id === 'bs-art') c.artifact.name = t.value;
         else if (t.id === 'bs-artlv') c.artifact.level = Math.max(0, Math.min(20, +t.value));
         else if (t.id === 'bs-arttier') c.artifact.tier = Math.max(0, Math.min(5, (+t.value || 1) - 1));
         setSum(); save();
         if (e.type === 'change') render();
       });
+      s.dataset.hero = i;
+      wireShotZone(s, i);
       function setSum() {
         var cnt = {}; SLOTS.forEach(function (sl) { var n = c.gear[sl]; if (n) cnt[n] = (cnt[n] || 0) + 1; });
         var lines = Object.keys(cnt).map(function (n) {
@@ -633,6 +700,131 @@
       }
       setSum();
     }
+    // ------------------------------------------------------- screenshots --
+    // A screenshot of a hero screen (attributes, gear, artifact or skills)
+    // is read by Claude through the host (artifact `sample` capability with
+    // images) and fills the fields it shows. Paste (Ctrl+V), drop or choose.
+    var vision = { ok: false };
+    if (host.vision && host.vision.ready) Promise.resolve(host.vision.ready).then(function (ok) { vision.ok = !!ok; if (ok && sh && sh.querySelector('.bs-drop')) sh.querySelector('.bs-drop').hidden = false; }, function () { });
+    function shotZone() {
+      return '<div class="bs-drop" id="bs-drop"' + (vision.ok ? '' : ' hidden') + '><b style="color:var(--label)">Fill from a screenshot</b>' +
+        '<span class="bs-small">Paste (Ctrl+V), drop or choose screenshots of this hero\'s screens: attributes, gear, artifact, skills. Each fills what it shows; check the numbers after.</span>' +
+        '<label class="bs-btn pri" data-h="shot">Choose screenshots<input type="file" id="bs-shot" accept="image/*" multiple hidden></label><span class="bs-small" id="bs-shotmsg" role="status"></span></div>';
+    }
+    function wireShotZone(s, i) {
+      var z = s.querySelector('#bs-drop'); if (!z) return;
+      z.addEventListener('dragover', function (e) { e.preventDefault(); z.classList.add('on'); });
+      z.addEventListener('dragleave', function () { z.classList.remove('on'); });
+      z.addEventListener('drop', function (e) {
+        e.preventDefault(); z.classList.remove('on');
+        var f = [].slice.call(e.dataTransfer.files || []).filter(function (x) { return /^image\//.test(x.type); });
+        if (f.length) readShots(f, i);
+      });
+    }
+    function imagesFrom(ev) {
+      var items = (ev.clipboardData && ev.clipboardData.items) || [], out = [];
+      for (var j = 0; j < items.length; j++) if (items[j].kind === 'file' && /^image\//.test(items[j].type)) { var f = items[j].getAsFile(); if (f) out.push(f); }
+      return out;
+    }
+    // Paste anywhere: inside a hero sheet it fills that hero; on the main
+    // screen the screenshot says which hero it is.
+    var onPaste = function (ev) {
+      if (!root.isConnected) { document.removeEventListener('paste', onPaste); return; }
+      var imgs = imagesFrom(ev); if (!imgs.length) return;
+      if (!vision.ok) return;
+      ev.preventDefault();
+      var hs = sh && sh.querySelector('#bs-drop');
+      readShots(imgs, hs ? +sh.dataset.hero : null);
+    };
+    document.addEventListener('paste', onPaste);
+
+    function shrink(blob) {
+      // Phones and 4K screens make big files; 1600 px on the long side keeps every number readable.
+      return new Promise(function (res) {
+        if (!window.createImageBitmap) return res(blob);
+        createImageBitmap(blob).then(function (bm) {
+          var m = Math.max(bm.width, bm.height), f = m > 1600 ? 1600 / m : 1;
+          if (f === 1 && blob.size < 3e6) return res(blob);
+          var c = document.createElement('canvas'); c.width = Math.round(bm.width * f); c.height = Math.round(bm.height * f);
+          c.getContext('2d').drawImage(bm, 0, 0, c.width, c.height);
+          c.toBlob(function (b) { res(b || blob); }, 'image/jpeg', 0.9);
+        }, function () { res(blob); });
+      });
+    }
+    function shotPrompt() {
+      var D = S.data();
+      var arts = Object.keys(D.artifacts).map(function (x) { return D.artifacts[x]; }).filter(function (a) { return a.season === 's1'; }).map(function (a) { return a.n; });
+      var heroes = Object.keys(D.heroes).map(function (x) { return D.heroes[x].n; });
+      return 'This is a screenshot from the game Dragonheir: Silent Gods (a hero screen: attributes, gear, artifact or skills). Read ONLY what is visible; never guess. ' +
+        'Answer with one JSON object, leaving out any key you cannot read:\n' +
+        '{"hero": exact hero name, "level": number, "stars": 1-5, ' +
+        '"stats": {"hp", "atk", "def", "critRate" (percent number, 35.5 for 35.5%), "critDmg" (percent), "acc" (Accuracy / Effect Hit), "res" (Resistance), "ench" (Enlightenment), "haste" (Skill Haste), "atkSpd" (Attack Speed percent)}, ' +
+        '"artifact": {"name", "level" (enhancement +0..+20), "stars" (effect stars 1-6)}, ' +
+        '"gear": {"Helm": set name, "Weapon": set name, "Armor": set name, "Gloves": set name}, ' +
+        '"skills": {"battle": battle skill level 1-5, "ult": ultimate skill level 1-5}}\n' +
+        'Use the total values shown on the attribute screen (not base values). Set names: ' + S.BEGINNER_SETS.join('; ') + '.\nArtifact names: ' + arts.join('; ') + '.\nHero names: ' + heroes.join('; ') + '.';
+    }
+    function norm(x) { return String(x || '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
+    function matchName(name, list) {
+      var n = norm(name); if (!n) return null;
+      var hit = list.filter(function (x) { return norm(x) === n; })[0];
+      if (!hit) hit = list.filter(function (x) { var m = norm(x); return m && (m.indexOf(n) >= 0 || n.indexOf(m) >= 0); })[0];
+      return hit || null;
+    }
+    // Apply what one screenshot shows; returns the field names it filled.
+    function applyShot(id, js) {
+      var c = state.heroes[id] = state.heroes[id] || {}, got = [];
+      c.stats = c.stats || {}; c.gear = c.gear || {}; c.artifact = c.artifact || {};
+      var num = function (v) { v = typeof v === 'string' ? +v.replace(/[%,\s+]/g, '') : +v; return isFinite(v) ? v : null; };
+      if (num(js.level)) { c.level = Math.max(1, Math.min(100, num(js.level))); got.push('level'); }
+      if (num(js.stars)) { c.stars = Math.max(1, Math.min(5, num(js.stars))); got.push('stars'); }
+      if (js.stats) STATS.forEach(function (st) { var v = num(js.stats[st[0]]); if (v != null) { c.stats[st[0]] = v; got.push(st[0]); } });
+      if (js.artifact && js.artifact.name) {
+        var D = S.data(), an = matchName(js.artifact.name, Object.keys(D.artifacts).map(function (x) { return D.artifacts[x].n; }));
+        if (an) { c.artifact.name = an; got.push('artifact'); }
+        if (num(js.artifact.level) != null) c.artifact.level = Math.max(0, Math.min(20, num(js.artifact.level)));
+        if (num(js.artifact.stars)) c.artifact.tier = Math.max(0, Math.min(5, num(js.artifact.stars) - 1));
+      }
+      if (js.gear) SLOTS.forEach(function (sl) { var n = matchName(js.gear[sl], S.BEGINNER_SETS); if (n) { c.gear[sl] = n; got.push(sl); } });
+      if (js.skills) ['battle', 'ult'].forEach(function (k2) { var v = num(js.skills[k2]); if (v) { c.skills = c.skills || {}; c.skills[k2] = Math.max(1, Math.min(5, Math.round(v))); got.push(k2 === 'battle' ? 'skb' : 'sku'); } });
+      return got;
+    }
+    async function readShots(files, slot) {
+      var msg = function (t) { var m = sh && sh.querySelector('#bs-shotmsg'); if (m) m.textContent = t; };
+      if (!vision.ok) return;
+      msg('Reading ' + files.length + ' screenshot' + (files.length > 1 ? 's' : '') + '…');
+      var filled = [], who = null;
+      for (var j = 0; j < files.length; j++) {
+        var js;
+        try { js = await host.vision.read(shotPrompt(), await shrink(files[j])); }
+        catch (e) {
+          var why = { not_granted: 'Claude was not allowed to read images on this page.', rate_limited: 'Too many requests, try again in a minute.', images_unavailable: 'Reading images is not available here.', image_rejected: 'This image could not be read (type or size).' }[e && e.code] || 'Could not read the screenshot.';
+          msg(why); return;
+        }
+        if (!js || typeof js !== 'object') continue;
+        var id = slot != null ? state.team[slot] : null;
+        if (id == null) {
+          var hn = matchName(js.hero, Object.keys(S.data().heroes).map(function (x) { return S.data().heroes[x].n; }));
+          var h = hn && heroOf(hn);
+          if (!h) { shotSheet('The screenshot does not show a hero name. Open the hero in your team and paste it there.'); return; }
+          if (state.team.indexOf(h.id) < 0) { shotSheet(h.n + ' is not in your team. Put the hero in a slot first (tap a hero, then Change hero), then paste again.'); return; }
+          slot = state.team.indexOf(h.id); id = h.id;
+        }
+        who = id;
+        filled = filled.concat(applyShot(id, js));
+      }
+      save(); render();
+      if (who == null) { msg('Nothing readable found.'); return; }
+      if (!sh || +sh.dataset.hero !== slot) heroSheet(slot);
+      filled.forEach(function (f) {
+        var n = sh && (sh.querySelector('#bs-st-' + f) || sh.querySelector('#bs-g-' + f) || sh.querySelector(f === 'level' ? '#bs-lv' : f === 'stars' ? '#bs-stars' : f === 'artifact' ? '#bs-art' : f === 'skb' ? '#bs-skb' : f === 'sku' ? '#bs-sku' : null));
+        if (n) n.classList.add('bs-filled');
+      });
+      var m2 = sh && sh.querySelector('#bs-shotmsg');
+      if (m2) m2.textContent = filled.length ? 'Filled ' + filled.length + ' fields (green). Check them against the game.' : 'Nothing readable found on this screenshot.';
+    }
+    function shotSheet(t) { sheet('<div class="hd"><h3>Screenshot</h3><button class="x" data-a="close" aria-label="Close">×</button></div><p class="bs-muted" style="margin:0">' + E(t) + '</p>'); }
+
     function pickSheet(i) {
       var owned = host.owned && host.owned.length ? host.owned : null;
       var ids = Object.keys(S.kits()).map(Number).filter(function (id) { return heroOf(id) && (!owned || owned.indexOf(id) >= 0 || owned.indexOf(String(id)) >= 0); })
@@ -649,7 +841,7 @@
     function bossSheet() {
       var p = S.bosses()[state.boss];
       sheet('<div class="hd"><h3>' + E(p.name) + '</h3><button class="x" data-a="close" aria-label="Close">×</button></div>' +
-        '<div class="bs-small">' + E(p.dungeon || '') + ' · one skill every 6 s</div>' +
+        '<div class="bs-small">' + E(p.dungeon || '') + (p.altName ? ' (' + E(p.altName) + ')' : '') + ' · ' + E(p.farm || '') + ' · one skill every ' + (state.boss === 'vortex' ? 5 : 6) + ' s</div>' +
         (p.skills || []).map(function (s) { return '<div class="bs-skill"><b>' + E(s.name) + '</b><span class="t">Hits: ' + E(s.targetText) + '</span><span class="d">' + E(s.text) + '</span></div>'; }).join('') +
         (p.mechanics ? '<div class="bs-skill"><b>Passive</b>' + p.mechanics.map(function (m) { return '<span class="d">' + E(m) + '</span>'; }).join('') + '</div>' : '') +
         '<div class="bs-note">' + E(p.note) + '</div>');
@@ -659,11 +851,15 @@
         '<label class="bs-f">Fights<select id="bs-runs">' + [100, 200, 500].map(function (n) { return '<option' + (state.runs === n ? ' selected' : '') + '>' + n + '</option>'; }).join('') + '</select></label>' +
         '<label class="bs-f">Time limit (s)<input id="bs-sec" type="number" min="30" max="600" inputmode="numeric" value="' + state.seconds + '"></label>' +
         '<label class="bs-f">Default hero level<input id="bs-dlv" type="number" min="1" max="100" inputmode="numeric" value="' + state.level + '"></label></div>' +
-        '<div class="bs-small">Boss level follows the default hero level. More fights = steadier numbers, a bit slower.</div>' +
+        '<div class="bs-small">More fights = steadier numbers, a bit slower. Goblin Lair (120 s) and Temporal Vortex (8 min) use their own limit.</div>' +
+        '<div class="bs-ct"><span>Boss estimate</span></div><div class="bs-seg" role="group" aria-label="Boss estimate">' + ESTIMATE.map(function (x) { return '<button data-est="' + x[1] + '" aria-pressed="' + (state.strength === x[1]) + '">' + x[0] + '</button>'; }).join('') + '</div>' +
+        '<div class="bs-small">The game never shows boss HP and damage, so these are our estimate. If your real fights go better or worse than the simulator, move this. It is not the game\'s difficulty: pick the stage on the main screen for that.</div>' +
         '<div class="bs-ct"><span>Your saved heroes</span></div><div class="bs-row"><label class="bs-btn">Import account JSON<input type="file" accept=".json,application/json" id="bs-imp" hidden></label><button class="bs-btn" data-h="copy">Copy my setup</button></div><div class="bs-small" id="bs-impmsg"></div>',
         function (e) {
           var t = e.target;
           if (e.type === 'click') {
+            var est = t.closest('[data-est]');
+            if (est) { state.strength = +est.dataset.est; est.parentNode.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', b === est); }); save(); render(); return; }
             if (t.closest('[data-h="copy"]')) {
               var txt = JSON.stringify(state);
               var msg = sh.querySelector('#bs-impmsg');
@@ -707,7 +903,8 @@
       var rows = [
         ['var(--good)', 'Official game data', 'Hero stats, skill numbers and chances, artifact and set texts, captain auras.'],
         ['var(--good)', 'Sourced rules', 'Skill charge times, Skill Haste, Accuracy vs Resistance (a 75% debuff can still miss), status values, Frost 5-stack burst, Support bond shields.'],
-        ['var(--warn)', 'Estimated', 'Boss HP, damage and skill sizes (never published), the Defense curve, cast times, gear when you leave stats empty.'],
+        ['var(--warn)', 'Estimated', 'Boss HP, damage and skill sizes (never published), how much each stage adds (from official boss levels), the Domain element penalty, the Defense curve, cast times, gear when you leave stats empty.'],
+        ['var(--warn)', 'Skill levels', 'Common pattern from game tooltips: Battle skill Lv2 +5% damage, Lv3 +10%, Lv4 +25% effect chance, Lv5 3 s faster; Ultimate Lv2 +10% damage, Lv3 +25% chance, Lv4 3 s faster, Lv5 +10% damage. Some heroes upgrade differently.'],
         ['var(--label-3)', 'How to use it', 'Compare teams and setups on equal terms. Typing your real stats makes your side exact; the boss side stays an estimate until we calibrate it from one of your fight statistics screens.']
       ];
       sheet('<div class="hd"><h3>How accurate is this?</h3><button class="x" data-a="close" aria-label="Close">×</button></div><div class="bs-conf">' +

@@ -16,7 +16,7 @@
 })(typeof window !== 'undefined' ? window : globalThis, function () {
   'use strict';
 
-  var VERSION = '0.3.0';
+  var VERSION = '0.4.0';
 
   // ---------------------------------------------------------------- rules --
   // conf: verified = official text or table; estimated = derived from data;
@@ -191,6 +191,7 @@
       var st = (h.insp[i] && h.insp[i].stats) || {};
       for (var k in st) addStat(s, k, st[k]);
     }
+    applySkillLevels(s, spec.skills);
     var notes = [];
     if (spec.artifact) {
       var a = artifactByName(spec.artifact.name || spec.artifact);
@@ -217,6 +218,29 @@
       ['critRate', 'critDmg', 'acc', 'res', 'ench', 'haste', 'atkSpd'].forEach(function (k) { if (o[k] != null) s[k] = o[k]; });
     }
     return { s: s, h: h, notes: notes };
+  }
+  // Skill levels (Battle and Ultimate, 1-5; passives have no level). Skill
+  // texts in the data are the level-1 text (Garrika's config text matches the
+  // level-1 tooltip: 75% chance, which level 4 raises by 25). Each level adds
+  // the step below on top. Per-hero paths differ in game; this is the common
+  // pattern (tooltips: Garrika 2023 via ayumilove; Reborn tooltip 2025-05-12:
+  // later levels add damage and cut recharge by 3 s). conf: reported pattern.
+  var SKILL_LV = {
+    max: 5,
+    battle: [null, null, { dmg: 0.05 }, { dmg: 0.10 }, { chance: 0.25 }, { cd: 3 }],
+    ult: [null, null, { dmg: 0.10 }, { chance: 0.25 }, { cd: 3 }, { dmg: 0.10 }]
+  };
+  function applySkillLevels(s, lv) {
+    if (!lv) return;
+    ['battle', 'ult'].forEach(function (slot) {
+      var L = clamp(Math.round(+lv[slot] || 1), 1, SKILL_LV.max);
+      for (var i = 2; i <= L; i++) {
+        var st = SKILL_LV[slot][i];
+        if (st.dmg) s['dmgBonus_' + slot] = (s['dmgBonus_' + slot] || 0) + st.dmg;
+        if (st.chance) s['statusChance_' + slot] = (s['statusChance_' + slot] || 0) + st.chance;
+        if (st.cd) s['cdCut_' + slot] = (s['cdCut_' + slot] || 0) + st.cd;
+      }
+    });
   }
   // Reborn gear: 4 slots; Legendary 2-piece stats + 3-piece effect, Mythic
   // 1-piece effect, Epic/Rare 2-piece stats (game config, gear-sets.json).
@@ -462,7 +486,7 @@
     if (!tgt || !tgt.alive) return { amount: 0 };
     var R = this.R;
     var raw = typeof coef === 'number' ? coef : this.scale(src, tgt, coef);
-    var ctx = { src: src, tgt: tgt, o: o, bonus: (o.bonus || 0) + this.stat(src, 'dmgBonus'), defIgnore: (o.defIgnore || 0) + this.stat(src, 'defIgnore'),
+    var ctx = { src: src, tgt: tgt, o: o, bonus: (o.bonus || 0) + this.stat(src, 'dmgBonus') + (o.tag === 'battle' || o.tag === 'ult' ? this.stat(src, 'dmgBonus_' + o.tag) : 0), defIgnore: (o.defIgnore || 0) + this.stat(src, 'defIgnore'),
       critRate: this.stat(src, 'critRate') + (o.critRate || 0), critDmg: this.stat(src, 'critDmg'), vuln: this.stat(tgt, 'vuln'), raw: raw, critExtra: 0 };
     this.emit('modifyDamage', ctx);
     if (this.has(tgt, 'Invincibility')) { this.emit('hit', { src: src, tgt: tgt, o: o, amount: 0, crit: false }); return { amount: 0 }; }
@@ -572,7 +596,7 @@
     var v = this.R.scrolls === 'none' ? tm[key + 'B'] : tm[key];
     return v == null ? tm[key] == null ? null : tm[key] : v;
   };
-  B.ultFull = function (u) { return (u.kit && u.kit.ultFull) || this.timing(u, 'uc') || this.R.ultFull; };
+  B.ultFull = function (u) { return Math.max(4, ((u.kit && u.kit.ultFull) || this.timing(u, 'uc') || this.R.ultFull) - this.stat(u, 'cdCut_ult')); };
   // Final chance that a hostile status lands: skill chance (+ additive chance
   // bonuses, capped at 100%) x the ACC vs RES curve.
   B.landChance = function (src, tgt, chance, skill, noRes) {
@@ -711,7 +735,7 @@
     return 1 / (af * Math.max(0.2, spd));
   };
   // Base recharge of the battle skill; the countdown runs at rechargeRate(u).
-  B.battleCd = function (u) { return (u.kit && u.kit.battleCd) || this.timing(u, 'bc') || this.R.battleCd; };
+  B.battleCd = function (u) { return Math.max(2, ((u.kit && u.kit.battleCd) || this.timing(u, 'bc') || this.R.battleCd) - this.stat(u, 'cdCut_battle')); };
 
   B.act = function (u) {
     var R = this.R, k = u.kit;
@@ -1238,7 +1262,7 @@
   function registerBoss(id, preset) { BOSSES[id] = preset; }
 
   return {
-    VERSION: VERSION, RULE_INFO: RULE_INFO, defaultRules: defaultRules, GEAR_PROFILES: GEAR_PROFILES,
+    VERSION: VERSION, RULE_INFO: RULE_INFO, defaultRules: defaultRules, GEAR_PROFILES: GEAR_PROFILES, SKILL_LV: SKILL_LV,
     setData: setData, data: function () { return DATA; }, hero: hero, nakedStats: nakedStats, buildStats: buildStats, finalStats: finalStats,
     starsForLevel: starsForLevel, captainFx: captainFx, artifactByName: artifactByName, setByName: setByName,
     registerKit: registerKit, registerArtifact: registerArtifact, registerSet: registerSet, registerBond: registerBond, registerBoss: registerBoss,

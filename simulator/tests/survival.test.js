@@ -201,6 +201,46 @@ var tests = [
       assert.ok(r.survival.incomingDps > 0, p + ' deals damage');
       assert.ok(S.bosses()[p].skills.length >= 3, p + ' lists skills');
     });
+  }],
+  // ---- v0.4: Darko's asks D10, D11, D14
+  ['D10 every dungeon is named as in game, has stages and an S1 label', function () {
+    var want = { harpy: 'Grave of Venom', xenos: 'Grave of Curse', scavenger: 'Grave of Rot', fyre: 'Heretical Ruins', gruentius: 'Ancient Battlefield',
+      goblin: 'Goblin Lair', flameDomain: 'Flame Domain', tempestDomain: 'Tempest Domain', frostDomain: 'Frost Domain', vortex: 'Temporal Vortex' };
+    Object.keys(want).forEach(function (k) {
+      var p = S.bosses()[k];
+      assert.strictEqual(p.dungeon, want[k]);
+      assert.ok(p.s1 === true && p.stages && p.stages.max > p.stages.min, k);
+      var r = S.simulate(opts({ enemy: { preset: k, level: 59, stage: S.normalStage(k, 59) }, seconds: p.seconds || 180, runs: 3 }));
+      assert.ok(r.survival.incomingDps > 0, k + ' hits back');
+    });
+  }],
+  ['D11 higher stage = stronger boss (monotonic win rate)', function () {
+    var w = [7, 9, 11].map(function (st) { return S.simulate(opts({ enemy: { preset: 'harpy', level: 59, stage: st }, runs: 30 })).winRate; });
+    assert.ok(w[0] >= w[1] && w[1] >= w[2] && w[0] > w[2], 'win ' + w.join(' '));
+  }],
+  ['D10 Frost Domain counters Ice: same team does worse than in Tempest Domain', function () {
+    var f = S.simulate(opts({ enemy: { preset: 'frostDomain', level: 59, stage: 6 }, runs: 30 }));
+    var t = S.simulate(opts({ enemy: { preset: 'tempestDomain', level: 59, stage: 6 }, runs: 30 }));
+    assert.ok(f.winRate < t.winRate || (f.ttk && t.ttk && f.ttk.mean > t.ttk.mean), 'frost ' + f.winRate + ' tempest ' + t.winRate);
+  }],
+  ['D14 skill levels raise damage and cut recharge', function () {
+    var lo = S.simulate(opts({ team: team(TEAM.map(function () { return { skills: { battle: 1, ult: 1 } }; })), enemy: { preset: 'dummy', level: 59 }, seconds: 60, runs: 10 }));
+    var hi = S.simulate(opts({ team: team(TEAM.map(function () { return { skills: { battle: 5, ult: 5 } }; })), enemy: { preset: 'dummy', level: 59 }, seconds: 60, runs: 10 }));
+    assert.ok(hi.dps.mean > lo.dps.mean * 1.1, 'dps ' + lo.dps.mean + ' -> ' + hi.dps.mean);
+    var b = S.runOnce({ team: [{ hero: 'Auster', level: 59, skills: { battle: 5, ult: 4 } }], enemy: { preset: 'dummy', level: 59 }, seconds: 0.1 }, 1);
+    var b1 = S.runOnce({ team: [{ hero: 'Auster', level: 59 }], enemy: { preset: 'dummy', level: 59 }, seconds: 0.1 }, 1);
+    near(b1.battleCd(b1.units[0]) - b.battleCd(b.units[0]), 3, 1e-9, 'battle recharge cut');
+    near(b1.ultFull(b1.units[0]) - b.ultFull(b.units[0]), 3, 1e-9, 'ult recharge cut');
+    near(b.units[0].s.dmgBonus_battle, 0.15, 1e-9); near(b.units[0].s.statusChance_battle, 0.25, 1e-9);
+  }],
+  ['D14 skill level 1 = no change (old setups give the same fight)', function () {
+    var a = S.simulate(opts({ runs: 5 })), b = S.simulate(opts({ team: team(TEAM.map(function () { return { skills: { battle: 1, ult: 1 } }; })), runs: 5 }));
+    assert.strictEqual(a.dps.mean, b.dps.mean);
+  }],
+  ['Vortex is a score fight: the boss never dies, damage keeps growing', function () {
+    var r = S.simulate(opts({ enemy: { preset: 'vortex', level: 59, stage: 4 }, seconds: 480, runs: 5 }));
+    assert.strictEqual(r.winRate, 0);
+    assert.ok(r.survival.wipeAt != null && r.survival.wipeAt < 480, 'team falls at ' + r.survival.wipeAt);
   }]
 ];
 
