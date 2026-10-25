@@ -48,7 +48,7 @@
     '.bs-seg button{padding:7px 12px;border-radius:8px;font:600 12.5px var(--font);white-space:nowrap}',
     '.bs-seg button[aria-pressed="true"]{background:var(--card);box-shadow:var(--shadow-sm)}',
     '.bs-go{display:flex;gap:10px;align-items:center;flex-wrap:wrap}',
-    '.bs-run{flex:1;min-width:200px;height:48px;border-radius:14px;background:var(--accent-bg);color:var(--on-accent)!important;font:650 16px var(--font)!important;position:relative;overflow:hidden}',
+    '.bs-run{text-align:center!important;flex:1;min-width:200px;height:48px;border-radius:14px;background:var(--accent-bg);color:var(--on-accent)!important;font:650 16px var(--font)!important;position:relative;overflow:hidden}',
     '.bs-run:disabled{cursor:progress}',
     '.bs-run i{position:absolute;inset:0 auto 0 0;background:rgba(255,255,255,.22);width:0;transition:width .15s linear}',
     '.bs-run span{position:relative}',
@@ -160,7 +160,7 @@
     '.bs-skill .d{font-size:12.5px;color:var(--label-2)}',
     '.bs-conf{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;font-size:13px;align-items:start}',
     '.bs-dot{width:10px;height:10px;border-radius:5px;margin-top:4px}',
-    '@media (max-width:560px){.bs-team{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}.bs-av{width:46px;height:46px}.bs-verdict{grid-template-columns:1fr;justify-items:start}.bs-stage{grid-template-columns:1fr;padding:40px 10px 10px;min-height:0;align-content:start}.bs-side.foe{order:-1}.bs-side.foe .bs-unit{grid-template-columns:auto minmax(0,1fr)}.bs-side.foe .bs-unit .bs-pic{order:0}.bs-pic{width:34px;height:34px}.bs-unit.boss .bs-pic{width:52px;height:52px}}',
+    '@media (max-width:560px){.bs-mark{font-size:0;width:9px;height:9px;padding:0;top:7px;right:7px;background:var(--good)}.bs-mark.est{background:var(--fill-3)}.bs-team{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}.bs-av{width:46px;height:46px}.bs-verdict{grid-template-columns:1fr;justify-items:start}.bs-stage{grid-template-columns:1fr;padding:40px 10px 10px;min-height:0;align-content:start}.bs-side.foe{order:-1}.bs-side.foe .bs-unit{grid-template-columns:auto minmax(0,1fr)}.bs-side.foe .bs-unit .bs-pic{order:0}.bs-pic{width:34px;height:34px}.bs-unit.boss .bs-pic{width:52px;height:52px}}',
     '@media (prefers-reduced-motion:reduce){.bs-float,.bs-pic::after{animation:none!important}.bs-hp .lag,.bs-hp .hp{transition:none}}'
   ].join('\n');
 
@@ -239,7 +239,7 @@
     function render() {
       var bp = S.bosses();
       var html = '';
-      html += '<div class="bs-head"><div><h2>Battle Simulator</h2><p>Hundreds of fights against a boss that hits back. See who survives, when heroes fall and what saves them.</p></div>' +
+      html += '<div class="bs-head"><div>' + (host.hideTitle ? '' : '<h2>Battle Simulator</h2>') + '<p>Hundreds of fights against a boss that hits back. See who survives, when heroes fall and what saves them.</p></div>' +
         '<button class="bs-tag" data-a="honesty" aria-label="How accurate is this?">Sim v' + E(S.VERSION) + ' · <b>estimates</b></button></div>';
       // team
       html += '<section class="bs-card"><div class="bs-ct"><span>Your team</span><span class="r">Tap a hero for stats, artifact and sets</span></div><div class="bs-team">' +
