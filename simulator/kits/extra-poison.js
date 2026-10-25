@@ -254,14 +254,16 @@
       b.on(u, 'modifyDamage', function (c) { if (c.src === u) c.defIgnore += 0.01 * b.stacks(c.tgt, 'Poison'); });
     },
     battle: function (u, b) {
-      // ASSUMED: "bounces up to 5 times" = 5 hits in total, cycling through the alive enemies from the main target; with one enemy all 5 hit it.
-      var first = b.target(u);
-      if (!first) return;
-      var order = [first].concat(shuffled(b, b.enemies(u).filter(function (x) { return x !== first; })));
-      for (var i = 0; i < 5; i++) {
-        var alive = order.filter(function (x) { return x.alive; });
-        if (!alive.length) return;
-        b.hit(u, alive[i % alive.length], { atk: 1.05 }, { el: POI, tag: 'battle', apply: [['Poison', 0.75, 15, { stacks: 1, skill: 'battle' }]] });
+      // "Bounces between enemies up to 5 times": each hop goes to another enemy,
+      // never the one just hit. CALIBRATED: against a lone boss the dagger hits
+      // once (Darko's Temporal Vortex statistics, 2026-10-25: Shink 15.5% of
+      // the team's damage; the old 5-hits-on-one-target reading gave 27%).
+      var cur = b.target(u), last = null;
+      for (var i = 0; i < 5 && cur; i++) {
+        b.hit(u, cur, { atk: 1.05 }, { el: POI, tag: 'battle', apply: [['Poison', 0.75, 15, { stacks: 1, skill: 'battle' }]] });
+        last = cur;
+        var next = shuffled(b, b.enemies(u).filter(function (x) { return x !== last && x.alive; }));
+        cur = next[0];
       }
     },
     ult: function (u, b) {

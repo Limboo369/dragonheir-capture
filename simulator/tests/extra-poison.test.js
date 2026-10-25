@@ -120,9 +120,9 @@ check('Corrin passive: a Poisoned enemy dying spreads Poison with 80% ATK + 480%
   near(d, (p.b.R.areaSize - 1) * (0.8 * p.atk + 4.8 * p.ench), 'passive');
 });
 
-check('Shink battle: 5 x 105% ATK; ult: 5 x 105% ATK', function () {
+check('Shink battle: dagger bounces to OTHER enemies, so a lone target is hit once; ult: 5 x 105% ATK', function () {
   var p = setup('Shink');
-  near(cast(p, 'battle'), 5 * 1.05 * p.atk, 'battle');
+  near(cast(p, 'battle'), 1 * 1.05 * p.atk, 'battle');
   near(cast(p, 'ult'), 5 * 1.05 * p.atk, 'ult');
 });
 

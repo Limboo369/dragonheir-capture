@@ -263,6 +263,19 @@ var tests = [
     near(taken / 1e3, 924, 280, 'damage taken (k)');
     var og = r.perHero.filter(function (p) { return p.name === 'Oggok'; })[0];
     assert.ok(og.healing / heal > 0.7, 'Oggok does most of the healing');
+  }],
+  ['Vortex Poison team: Darko\'s in-game Statistics (2026-10-25, Difficulty I, 3,764,258)', function () {
+    var T = [[21700, { hp: 23786, atk: 846, def: 811, critRate: 0.306, critDmg: 0.742, acc: 103, res: 14, ench: 46, haste: 20 }, 'Rift Hourglass'],
+      [21010, { hp: 35037, atk: 820, def: 973, critRate: 0.1, critDmg: 0.579, acc: 46, res: 0, ench: 47, haste: 0 }, "Illuya's Fang"],
+      [20670, { hp: 26914, atk: 1397, def: 925, critRate: 0.412, critDmg: 0.5, acc: 63, res: 48, ench: 85, haste: 0 }, "Witch's Remains"],
+      [22010, { hp: 22938, atk: 1170, def: 641, critRate: 0.494, critDmg: 0.586, acc: 61, res: 0, ench: 44, haste: 0 }, "Illuya's Fang"],
+      [22020, { hp: 20058, atk: 1227, def: 539, critRate: 0.293, critDmg: 0.924, acc: 23, res: 12, ench: 41, haste: 0 }, null]];
+    var team = T.map(function (x) { var sp = { hero: x[0], level: 59, stats: Object.assign({ totals: true }, x[1]) }; if (x[2]) sp.artifact = { name: x[2], level: 12, tier: 3 }; return sp; });
+    var r = S.simulate({ team: team, captain: 0, enemy: { preset: 'vortex', level: 59, stage: 1 }, seconds: 480, runs: 30, seed: 20261025, score: true });
+    var tot = 0, sh = 0; r.perHero.forEach(function (p) { tot += p.damage; if (p.name === 'Shink') sh = p.damage; });
+    near(tot / 1e6, 3.76, 0.6, 'total damage (M)');
+    assert.ok(sh / tot < 0.22, 'Shink share ' + (sh / tot) + ' (game 15.5%; his dagger cannot bounce on a lone boss)');
+    r.perHero.forEach(function (p) { assert.ok(p.deathRate <= 0.15, p.name + ' survives 8:00'); });
   }]
 ];
 

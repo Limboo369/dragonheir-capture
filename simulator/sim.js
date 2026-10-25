@@ -47,7 +47,7 @@
     flatTier: { v: 50, conf: 'reported', note: 'Flat Accuracy/Resistance Up or Penalty per tier (CN tooltip: +50).' },
     frozenDmgTaken: { v: 0.3, conf: 'verified', note: 'Frozen units take 30% less damage (official S1 table).' },
     frostAtkSpd: { v: 0, conf: 'assumed', note: 'Frost slow on attack speed. No source states one, so off.', range: [0, 0.2] },
-    poisonPerStack: { v: 0.065, conf: 'estimated', note: 'Poison: each stack deals this x caster ATK per second as Derivative damage (x Enlightenment bonus). Not published for the current game; S1 capped a 5 s tick at 30% ATK (6%/s) and a current hero text implies a 20% ATK cap per tick (about 6.7%/s at 3 s ticks).', range: [0.04, 0.1] },
+    poisonPerStack: { v: 0.045, conf: 'calibrated', note: 'Poison: each stack deals this x caster ATK per second as Derivative damage (x Enlightenment bonus). Not published; S1 capped a 5 s tick at 30% ATK (6%/s). Lowered from 0.065 to 0.045 on Darko\'s Poison-team Temporal Vortex statistics (2026-10-25: game 3.76M; 0.065 gave 4.2M).', range: [0.04, 0.1] },
     poisonMaxStacks: { v: 20, conf: 'assumed', note: 'Max Poison stacks per target.' },
     burnPerStack: { v: 0.1, conf: 'assumed', note: 'Burn per stack per second x caster ATK.' },
     derivEnch: { v: 200, conf: 'verified', note: 'Derivative damage (DoT) x (1 + Enlightenment / this) and cannot crit (official wiki article 103).' },
