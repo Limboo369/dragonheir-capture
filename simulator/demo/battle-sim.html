@@ -50,13 +50,30 @@ body { background: var(--wall); color: var(--label); font: 400 14px/1.4 var(--fo
     var h = DHSim.data().heroes[id];
     if (h && ((h.r === 'Epic' && h.season === 's1') || LEG.indexOf(h.n) >= 0)) owned.push(+id);
   });
+  // Storage: the artifact database keeps the setup across devices and browsers
+  // (Darko's rule: never lose saved data); localStorage is only a fast cache.
+  var KEY = 'sim/loadout', dbp = null, ui = null, timer = null;
+  function lsGet(k) { try { return JSON.parse(localStorage.getItem('dhsim:' + k)); } catch (e) { return null; } }
+  function lsSet(k, v) { try { localStorage.setItem('dhsim:' + k, JSON.stringify(v)); } catch (e) { } }
+  function db() { if (!dbp) dbp = (window.claude && window.claude.use ? window.claude.use('db') : Promise.resolve(null)).catch(function () { return null; }); return dbp; }
   var host = {
     pics: window.DH_PICS || {},
     owned: owned,
-    load: function (k) { try { return JSON.parse(localStorage.getItem('dhsim:' + k)); } catch (e) { return null; } },
-    save: function (k, v) { try { localStorage.setItem('dhsim:' + k, JSON.stringify(v)); } catch (e) { } }
+    load: function (k) { return lsGet(k); },
+    save: function (k, v) {
+      lsSet(k, v);
+      clearTimeout(timer);
+      timer = setTimeout(function () { db().then(function (d) { if (d) return d.doc(k).set({ json: JSON.stringify(v), at: new Date().toISOString() }); }).catch(function (e) { console.warn('save failed', e && e.code); }); }, 600);
+    }
   };
-  function go() { DHBattleUI.mount(document.getElementById('app'), host); }
+  function go() {
+    ui = DHBattleUI.mount(document.getElementById('app'), host);
+    db().then(function (d) { return d ? d.doc(KEY).get() : null; }).then(function (snap) {
+      if (!snap || !snap.exists) return;
+      var v = JSON.parse(snap.data().json || 'null');
+      if (v && JSON.stringify(v) !== JSON.stringify(lsGet(KEY))) { lsSet(KEY, v); ui.setState(v); }
+    }).catch(function () { });
+  }
   if (window.DHSim && window.DHBattleUI) go(); else window.addEventListener('load', go);
 })();
 </script>

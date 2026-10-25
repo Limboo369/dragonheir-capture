@@ -96,6 +96,22 @@ var tests = [
     var d = S.finalStats(S.buildStats({ hero: 'Auster', level: 59 }).s);
     assert.ok(c.atk > d.atk, 'without typed stats the 2-piece ATK% is added');
   }],
+  ['Typed totals keep the base: % buffs and auras scale off base, not the typed total', function () {
+    var base = S.nakedStats(S.hero('Auster'), 59).atk;
+    var b = S.runOnce(opts({ team: team([{}, { stats: { atk: 3000, totals: true } }]), captain: 0 }), 1);
+    var u = b.units[1], aura = S.captainFx(S.hero('Lossenia')).value;
+    near(b.atk(u), 3000 + base * aura, 1e-6, 'aura on base');
+    b.buff(u, u, 'Attack Up', 5, null, { value: 0.3 });
+    near(b.atk(u), 3000 + base * (aura + 0.3), 1e-6, 'buff on base');
+  }],
+  ['Partial typing keeps gear in untyped stats', function () {
+    var gear = { sets: [{ name: 'Imperial Executioner', pieces: 3 }], artifact: { name: 'Ring of Winter', level: 20 } };
+    var full = S.finalStats(S.buildStats(Object.assign({ hero: 'Auster', level: 59 }, gear)).s);
+    var typed = S.finalStats(S.buildStats(Object.assign({ hero: 'Auster', level: 59, stats: { atk: 3000, totals: true } }, gear)).s);
+    assert.strictEqual(typed.atk, 3000);
+    near(typed.critRate, full.critRate, 1e-9, 'crit from the set stays');
+    near(typed.hp, full.hp, 1e-9, 'HP from the artifact stays');
+  }],
   ['T13 Imperial Executioner: skill crits deal +16%', function () {
     var b = S.runOnce({ team: [{ hero: 'Auster', level: 60, sets: [{ name: 'Imperial Executioner', pieces: 3 }], stats: { critRate: 1, totals: true } }], enemy: { preset: 'dummy', level: 60 }, seconds: 0.1, captain: 99 }, 1);
     var u = b.units[0], t = b.units[1];

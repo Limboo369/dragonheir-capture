@@ -198,23 +198,24 @@
       var a = artifactByName(spec.artifact.name || spec.artifact);
       if (a) {
         var al = clamp((spec.artifact.level || 20) - 1, 0, 19);
-        // Typed hero-screen totals already contain the artifact's main stats.
-        if (!(spec.stats && spec.stats.totals)) a.stats.forEach(function (p) { addStat(s, p[0], p[1][al]); });
+        a.stats.forEach(function (p) { addStat(s, p[0], p[1][al]); });
       } else notes.push('unknown artifact ' + (spec.artifact.name || spec.artifact));
     }
     (spec.sets || []).forEach(function (sn) {
       var set = setByName(sn.name || sn);
       if (!set) { notes.push('unknown set ' + (sn.name || sn)); return; }
-      // Typed hero-screen totals already contain the 2-piece stats.
-      if (spec.stats && spec.stats.totals) return;
       if (setPieces(set, sn) >= 2) for (var k in set.bonus2) addStat(s, k, set.bonus2[k]);
     });
     if (spec.stats) {
-      // Measured in-game totals override the model (best accuracy).
+      // Measured hero-screen totals replace the model for the typed stats only
+      // (they already contain gear, set 2-piece stats and artifact main stats,
+      // so nothing is added twice; untyped stats keep the model's gear). ATK,
+      // HP and DEF keep the hero's base so battle % buffs and auras scale off
+      // the base as in game; the rest of the typed total becomes flat bonus.
       var o = spec.stats;
-      if (o.atk != null) { s.atkB = o.atk; s.atkF = 0; s.atkP = 0; }
-      if (o.hp != null) { s.hpB = o.hp; s.hpF = 0; s.hpP = 0; }
-      if (o.def != null) { s.defB = o.def; s.defF = 0; s.defP = 0; }
+      if (o.atk != null) { s.atkF = o.atk - s.atkB; s.atkP = 0; }
+      if (o.hp != null) { s.hpF = o.hp - s.hpB; s.hpP = 0; }
+      if (o.def != null) { s.defF = o.def - s.defB; s.defP = 0; }
       ['critRate', 'critDmg', 'acc', 'res', 'ench', 'haste', 'atkSpd'].forEach(function (k) { if (o[k] != null) s[k] = o[k]; });
     }
     return { s: s, h: h, notes: notes };

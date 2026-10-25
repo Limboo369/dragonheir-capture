@@ -714,7 +714,9 @@
         rows.map(function (r) { return '<span class="bs-dot" style="background:' + r[0] + '"></span><div><b>' + E(r[1]) + '</b><div class="bs-muted">' + E(r[2]) + '</div></div>'; }).join('') + '</div>' +
         '<div class="bs-small">Simulator v' + E(S.VERSION) + '. Every fight rolls crits, debuff chances and boss targets again, so 200 fights show the real spread.</div>');
     }
-    return { rerender: render, state: function () { return state; } };
+    // A host whose storage answers late (artifact db) hands the saved setup over here.
+    function setState(v) { if (v && v.team) { state = Object.assign(blankState(host), v); render(); } }
+    return { rerender: render, state: function () { return state; }, setState: setState };
   }
 
   root.DHBattleUI = { mount: mount, KEY: KEY };
