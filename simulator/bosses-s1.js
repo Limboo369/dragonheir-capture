@@ -542,6 +542,19 @@
   // and level come from the player (what the game shows before the fight);
   // enemy gear is the engine's default for their role and level (ASSUMED).
   var FEY_DEFAULT = ['Dallbam', 'Estella', 'Rava', 'Rowena', 'Vidimir'];
+  // Boss floors: 5, 10, then every 30 floors (40, 70 ... 280). Pattern from the
+  // Season 3 guide (dragonheir.info 402); Darko confirmed the same floors on his
+  // Season 1 server (2026-10-26). The S1 boss is a Poison boss (dragonheir.info
+  // 805): keeps poisoning and gets stronger after each Poison that lands, its
+  // second skill stuns. Bosses above floor 140 have 250 Resistance (S3 guide).
+  // Name and numbers not published: ASSUMED, sized like a dungeon boss 40
+  // levels above the player when the floor level equals the player's level.
+  function feyBossFloor(s) { s = +s || 0; return s === 5 || (s >= 10 && s <= 300 && (s - 10) % 30 === 0); }
+  var FEYBOSS = [
+    skill('Venom Burst', 'area', 'Hits its target and up to 2 nearby heroes, 2 Poison stacks on each.', null),
+    skill('Paralyzing Sting', 'random', 'Hits a random hero and Stuns them 3 s (Resistance helps).', null),
+    skill('Toxic Tide', 'all', 'Hits every hero and poisons them.', null)
+  ];
   S.registerBoss('fey', {
     name: 'Enemy heroes', dungeon: 'Fey Corridor', conf: 'estimated', seconds: 600, altName: 'Fey Meander',
     note: 'A floor is a team of enemy heroes that cast their own skills and ultimates (dragonheir.info 805, 1162). Pick the heroes and level the game shows for your floor. Enemy gear and the level per floor are estimates. Guides: AoE schools (Frost, Poison, Rally, Summon), control teams, debuff immunity on boss floors.',
@@ -554,7 +567,28 @@
       var m = { hp: 6 * (e.foeHp || 1), atk: 1 * (e.foeAtk || 1) };
       return ids.map(function (h) { return { hero: h, level: lv, mult: m }; });
     },
-    make: function () { throw new Error('fey uses enemyTeam'); }
+    bossFloor: function (e) { return feyBossFloor(e.stage); },
+    bossSkills: info(FEYBOSS),
+    bossMechanics: ['Boss floor: one Poison boss instead of enemy heroes.', 'Every Poison that lands makes the boss hit 5% harder (up to +50%): Debuff Immunity, cleansing and Resistance help.', 'Its second skill stuns a hero.', 'Above floor 140 the boss has 250 Resistance: your debuffs land less often.'],
+    make: function (e) {
+      var s = Math.max(1, Math.min(300, +e.stage || 1)), lv = e.foeLevel || STAGES.fey.lv(s);
+      var c = {}; for (var k in e) c[k] = e[k];
+      c._sf = Math.max(0.25, Math.min(5, Math.pow(1.12, (lv - (e.level || 60)) / 10)));
+      if (c.res == null) c.res = s > 140 ? 250 : 30;
+      var st = scaled(c, { hpX: 35, atkX: 2.6, defX: 1.2 });
+      function fury(u) { return 0.05 * Math.min(10, u.flags.fury || 0); }
+      function poison(u, b, t, n) { for (var i = 0; i < n; i++) if (b.apply(u, t, 'Poison', 1, 6)) u.flags.fury = (u.flags.fury || 0) + 1; }
+      var kit = cycleKit({
+        basic: function (u, b, t) { b.hit(u, t, { atk: 1.0 }, { tag: 'basic', bonus: fury(u) }); poison(u, b, t, 1); },
+        skills: function () {
+          FEYBOSS[0].fn = function (u, b) { var t = b.target(u); if (!t) return; b.area(u, t, 3).forEach(function (x) { b.hit(u, x, { atk: 1.6 }, { tag: 'battle', bonus: fury(u) }); poison(u, b, x, 2); }); };
+          FEYBOSS[1].fn = function (u, b) { var t = PICK.random(b, u); if (!t) return; b.hit(u, t, { atk: 1.4 }, { tag: 'battle', bonus: fury(u) }); b.apply(u, t, 'Stunned', 1, 3); };
+          FEYBOSS[2].fn = function (u, b) { b.enemies(u).forEach(function (x) { b.hit(u, x, { atk: 1.5 }, { tag: 'ult', bonus: fury(u) }); poison(u, b, x, 1); }); };
+          return FEYBOSS;
+        }
+      });
+      return { units: [boss('Floor boss (Poison)', st, c, kit)] };
+    }
   });
 
   var META = {

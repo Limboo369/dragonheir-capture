@@ -974,7 +974,7 @@
     if (enemy.team) return prepareSide(b, 'B', enemy.team, { mode: opts.mode, enemyCaptain: enemy.captain });
     var preset = typeof enemy.preset === 'object' ? enemy.preset : BOSSES[enemy.preset || 'dummy'];
     if (!preset) throw new Error('DHSim: unknown enemy preset ' + enemy.preset);
-    if (preset.enemyTeam) {
+    if (preset.enemyTeam && !(preset.bossFloor && preset.bossFloor(enemy))) {
       // Modes that send a team of enemy heroes (Fey Corridor floors).
       b.enemyInfo = { name: preset.name, conf: preset.conf, note: preset.note, skills: null, mechanics: preset.mechanics || null };
       return prepareSide(b, 'B', preset.enemyTeam(enemy, opts), { mode: opts.mode, enemyCaptain: enemy.captain == null ? 0 : enemy.captain });
@@ -984,7 +984,8 @@
       b.waves = made.waves;
       b.waves[0].forEach(function (spec) { b.addUnit('B', spec, spec.extra); });
     } else made.units.forEach(function (spec) { b.addUnit('B', spec, spec.extra); });
-    b.enemyInfo = { name: preset.name, conf: preset.conf, note: preset.note, skills: preset.skills || null, mechanics: preset.mechanics || null };
+    b.enemyInfo = preset.bossSkills ? { name: 'Floor boss (Poison)', conf: preset.conf, note: preset.note, skills: preset.bossSkills, mechanics: preset.bossMechanics || null }
+      : { name: preset.name, conf: preset.conf, note: preset.note, skills: preset.skills || null, mechanics: preset.mechanics || null };
     return null;
   }
 

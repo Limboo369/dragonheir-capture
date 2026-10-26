@@ -362,7 +362,9 @@
       return state.fey;
     }
     function feyRow() {
-      var f = feyState(), est = S.bosses().fey.stages.level(stageOf('fey'));
+      var f = feyState(), fl = stageOf('fey'), est = S.bosses().fey.stages.level(fl);
+      if (S.bosses().fey.bossFloor({ stage: fl })) return '<div class="bs-row" style="margin-top:10px"><span class="bs-small"><b>Boss floor ' + E(fl) + ':</b> one Poison boss instead of enemy heroes (boss every 30 floors: 5, 10, 40, 70 ... 280). Debuff Immunity, cleansing and Resistance help.' + (fl > 140 ? ' This boss has 250 Resistance.' : '') + ' Its numbers are estimates.</span></div>' +
+        '<div class="bs-row" style="margin-top:8px"><label class="bs-f" style="max-width:180px">Boss level<input id="bs-foelv" type="number" min="1" max="100" inputmode="numeric" placeholder="' + E(est) + '" value="' + E(f.level || '') + '"></label></div>';
       return '<div class="bs-ct" style="margin-top:10px"><span>Enemy heroes on this floor</span><span class="r">Tap to change</span></div>' +
         '<div class="bs-team">' + f.heroes.map(function (id, i) { var h = heroOf(id); return '<button class="bs-slot" data-a="foe" data-i="' + i + '">' + avatar(id) + '<span class="nm">' + E(h ? h.n : '?') + '</span><span class="sub">Lv ' + E(f.level || est) + '</span></button>'; }).join('') + '</div>' +
         '<div class="bs-row" style="margin-top:8px"><label class="bs-f" style="max-width:180px">Enemy level<input id="bs-foelv" type="number" min="1" max="100" inputmode="numeric" placeholder="' + E(est) + '" value="' + E(f.level || '') + '"></label>' +

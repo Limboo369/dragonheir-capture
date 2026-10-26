@@ -316,11 +316,21 @@ var tests = [
   }],
   ['Fey Corridor: a floor is a team of enemy heroes the player picks; higher floors are harder', function () {
     var lo = S.simulate(opts({ enemy: { preset: 'fey', level: 59, stage: 60 }, mode: 'fey_corridor', seconds: 600, runs: 10 }));
-    var hi = S.simulate(opts({ enemy: { preset: 'fey', level: 59, stage: 280 }, mode: 'fey_corridor', seconds: 600, runs: 10 }));
-    assert.ok(lo.winRate > hi.winRate, 'floor 60 ' + lo.winRate + ' vs floor 280 ' + hi.winRate);
-    var c = S.simulate(opts({ enemy: { preset: 'fey', level: 59, stage: 100, heroes: ['Garius', 'Gardrus', 'Iola', "Zhar'loth", 'Nathaniel'], foeLevel: 60 }, mode: 'fey_corridor', seconds: 600, runs: 5 }));
+    var hi = S.simulate(opts({ enemy: { preset: 'fey', level: 59, stage: 279 }, mode: 'fey_corridor', seconds: 600, runs: 10 }));
+    assert.ok(lo.winRate > hi.winRate, 'floor 60 ' + lo.winRate + ' vs floor 279 ' + hi.winRate);
+    var c = S.simulate(opts({ enemy: { preset: 'fey', level: 59, stage: 101, heroes: ['Garius', 'Gardrus', 'Iola', "Zhar'loth", 'Nathaniel'], foeLevel: 60 }, mode: 'fey_corridor', seconds: 600, runs: 5 }));
     assert.ok(c.perHero.length === 5 && c.winRate >= 0, 'picked enemies fight');
     assert.strictEqual(S.normalStage('fey', 59), 145, 'default floor matches the player level');
+  }],
+  ['Fey Corridor boss floors (5, 10, 40, 70 ... 280): one Poison boss that stuns; 250 Resistance above floor 140', function () {
+    var fey = S.bosses().fey;
+    [5, 10, 40, 70, 100, 280].forEach(function (s) { assert.ok(fey.bossFloor({ stage: s }), 'floor ' + s + ' is a boss floor'); });
+    [1, 6, 30, 99, 101, 300].forEach(function (s) { assert.ok(!fey.bossFloor({ stage: s }), 'floor ' + s + ' is a hero floor'); });
+    var b = S.simulate(opts({ enemy: { preset: 'fey', level: 59, stage: 130 }, mode: 'fey_corridor', seconds: 600, runs: 10 }));
+    assert.strictEqual(b.enemy.name, 'Floor boss (Poison)', 'boss on floor 130');
+    var h = S.simulate(opts({ enemy: { preset: 'fey', level: 59, stage: 280 }, mode: 'fey_corridor', seconds: 600, runs: 10 }));
+    assert.ok(b.winRate >= h.winRate, 'floor 130 boss ' + b.winRate + ' vs floor 280 boss ' + h.winRate);
+    console.log('    fey boss win: floor 130', b.winRate, 'floor 280', h.winRate);
   }],
   ['Vortex Difficulty II calibration: Darko\'s fight 2026-10-26 (Lv79 cards, team down at 5:21)', function () {
     // Typed totals = Companion sim/loadout v24 (Ice heroes' gear had moved to the Poison team, so their damage is too high here).
