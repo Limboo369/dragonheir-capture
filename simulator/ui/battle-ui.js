@@ -968,7 +968,7 @@
         .sort(function (a, b) { var ha = heroOf(a), hb = heroOf(b); return (ha.r === hb.r ? 0 : ha.r === 'Legendary' ? -1 : 1) || ha.n.localeCompare(hb.n); });
     }
     function fbLock(pool) { return fbOpts().lock.filter(function (id) { return pool.indexOf(id) >= 0; }); }
-    function fbKey() { return [state.boss, stageOf(state.boss), state.strength, state.level].join(':'); }
+    function fbKey() { return [state.boss, stageOf(state.boss), state.strength, state.level, state.boss === 'fey' ? feyState().heroes.join(',') + '@' + (feyState().level || '') : ''].join(':'); }
     function fbButton() {
       if (!window.DHFindBest) return '';
       return '<button class="bs-btn pri bs-fbb" data-a="fb"' + (busy ? ' disabled' : '') + '>' + ICON_FB + (fb ? '<b>' + Math.round(fb.p * 100) + '%</b>' : 'Find best team') + '</button>';
