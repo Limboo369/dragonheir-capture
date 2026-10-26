@@ -220,6 +220,8 @@
       if (o.def != null) { s.defF = o.def - n0.def; s.defP = 0; }
       ['critRate', 'critDmg', 'acc', 'res', 'ench', 'haste', 'atkSpd'].forEach(function (k) { if (o[k] != null) s[k] = o[k]; });
     }
+    // mult: enemy heroes in PvE modes are stronger than a player's hero of the same level.
+    if (spec.mult) { var mu = spec.mult; if (mu.hp) { s.hpB *= mu.hp; s.hpF *= mu.hp; } if (mu.atk) { s.atkB *= mu.atk; s.atkF *= mu.atk; } }
     return { s: s, h: h, notes: notes };
   }
   // Skill levels (Battle and Ultimate, 1-5; passives have no level). Skill
@@ -972,6 +974,11 @@
     if (enemy.team) return prepareSide(b, 'B', enemy.team, { mode: opts.mode, enemyCaptain: enemy.captain });
     var preset = typeof enemy.preset === 'object' ? enemy.preset : BOSSES[enemy.preset || 'dummy'];
     if (!preset) throw new Error('DHSim: unknown enemy preset ' + enemy.preset);
+    if (preset.enemyTeam) {
+      // Modes that send a team of enemy heroes (Fey Corridor floors).
+      b.enemyInfo = { name: preset.name, conf: preset.conf, note: preset.note, skills: null, mechanics: preset.mechanics || null };
+      return prepareSide(b, 'B', preset.enemyTeam(enemy, opts), { mode: opts.mode, enemyCaptain: enemy.captain == null ? 0 : enemy.captain });
+    }
     var made = preset.make(enemy, opts);
     if (made.waves) {
       b.waves = made.waves;

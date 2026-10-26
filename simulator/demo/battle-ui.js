@@ -182,6 +182,30 @@
     '.bs-conf{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;font-size:13px;align-items:start}',
     '.bs-dot{width:10px;height:10px;border-radius:5px;margin-top:4px}',
     '@media (max-width:560px){.bs-mark{top:7px;right:calc(50% - 26px)}.bs-team{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}.bs-av{width:46px;height:46px}.bs-slot .nm{font-size:11px;padding:0 2px}.bs-verdict{grid-template-columns:1fr;justify-items:stretch}.bs-verdict .bs-ring{justify-self:center}.bs-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.bs-dg .bs-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.bs-dg .bs-chip{min-width:0}.bs-dg .bs-chip>span{min-width:0}.bs-dg .bs-chip small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bs-stage{grid-template-columns:1fr;padding:40px 10px 10px;min-height:0;align-content:start}.bs-side.foe{order:-1}.bs-side.foe .bs-unit{grid-template-columns:auto minmax(0,1fr)}.bs-side.foe .bs-unit .bs-pic{order:0}.bs-pic{width:34px;height:34px}.bs-unit.boss .bs-pic{width:52px;height:52px}}',
+    // Find best team sheet
+    '.bs-ct .bs-ctr{display:inline-flex;align-items:center;gap:10px}',
+    '.bs-fbb svg{width:15px;height:15px;flex:none}',
+    '.bs-fbb b{font-weight:650;font-variant-numeric:tabular-nums}',
+    '.bs-fbpool button{position:relative}',
+    '.bs-fbpool button[aria-pressed="true"]{background:var(--accent-soft)}',
+    '.bs-fbpool button[aria-pressed="true"] .bs-av{box-shadow:0 0 0 2px var(--accent-bg)}',
+    '.bs-lock{position:absolute;top:4px;right:calc(50% - 28px);width:18px;height:18px;border-radius:9px;background:var(--accent-bg);color:var(--on-accent);display:grid;place-items:center}',
+    '.bs-lock svg{width:10px;height:10px}',
+    '.bs-est{font:600 10px var(--font);font-style:normal;color:var(--label-3)}',
+    '.bs-fbres{display:grid;gap:8px}',
+    '.bs-fbr{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:var(--fill)}',
+    '.bs-fbr.me{background:transparent;box-shadow:inset 0 0 0 1px var(--fill-3)}',
+    '.bs-fbr .n{font:700 13px var(--font);color:var(--label-3);min-width:22px}',
+    '.bs-fbr .bs-avs{display:inline-flex;flex-wrap:wrap;gap:4px}',
+    '.bs-fbr .bs-av{width:34px;height:34px;font-size:12px}',
+    '.bs-fbr .bs-crown{top:-4px;left:-4px;width:15px;height:15px;font-size:9px;line-height:15px}',
+    '.bs-fbr .nms{grid-column:2;font:500 11.5px var(--font);color:var(--label-2);min-width:0}',
+    '.bs-fbr .v{grid-column:2;display:flex;align-items:center;gap:8px;flex-wrap:wrap;font:700 15px var(--font);font-variant-numeric:tabular-nums}',
+    '.bs-fbr .v small{font:500 12px var(--font);color:var(--label-3)}',
+    '.bs-fbr .bs-btn{grid-row:1/span 3;grid-column:3}',
+    '.bs-fbr .bs-pill{height:22px;padding:0 8px;font-size:11.5px}',
+    '.bs-fbr .tie{background:var(--fill-2);color:var(--label-2)}',
+    '@media (max-width:560px){.bs-ct .bs-hint{display:none}}',
     '@media (prefers-reduced-motion:reduce){.bs-float,.bs-pic::after{animation:none!important}.bs-hp .lag,.bs-hp .hp{transition:none}}'
   ].join('\n');
 
@@ -199,7 +223,7 @@
     { k: 'harpy', mode: 'grave_of_venom', g: 'Gear' }, { k: 'xenos', mode: 'grave_of_curse', g: 'Gear' }, { k: 'scavenger', mode: 'grave_of_rot', g: 'Gear' },
     { k: 'fyre', mode: 'heretical_ruins', g: 'Runes' }, { k: 'gruentius', mode: 'ancient_battlefield', g: 'Runes' },
     { k: 'goblin', mode: 'goblin_lair', g: 'Growth' }, { k: 'flameDomain', mode: 'talent', g: 'Growth' }, { k: 'tempestDomain', mode: 'talent', g: 'Growth' }, { k: 'frostDomain', mode: 'talent', g: 'Growth' },
-    { k: 'vortex', mode: 'temporal_vortex', g: 'Daily' }
+    { k: 'vortex', mode: 'temporal_vortex', g: 'Daily' }, { k: 'fey', mode: 'fey_corridor', g: 'Modes' }
   ];
   // Boss HP and damage are never published: this corrects our estimate, it is not a game difficulty.
   var ESTIMATE = [['−20%', 0.8], ['Estimate', 1], ['+30%', 1.3], ['+60%', 1.6]];
@@ -286,7 +310,7 @@
     function secondsFor(k) { var p = S.bosses()[k]; return (p && p.seconds) || state.seconds; }
     function buildOpts() {
       var b = bossEntry(), stg = stageOf(b.k);
-      return { team: state.team.map(heroSpec), captain: state.captain, enemy: { preset: b.k, level: state.level, stage: stg, stage9: b.k === 'xenos' && stg >= 9 }, mode: b.mode, seconds: secondsFor(b.k), runs: state.runs, seed: 20261025, rules: { bossPower: state.strength }, score: !!(S.bosses()[b.k] || {}).score };
+      return { team: state.team.map(heroSpec), captain: state.captain, enemy: Object.assign({ preset: b.k, level: state.level, stage: stg, stage9: b.k === 'xenos' && stg >= 9 }, b.k === 'fey' ? { heroes: feyState().heroes.slice(), foeLevel: feyState().level || null } : {}), mode: b.mode, seconds: secondsFor(b.k), runs: state.runs, seed: 20261025, rules: { bossPower: state.strength }, score: !!(S.bosses()[b.k] || {}).score };
     }
 
     // ------------------------------------------------------------ render --
@@ -297,7 +321,7 @@
         '<button class="bs-tag" data-a="honesty" aria-label="How accurate is this?">Sim v' + E(S.VERSION) + ' · <b>estimates</b></button></div>';
       // team
       var saved = hostTeams();
-      html += '<section class="bs-card"><div class="bs-ct"><span>Your team</span><span class="r">Tap a hero for stats, artifact and sets</span></div>' +
+      html += '<section class="bs-card"><div class="bs-ct"><span>Your team</span><span class="r bs-ctr"><span class="bs-hint">Tap a hero to edit</span>' + fbButton() + '</span></div>' +
         (saved.length ? '<div class="bs-row bs-load" role="group" aria-label="Load a saved team">' + saved.map(function (t) {
           return '<button class="bs-chip" data-a="loadteam" data-k="' + E(t.id) + '" aria-pressed="' + sameTeam(t.team) + '" title="' + E(t.team.map(function (id) { var h = heroOf(id); return h ? h.n : ''; }).join(', ')) + '">' +
             '<span class="bs-avs">' + t.team.map(function (id) { return avatar(id); }).join('') + '</span><span>' + E(t.name) + (t.sub ? '<small>' + E(t.sub) + '</small>' : '') + '</span></button>';
@@ -310,7 +334,7 @@
             '<span class="nm">' + E(h ? h.n : '?') + '</span><span class="sub">Lv ' + E(c.level || state.level) + (c.artifact && c.artifact.name ? ' · ' + E(c.artifact.name.split(' ').slice(-1)[0]) : '') + '</span></button>';
         }).join('') + '</div></section>';
       // boss
-      var cur = bp[state.boss] || {}, stg = stageOf(state.boss), groups = ['Gear', 'Runes', 'Growth', 'Daily'];
+      var cur = bp[state.boss] || {}, stg = stageOf(state.boss), groups = ['Gear', 'Runes', 'Growth', 'Daily', 'Modes'];
       html += '<section class="bs-card"><div class="bs-ct"><span>Dungeon</span><button class="r bs-btn" data-a="bossinfo">Skills and targets</button></div>' +
         groups.map(function (g) {
           return '<div class="bs-dg"><span class="bs-dgl">' + g + '</span><div class="bs-row">' + BOSSES.filter(function (b) { return b.g === g; }).map(function (b) {
@@ -320,12 +344,41 @@
         }).join('') +
         '<div class="bs-row">' + (cur.stages ? '<div class="bs-step" role="group" aria-label="' + E(cur.stages.label) + '"><button data-a="stg" data-v="-1" aria-label="Lower">−</button><span><small>' + E(cur.stages.label) + '</small><b>' + stg + '</b></span><button data-a="stg" data-v="1" aria-label="Higher">+</button></div>' : '') +
         '<span class="bs-small">' + (cur.altName ? 'In game also "' + E(cur.altName) + '". ' : '') + (cur.score ? 'Score fight: damage before your team falls.' : cur.stars ? '3 stars = more than 50 s left.' : '') + '</span>' +
-        '<button class="bs-btn" data-a="more" style="margin-left:auto">' + E(state.runs) + ' fights · Lv ' + E(state.level) + (state.strength !== 1 ? ' · boss ' + (state.strength > 1 ? '+' : '−') + Math.round(Math.abs(state.strength - 1) * 100) + '%' : '') + '</button></div></section>';
+        '<button class="bs-btn" data-a="more" style="margin-left:auto">' + E(state.runs) + ' fights · Lv ' + E(state.level) + (state.strength !== 1 ? ' · boss ' + (state.strength > 1 ? '+' : '−') + Math.round(Math.abs(state.strength - 1) * 100) + '%' : '') + '</button></div>' + (state.boss === 'fey' ? feyRow() : '') + '</section>';
       // run
       html += '<div class="bs-go"><button class="bs-run" data-a="run"' + (busy ? ' disabled' : '') + '><i style="width:' + (busy ? Math.round(busy.p * 100) : 0) + '%"></i><span>' + (busy ? E(busy.label) + ' ' + Math.round(busy.p * 100) + '%' : 'Simulate ' + E(state.runs) + ' fights') + '</span></button></div>';
       html += '<div id="bs-out">' + (result ? results() : '') + '</div>';
       root.innerHTML = html;
       if (result && rp) mountReplay();
+    }
+
+    // Fey Corridor: the floor's enemy heroes and their level, as the game shows them.
+    function feyState() {
+      if (!state.fey || !state.fey.heroes) state.fey = { heroes: ['Dallbam', 'Estella', 'Rava', 'Rowena', 'Vidimir'].map(function (n) { var h = heroOf(n); return h ? h.id : null; }).filter(Boolean), level: '' };
+      return state.fey;
+    }
+    function feyRow() {
+      var f = feyState(), est = S.bosses().fey.stages.level(stageOf('fey'));
+      return '<div class="bs-ct" style="margin-top:10px"><span>Enemy heroes on this floor</span><span class="r">Tap to change</span></div>' +
+        '<div class="bs-team">' + f.heroes.map(function (id, i) { var h = heroOf(id); return '<button class="bs-slot" data-a="foe" data-i="' + i + '">' + avatar(id) + '<span class="nm">' + E(h ? h.n : '?') + '</span><span class="sub">Lv ' + E(f.level || est) + '</span></button>'; }).join('') + '</div>' +
+        '<div class="bs-row" style="margin-top:8px"><label class="bs-f" style="max-width:180px">Enemy level<input id="bs-foelv" type="number" min="1" max="100" inputmode="numeric" placeholder="' + E(est) + '" value="' + E(f.level || '') + '"></label>' +
+        '<span class="bs-small">Type the level the game shows for this floor. Empty = our estimate (' + E(est) + '). Enemy gear is estimated.</span></div>';
+    }
+    function foeSheet(i) {
+      var f = feyState(), all = Object.keys(S.data().heroes).map(Number).filter(function (id) { return heroOf(id); })
+        .sort(function (a, b) { return heroOf(a).n.localeCompare(heroOf(b).n); });
+      function list(q) {
+        q = (q || '').toLowerCase();
+        return all.filter(function (id) { return !q || heroOf(id).n.toLowerCase().indexOf(q) >= 0; }).slice(0, 60)
+          .map(function (id) { var h = heroOf(id); return '<button data-pick="' + id + '" aria-pressed="' + (f.heroes[i] === id) + '">' + avatar(id) + '<span>' + E(h.n) + '</span></button>'; }).join('');
+      }
+      var s2 = sheet('<div class="hd"><h3>Enemy hero ' + (i + 1) + '</h3><button class="x" data-a="close" aria-label="Close">×</button></div>' +
+        '<label class="bs-f">Search<input id="bs-foeq" type="search" placeholder="Hero name" autocomplete="off"></label><div class="bs-pick" id="bs-foel">' + list('') + '</div>' +
+        '<div class="bs-small">Any hero can appear on a floor. Heroes without a hand-checked kit use their skill text.</div>', function (e) {
+        if (e.target.id === 'bs-foeq' && e.type === 'input') { s2.querySelector('#bs-foel').innerHTML = list(e.target.value); return; }
+        var b = e.type === 'click' && e.target.closest('[data-pick]'); if (!b) return;
+        f.heroes[i] = +b.dataset.pick; save(); closeSheet(); render();
+      });
     }
 
     function verdictOf(w) { return w >= 0.9 ? 'safe' : w >= 0.5 ? 'risky' : 'losing'; }
@@ -637,6 +690,10 @@
       return owned.filter(function (id) { return S.kits()[id] && inTeam.indexOf(+id) < 0; });
     }
 
+    root.addEventListener('change', function (ev) {
+      if (ev.target.id !== 'bs-foelv') return;
+      var v = Math.round(+ev.target.value); feyState().level = v >= 1 && v <= 100 ? v : ''; save(); render();
+    });
     root.addEventListener('click', function (ev) {
       var a = ev.target.closest('[data-a]'); if (!a || !root.contains(a)) return;
       var act = a.dataset.a;
@@ -649,6 +706,8 @@
         save(); render();
       }
       else if (act === 'hero') heroSheet(+a.dataset.i);
+      else if (act === 'foe') foeSheet(+a.dataset.i);
+      else if (act === 'fb') fbSheet();
       else if (act === 'bossinfo') bossSheet();
       else if (act === 'honesty') honestySheet();
       else if (act === 'more') moreSheet();
@@ -894,6 +953,111 @@
     }
     function shotSheet(t) { sheet('<div class="hd"><h3>Screenshot</h3><button class="x" data-a="close" aria-label="Close">×</button></div><p class="bs-muted" style="margin:0">' + E(t) + '</p>'); }
 
+    // ---------------------------------------------------- find best team --
+    // Beam search over the owned heroes (find-best.js); fights run in Web Workers so the page stays usable.
+    var fb = null, fbRes = null, fbErr = null;
+    var ICON_FB = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="M10.4 10.4 14 14"/></svg>';
+    var ICON_LOCK = '<svg viewBox="0 0 10 10" fill="currentColor" aria-hidden="true"><rect x="1.5" y="4.5" width="7" height="5" rx="1"/><path d="M3 4.5V3.2a2 2 0 0 1 4 0v1.3" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>';
+    function typedOf(id) { var c = state.heroes[id]; return !!(c && c.stats && STATS.some(function (s) { var v = c.stats[s[0]]; return v !== '' && v != null; })); }
+    function fbOpts() { state.fb = state.fb || { lock: [], mine: false }; state.fb.lock = state.fb.lock || []; return state.fb; }
+    function fbPool() {
+      var kits = S.kits(), ids = {}, mine = fbOpts().mine;
+      var owned = host.owned && host.owned.length ? host.owned : Object.keys(kits);
+      owned.concat(Object.keys(state.heroes), state.team).forEach(function (id) { id = +id; if (kits[id] && heroOf(id)) ids[id] = 1; });
+      return Object.keys(ids).map(Number).filter(function (id) { return !mine || typedOf(id); })
+        .sort(function (a, b) { var ha = heroOf(a), hb = heroOf(b); return (ha.r === hb.r ? 0 : ha.r === 'Legendary' ? -1 : 1) || ha.n.localeCompare(hb.n); });
+    }
+    function fbLock(pool) { return fbOpts().lock.filter(function (id) { return pool.indexOf(id) >= 0; }); }
+    function fbKey() { return [state.boss, stageOf(state.boss), state.strength, state.level].join(':'); }
+    function fbButton() {
+      if (!window.DHFindBest) return '';
+      return '<button class="bs-btn pri bs-fbb" data-a="fb"' + (busy ? ' disabled' : '') + '>' + ICON_FB + (fb ? '<b>' + Math.round(fb.p * 100) + '%</b>' : 'Find best team') + '</button>';
+    }
+    function fmtN(n) { return Math.round(n).toLocaleString('en-US'); }
+    function fmtDmg(v) { return v >= 1e6 ? (v / 1e6).toFixed(2) + 'M' : fmtN(v / 1000) + 'K'; }
+    function fbRow(r, i, res) {
+      var me = i < 0, cur = res.current, val;
+      if (res.score) val = '<b>' + fmtDmg(r.v) + '</b>' + (!me && cur && cur.v > 0 ? '<small>' + (r.v >= cur.v ? '+' : '−') + Math.abs(Math.round((r.v / cur.v - 1) * 100)) + '% vs yours</small>' : '');
+      else val = '<span class="bs-pill ' + verdictOf(r.win) + '">' + Math.round(r.win * 100) + '%</span>' + (r.ttk ? '<small>' + Math.round(r.ttk) + ' s</small>' : '');
+      var est = r.team.some(function (id) { return !typedOf(id); });
+      if (res.score && r.dead != null) val += r.dead < 0.1 ? '<span class="bs-pill safe" title="Nobody died in ' + Math.round((1 - r.dead) * 100) + '% of fights">No deaths</span>' : '<span class="bs-pill ' + (r.dead < 0.5 ? 'risky' : 'losing') + '" title="Share of fights where a hero died">Deaths ' + Math.round(r.dead * 100) + '%</span>';
+      return '<div class="bs-fbr' + (me ? ' me' : '') + '"><span class="n">' + (me ? 'You' : '#' + (i + 1)) + '</span>' +
+        '<span class="bs-avs">' + r.team.map(function (id, j) { var h = heroOf(id); return '<span class="bs-av" style="' + pic(id) + '" data-pic="' + id + '" title="' + E(h ? h.n : '') + '">' + (pic(id) ? '' : E(initials(h && h.n))) + (j === r.cap ? '<span class="bs-crown" title="Captain">C</span>' : '') + '</span>'; }).join('') + '</span>' +
+        (me ? '' : '<button class="bs-btn pri" data-fbuse="' + i + '">Use</button>') +
+        '<span class="nms">' + r.team.map(function (id) { var h = heroOf(id); return E(h ? h.n : '?'); }).join(' · ') + '</span>' +
+        '<span class="v">' + val + (r.tie ? '<span class="bs-pill tie" title="Within the simulator\'s margin of #1">Tie</span>' : '') + (est ? '<small title="Some heroes use estimated stats">Est.</small>' : '') + '</span></div>';
+    }
+    function fbHtml() {
+      var b = S.bosses()[state.boss] || {}, stg = stageOf(state.boss), pool = fbPool(), lock = fbLock(pool), mine = fbOpts().mine;
+      var est = window.DHFindBest.estimate(pool, lock, 20), res = fbRes && fbRes.key === fbKey() ? fbRes.res : null;
+      var h = '<div class="hd"><div><h3>Find best team</h3><div class="bs-small">' + E(b.dungeon || '') + (stg != null && b.stages ? ' · ' + E(b.stages.label) + ' ' + stg : '') + '</div></div><button class="x" data-a="close" aria-label="Close">×</button></div>';
+      if (res && !fb) {
+        h += '<div class="bs-fbres">' + res.top.map(function (r, i) { return fbRow(r, i, res); }).join('') + (res.current ? fbRow(res.current, -1, res) : '') + '</div>' +
+          '<div class="bs-small">' + fmtN(res.tested) + ' teams · ' + Math.round(res.ms / 1000) + ' s. Estimates: try the pick in game.</div>';
+      }
+      if (!fb) {
+        h += '<div class="bs-ct"><span>Heroes</span><div class="bs-seg" role="group" aria-label="Which heroes"><button data-fb="all" aria-pressed="' + !mine + '">All</button><button data-fb="mine" aria-pressed="' + mine + '">My stats</button></div></div>' +
+          '<div class="bs-pick bs-fbpool">' + pool.map(function (id) {
+            var hh = heroOf(id), on = lock.indexOf(id) >= 0;
+            return '<button data-fblock="' + id + '" aria-pressed="' + on + '" aria-label="' + E(hh.n) + (on ? ', locked in' : '') + '">' + avatar(id) + (on ? '<i class="bs-lock">' + ICON_LOCK + '</i>' : '') + '<span>' + E(hh.n) + '</span>' + (typedOf(id) ? '' : '<em class="bs-est">Est.</em>') + '</button>';
+          }).join('') + '</div>' +
+          '<div class="bs-small">Tap to lock a hero in · ' + pool.length + ' heroes · ~' + fmtN(est) + ' teams</div>';
+      }
+      var pct = fb ? Math.round(fb.p * 100) : 0, inf = fb && fb.info;
+      h += '<div class="bs-go"><button class="bs-run" data-fb="go"' + (fb || pool.length < 5 ? ' disabled' : '') + '><i style="width:' + pct + '%"></i><span>' +
+        (fb ? (inf && inf.phase === 'verify' ? 'Checking the top teams' : 'Testing ' + fmtN(inf ? inf.tested : 0) + ' / ~' + fmtN(inf ? inf.est : est)) + ' · ' + pct + '%' : pool.length < 5 ? 'Needs 5 heroes' : 'Find best team') + '</span></button>' +
+        (fb ? '<button class="bs-btn" data-fb="stop">Cancel</button>' : '') + '</div>';
+      if (fbErr) h += '<div class="bs-note">' + E(fbErr) + '</div>';
+      return h;
+    }
+    function fbPaint() {
+      var btn = root.querySelector('[data-a="fb"]');
+      if (btn) { var t = document.createElement('div'); t.innerHTML = fbButton(); if (t.firstChild) btn.replaceWith(t.firstChild); }
+      if (sh && sh.dataset.k === 'fb') sh.firstChild.innerHTML = fbHtml();
+    }
+    function fbTick() {
+      var pct = Math.round(fb.p * 100) + '%', inf = fb.info;
+      var hb = root.querySelector('[data-a="fb"] b'); if (hb) hb.textContent = pct;
+      if (!(sh && sh.dataset.k === 'fb')) return;
+      var run = sh.querySelector('[data-fb="go"]'); if (!run) return;
+      run.querySelector('i').style.width = pct;
+      run.querySelector('span').textContent = (inf.phase === 'verify' ? 'Checking the top teams' : 'Testing ' + fmtN(inf.tested) + ' / ~' + fmtN(inf.est)) + ' · ' + pct;
+    }
+    function fbStart() {
+      if (fb || !window.DHFindBest) return;
+      var pool = fbPool(); if (pool.length < 5) return;
+      var base = buildOpts(), specs = {};
+      delete base.team; delete base.captain; delete base.runs; delete base.seed;
+      pool.concat(state.team.map(Number)).forEach(function (id) { specs[id] = heroSpec(id); });
+      var src = document.getElementById('dhsim-src'), signal = { cancelled: false };
+      fb = { p: 0, info: null, signal: signal, key: fbKey() }; fbErr = null;
+      fbPaint();
+      window.DHFindBest.run({
+        S: S, base: base, specs: specs, pool: pool, lock: fbLock(pool), current: state.team.map(Number), currentCap: state.captain,
+        captain: +state.team[state.captain], src: src ? src.textContent : (host.simSource || null), signal: signal,
+        onProgress: function (p, info) { if (fb) { fb.p = p; fb.info = info; fbTick(); } }
+      }).then(function (res) { fbRes = { key: fb.key, res: res }; fb = null; fbPaint(); },
+        function (e) { fb = null; if (!e || !e.cancelled) fbErr = 'The search stopped: ' + (e && e.message || e); fbPaint(); });
+    }
+    function fbSheet() {
+      var s = sheet(fbHtml(), function (e) {
+        if (e.type !== 'click') return;
+        var t = e.target.closest('[data-fb],[data-fblock],[data-fbuse]'); if (!t) return;
+        var o = fbOpts();
+        if (t.dataset.fb === 'go') fbStart();
+        else if (t.dataset.fb === 'stop') { if (fb) { fb.signal.cancelled = true; if (fb.signal.close) fb.signal.close(); } }
+        else if (t.dataset.fb === 'all' || t.dataset.fb === 'mine') { o.mine = t.dataset.fb === 'mine'; save(); fbPaint(); }
+        else if (t.dataset.fblock) {
+          var id = +t.dataset.fblock, j = o.lock.indexOf(id);
+          if (j >= 0) o.lock.splice(j, 1); else if (o.lock.length < 4) o.lock.push(id);
+          save(); fbPaint();
+        } else if (t.dataset.fbuse) {
+          var r = fbRes && fbRes.res.top[+t.dataset.fbuse]; if (!r) return;
+          closeSheet(); loadTeam({ team: r.team.slice(), captain: r.team[r.cap] });
+        }
+      });
+      s.dataset.k = 'fb';
+    }
     function pickSheet(i) {
       var owned = host.owned && host.owned.length ? host.owned : null;
       var ids = Object.keys(S.kits()).map(Number).filter(function (id) { return heroOf(id) && (!owned || owned.indexOf(id) >= 0 || owned.indexOf(String(id)) >= 0); })

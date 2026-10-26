@@ -222,6 +222,8 @@
       if (o.def != null) { s.defF = o.def - n0.def; s.defP = 0; }
       ['critRate', 'critDmg', 'acc', 'res', 'ench', 'haste', 'atkSpd'].forEach(function (k) { if (o[k] != null) s[k] = o[k]; });
     }
+    // mult: enemy heroes in PvE modes are stronger than a player's hero of the same level.
+    if (spec.mult) { var mu = spec.mult; if (mu.hp) { s.hpB *= mu.hp; s.hpF *= mu.hp; } if (mu.atk) { s.atkB *= mu.atk; s.atkF *= mu.atk; } }
     return { s: s, h: h, notes: notes };
   }
   // Skill levels (Battle and Ultimate, 1-5; passives have no level). Skill
@@ -974,6 +976,11 @@
     if (enemy.team) return prepareSide(b, 'B', enemy.team, { mode: opts.mode, enemyCaptain: enemy.captain });
     var preset = typeof enemy.preset === 'object' ? enemy.preset : BOSSES[enemy.preset || 'dummy'];
     if (!preset) throw new Error('DHSim: unknown enemy preset ' + enemy.preset);
+    if (preset.enemyTeam) {
+      // Modes that send a team of enemy heroes (Fey Corridor floors).
+      b.enemyInfo = { name: preset.name, conf: preset.conf, note: preset.note, skills: null, mechanics: preset.mechanics || null };
+      return prepareSide(b, 'B', preset.enemyTeam(enemy, opts), { mode: opts.mode, enemyCaptain: enemy.captain == null ? 0 : enemy.captain });
+    }
     var made = preset.make(enemy, opts);
     if (made.waves) {
       b.waves = made.waves;
@@ -3998,7 +4005,11 @@
     flameDomain: { label: 'Stage', min: 1, max: 15, lv: function (s) { return 5 + 10 * s; } },
     tempestDomain: { label: 'Stage', min: 1, max: 15, lv: function (s) { return 5 + 10 * s; } },
     frostDomain: { label: 'Stage', min: 1, max: 15, lv: function (s) { return 5 + 10 * s; } },
-    vortex: { label: 'Difficulty', min: 1, max: 4, lv: function (s) { return 40 + 20 * s; } }
+    vortex: { label: 'Difficulty', min: 1, max: 4, lv: function (s) { return 40 + 20 * s; } },
+    // Fey Corridor: 300 floors (dragonheir.info 1162). Enemy level per floor is
+    // not published: ASSUMED 20 -> 100 over the 300 floors; the UI lets the
+    // player type the level shown in game. offset 0 = default floor at his level.
+    fey: { label: 'Floor', min: 1, max: 300, offset: 0, lv: function (s) { return Math.min(100, Math.round(20 + (s - 1) * 80 / 299)); } }
   };
   function stageFactor(id, e) {
     var st = STAGES[id];
@@ -4010,7 +4021,8 @@
   function normalStage(id, level) {
     var st = STAGES[id]; if (!st) return null;
     var best = st.min, gap = 1e9;
-    for (var s = st.min; s <= st.max; s++) { var g = Math.abs(st.lv(s) - ((level || 60) + 40)); if (g < gap) { gap = g; best = s; } }
+    var off = st.offset == null ? 40 : st.offset;
+    for (var s = st.min; s <= st.max; s++) { var g = Math.abs(st.lv(s) - ((level || 60) + off)); if (g < gap) { gap = g; best = s; } }
     return best;
   }
   function boss(name, st, e, kit) {
@@ -4472,11 +4484,31 @@
   });
 
   // Stages, S1 availability and what each dungeon drops, for every preset.
+  // Fey Corridor (also "Fey Meander"): each floor is a team of 5 enemy heroes,
+  // some floors a boss (dragonheir.info 805, 1162, 1212). The floor's heroes
+  // and level come from the player (what the game shows before the fight);
+  // enemy gear is the engine's default for their role and level (ASSUMED).
+  var FEY_DEFAULT = ['Dallbam', 'Estella', 'Rava', 'Rowena', 'Vidimir'];
+  S.registerBoss('fey', {
+    name: 'Enemy heroes', dungeon: 'Fey Corridor', conf: 'estimated', seconds: 600, altName: 'Fey Meander',
+    note: 'A floor is a team of enemy heroes that cast their own skills and ultimates (dragonheir.info 805, 1162). Pick the heroes and level the game shows for your floor. Enemy gear and the level per floor are estimates. Guides: AoE schools (Frost, Poison, Rally, Summon), control teams, debuff immunity on boss floors.',
+    mechanics: ['Enemies are real heroes with their own kits: their ultimates are the main threat.', 'Pick the enemy heroes you see on the floor, and their level.', 'Captains that work in Fey Meander / Trial Breakthrough apply here.'],
+    enemyTeam: function (e) {
+      var st = STAGES.fey, lv = e.foeLevel || st.lv(Math.max(st.min, Math.min(st.max, +e.stage || 1)));
+      var ids = (e.heroes && e.heroes.length ? e.heroes : FEY_DEFAULT);
+      // Floor enemies are tougher than a player's hero of the same level
+      // (fights last longer in game): HP x6, ATK x1, ASSUMED until a real floor is checked.
+      var m = { hp: 6 * (e.foeHp || 1), atk: 1 * (e.foeAtk || 1) };
+      return ids.map(function (h) { return { hero: h, level: lv, mult: m }; });
+    },
+    make: function () { throw new Error('fey uses enemyTeam'); }
+  });
+
   var META = {
     harpy: { s1: true, farm: 'Weapons, helmets' }, xenos: { s1: true, farm: 'Armor' }, scavenger: { s1: true, farm: 'Gloves' },
     fyre: { s1: true, farm: 'Positive runes' }, gruentius: { s1: true, farm: 'Negative runes' },
     goblin: { s1: true, farm: 'EXP, Gold' }, flameDomain: { s1: true, farm: 'Talent Stones' }, tempestDomain: { s1: true, farm: 'Talent Stones' },
-    frostDomain: { s1: true, farm: 'Talent Stones' }, vortex: { s1: true, farm: 'Daily score ranking' }
+    frostDomain: { s1: true, farm: 'Talent Stones' }, vortex: { s1: true, farm: 'Daily score ranking' }, fey: { s1: true, farm: 'Floors, Skill Scrolls' }
   };
   Object.keys(STAGES).forEach(function (id) {
     var p = S.bosses()[id]; if (!p) return;
