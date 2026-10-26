@@ -174,8 +174,11 @@
   // spec: {hero, level, stars, insp, gear: profileName | {..}, artifact: {name, level, tier}, sets: [names], stats: {...override}}
   function buildStats(spec) {
     var h = hero(spec.hero);
-    var lvl = spec.level || 60;
-    var n = nakedStats(h, lvl, spec.stars);
+    // battleLevel: modes that set every hero to a fixed level (Temporal Vortex
+    // shows Lv79 cards on Difficulty II for a Lv59 team). Typed totals were
+    // measured at spec.level, so only the base growth between the two is added.
+    var lvl0 = spec.level || 60, lvl = Math.max(lvl0, spec.battleLevel || 0);
+    var n = nakedStats(h, lvl, spec.stars), n0 = lvl === lvl0 ? n : nakedStats(h, lvl0, spec.stars);
     var g = typeof spec.gear === 'string' ? GEAR_PROFILES[spec.gear] : spec.gear;
     if (!g) g = GEAR_PROFILES[defaultProfile(h)];
     var s = {
@@ -214,9 +217,9 @@
       // HP and DEF keep the hero's base so battle % buffs and auras scale off
       // the base as in game; the rest of the typed total becomes flat bonus.
       var o = spec.stats;
-      if (o.atk != null) { s.atkF = o.atk - s.atkB; s.atkP = 0; }
-      if (o.hp != null) { s.hpF = o.hp - s.hpB; s.hpP = 0; }
-      if (o.def != null) { s.defF = o.def - s.defB; s.defP = 0; }
+      if (o.atk != null) { s.atkF = o.atk - n0.atk; s.atkP = 0; }
+      if (o.hp != null) { s.hpF = o.hp - n0.hp; s.hpP = 0; }
+      if (o.def != null) { s.defF = o.def - n0.def; s.defP = 0; }
       ['critRate', 'critDmg', 'acc', 'res', 'ench', 'haste', 'atkSpd'].forEach(function (k) { if (o[k] != null) s[k] = o[k]; });
     }
     return { s: s, h: h, notes: notes };
@@ -1145,6 +1148,9 @@
   // ------------------------------------------------------------ public API --
   // opts: {team: [spec], enemy: {preset, ...} | {team: [spec]}, mode, seconds, runs, seed, rules, captain, timelineStep, log}
   function simulate(opts) {
+    var pre = opts.enemy && !opts.enemy.team && (typeof opts.enemy.preset === 'object' ? opts.enemy.preset : BOSSES[opts.enemy.preset]);
+    var syncLv = pre && pre.heroLevel ? pre.heroLevel(opts.enemy) : 0;
+    if (syncLv) opts = Object.assign({}, opts, { team: opts.team.map(function (sp) { return typeof sp === 'object' ? Object.assign({}, sp, { battleLevel: syncLv }) : { hero: sp, battleLevel: syncLv }; }) });
     var runs = opts.runs || 100, seed = opts.seed || 12345, battles = [];
     for (var i = 0; i < runs; i++) battles.push(runOnce(opts, seed + i * 7919));
     return summarize(battles, opts);
@@ -4434,11 +4440,19 @@
   TARGET_TEXT.highestHp = 'Highest HP hero';
   S.registerBoss('vortex', {
     name: 'Sea King', dungeon: 'Temporal Vortex', conf: 'estimated', seconds: 480, score: true,
+    // The game sets every hero to a fixed level per difficulty: Lv59 cards on I,
+    // Lv79 on II (Darko's screens, 2026-10-25/26). III and IV follow the same
+    // +20 step (ASSUMED).
+    heroLevel: function (e) { return e.stage ? 39 + 20 * Math.max(1, Math.min(4, +e.stage)) : 0; },
     note: 'Score boss: the result is total damage before the team falls or 8 minutes pass. Mechanics from dragonheir.info 570, 586, 1149, 1597: Call of Lightning on the highest-HP hero, damage low early and rising. Numbers calibrated on one real in-game fight (Difficulty I, Lv59 team, 5.53M): boss cannot die, hits spread over all heroes, Riptide is the main damage, +4% damage per 20 s cycle.',
     skills: info(VORTEX),
     mechanics: ['Score = damage dealt. The fight goes on until your team falls (or 8 minutes).', 'Call of Lightning always hits your highest-HP hero: give one tanky hero the most HP.', 'The boss gets stronger every 20 s.'],
     make: function (e) {
-      var st = scaled(e, { hpX: 100000, atkX: 4.0, defX: 0.6 });
+      // Extra boss damage per difficulty on top of the stage level (CALIBRATED on
+      // Darko's Difficulty II fight 2026-10-26: whole team down at 5:21, 1.67M HP
+      // lost; II = 2.6x. III and IV continue the same ratio: ASSUMED).
+      var dk = Math.pow(2.6, Math.max(0, Math.min(4, +e.stage || 1) - 1));
+      var st = scaled(e, { hpX: 100000, atkX: 4.0 * dk, defX: 0.6 });
       function ramp(u, b) { return Math.pow(1.04, Math.floor(b.t / 20)) - 1; }
       function highestHp(b, u) { var best = null; b.targetable(u).forEach(function (x) { if (!best || b.maxHp(x) > b.maxHp(best)) best = x; }); return best; }
       var kit = cycleKit({

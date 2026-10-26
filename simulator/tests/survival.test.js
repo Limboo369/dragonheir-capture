@@ -313,6 +313,15 @@ var tests = [
     var tot = 0; r.perHero.forEach(function (p) { tot += p.damage; });
     near(tot / 1e6, 4.42, 0.6, 'total damage (M)');
     r.perHero.forEach(function (p) { assert.ok(p.deathRate <= 0.1, p.name + ' survives 8:00'); });
+  }],
+  ['Vortex Difficulty II calibration: Darko\'s fight 2026-10-26 (Lv79 cards, team down at 5:21)', function () {
+    // Typed totals = Companion sim/loadout v24 (Ice heroes' gear had moved to the Poison team, so their damage is too high here).
+    var team = [{"hero":20120,"level":59,"stats":{"totals":true,"acc":21,"atk":1567,"critDmg":0.849,"critRate":0.64,"def":779,"ench":26,"haste":0,"hp":16817,"res":32},"artifact":{"name":"Ring of Winter","level":12,"tier":3}},{"hero":20920,"level":59,"stats":{"totals":true,"acc":43,"atk":1423,"critDmg":0.831,"critRate":0.244,"def":741,"ench":55,"haste":0,"hp":15765,"res":12},"artifact":{"name":"Frost Globe","level":12,"tier":3}},{"hero":21030,"level":59,"stats":{"totals":true,"acc":21,"atk":1614,"critDmg":0.849,"critRate":0.414,"def":719,"ench":53,"haste":0,"hp":16036,"res":24},"artifact":{"name":"Ring of Winter","level":12,"tier":0}},{"hero":21700,"level":59,"stats":{"totals":true,"acc":103,"atk":846,"critDmg":0.742,"critRate":0.306,"def":811,"ench":46,"haste":20,"hp":23786,"res":14},"artifact":{"name":"Rift Hourglass","level":12,"tier":3}},{"hero":22290,"level":59,"stats":{"totals":true,"acc":73,"atk":1216,"critDmg":0.667,"critRate":0.142,"def":967,"ench":85,"haste":0,"hp":22017,"res":59},"artifact":{"name":"Witch's Remains","level":12,"tier":3},"skills":{"battle":5,"ult":5}}];
+    var r = S.simulate({ team: team, captain: 1, enemy: { preset: 'vortex', level: 59, stage: 2 }, seconds: 480, runs: 30, seed: 20261025, score: true });
+    assert.ok(r.survival.wipeAt != null && r.survival.wipeAt > 270 && r.survival.wipeAt < 380, 'team falls near 5:21, sim ' + r.survival.wipeAt);
+    r.perHero.forEach(function (p) { assert.ok(p.deathRate >= 0.8, p.name + ' falls in Difficulty II'); });
+    var r1 = S.simulate({ team: team, captain: 1, enemy: { preset: 'vortex', level: 59, stage: 1 }, seconds: 480, runs: 10, seed: 20261025, score: true });
+    assert.ok(r1.survival.wipeAt == null, 'the same team survives Difficulty I');
   }]
 ];
 

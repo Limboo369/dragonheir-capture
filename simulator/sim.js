@@ -172,8 +172,11 @@
   // spec: {hero, level, stars, insp, gear: profileName | {..}, artifact: {name, level, tier}, sets: [names], stats: {...override}}
   function buildStats(spec) {
     var h = hero(spec.hero);
-    var lvl = spec.level || 60;
-    var n = nakedStats(h, lvl, spec.stars);
+    // battleLevel: modes that set every hero to a fixed level (Temporal Vortex
+    // shows Lv79 cards on Difficulty II for a Lv59 team). Typed totals were
+    // measured at spec.level, so only the base growth between the two is added.
+    var lvl0 = spec.level || 60, lvl = Math.max(lvl0, spec.battleLevel || 0);
+    var n = nakedStats(h, lvl, spec.stars), n0 = lvl === lvl0 ? n : nakedStats(h, lvl0, spec.stars);
     var g = typeof spec.gear === 'string' ? GEAR_PROFILES[spec.gear] : spec.gear;
     if (!g) g = GEAR_PROFILES[defaultProfile(h)];
     var s = {
@@ -212,9 +215,9 @@
       // HP and DEF keep the hero's base so battle % buffs and auras scale off
       // the base as in game; the rest of the typed total becomes flat bonus.
       var o = spec.stats;
-      if (o.atk != null) { s.atkF = o.atk - s.atkB; s.atkP = 0; }
-      if (o.hp != null) { s.hpF = o.hp - s.hpB; s.hpP = 0; }
-      if (o.def != null) { s.defF = o.def - s.defB; s.defP = 0; }
+      if (o.atk != null) { s.atkF = o.atk - n0.atk; s.atkP = 0; }
+      if (o.hp != null) { s.hpF = o.hp - n0.hp; s.hpP = 0; }
+      if (o.def != null) { s.defF = o.def - n0.def; s.defP = 0; }
       ['critRate', 'critDmg', 'acc', 'res', 'ench', 'haste', 'atkSpd'].forEach(function (k) { if (o[k] != null) s[k] = o[k]; });
     }
     return { s: s, h: h, notes: notes };
@@ -1143,6 +1146,9 @@
   // ------------------------------------------------------------ public API --
   // opts: {team: [spec], enemy: {preset, ...} | {team: [spec]}, mode, seconds, runs, seed, rules, captain, timelineStep, log}
   function simulate(opts) {
+    var pre = opts.enemy && !opts.enemy.team && (typeof opts.enemy.preset === 'object' ? opts.enemy.preset : BOSSES[opts.enemy.preset]);
+    var syncLv = pre && pre.heroLevel ? pre.heroLevel(opts.enemy) : 0;
+    if (syncLv) opts = Object.assign({}, opts, { team: opts.team.map(function (sp) { return typeof sp === 'object' ? Object.assign({}, sp, { battleLevel: syncLv }) : { hero: sp, battleLevel: syncLv }; }) });
     var runs = opts.runs || 100, seed = opts.seed || 12345, battles = [];
     for (var i = 0; i < runs; i++) battles.push(runOnce(opts, seed + i * 7919));
     return summarize(battles, opts);

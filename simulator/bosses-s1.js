@@ -500,11 +500,19 @@
   TARGET_TEXT.highestHp = 'Highest HP hero';
   S.registerBoss('vortex', {
     name: 'Sea King', dungeon: 'Temporal Vortex', conf: 'estimated', seconds: 480, score: true,
+    // The game sets every hero to a fixed level per difficulty: Lv59 cards on I,
+    // Lv79 on II (Darko's screens, 2026-10-25/26). III and IV follow the same
+    // +20 step (ASSUMED).
+    heroLevel: function (e) { return e.stage ? 39 + 20 * Math.max(1, Math.min(4, +e.stage)) : 0; },
     note: 'Score boss: the result is total damage before the team falls or 8 minutes pass. Mechanics from dragonheir.info 570, 586, 1149, 1597: Call of Lightning on the highest-HP hero, damage low early and rising. Numbers calibrated on one real in-game fight (Difficulty I, Lv59 team, 5.53M): boss cannot die, hits spread over all heroes, Riptide is the main damage, +4% damage per 20 s cycle.',
     skills: info(VORTEX),
     mechanics: ['Score = damage dealt. The fight goes on until your team falls (or 8 minutes).', 'Call of Lightning always hits your highest-HP hero: give one tanky hero the most HP.', 'The boss gets stronger every 20 s.'],
     make: function (e) {
-      var st = scaled(e, { hpX: 100000, atkX: 4.0, defX: 0.6 });
+      // Extra boss damage per difficulty on top of the stage level (CALIBRATED on
+      // Darko's Difficulty II fight 2026-10-26: whole team down at 5:21, 1.67M HP
+      // lost; II = 2.6x. III and IV continue the same ratio: ASSUMED).
+      var dk = Math.pow(2.6, Math.max(0, Math.min(4, +e.stage || 1) - 1));
+      var st = scaled(e, { hpX: 100000, atkX: 4.0 * dk, defX: 0.6 });
       function ramp(u, b) { return Math.pow(1.04, Math.floor(b.t / 20)) - 1; }
       function highestHp(b, u) { var best = null; b.targetable(u).forEach(function (x) { if (!best || b.maxHp(x) > b.maxHp(best)) best = x; }); return best; }
       var kit = cycleKit({
