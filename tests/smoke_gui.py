@@ -12,7 +12,7 @@ def main():
     from dhreader.store import Store
 
     store = Store(path=pathlib.Path(os.getcwd()) / "account.json")
-    store.merge("Oggok", {"level": 59, "stars": 3, "power": 13005, "stats": {"hp": 22099}})
+    store.merge({"id": 21700, "name": "Oggok"}, {"level": 59, "stars": 3, "power": 13005, "stats": {"hp": 22099}})
     app = App(reader=None, store=store)
     app.on_event({"kind": "read", "hero": "Oggok", "changed": ["stats.hp"]})
     app.root.after(1500, app.root.destroy)
