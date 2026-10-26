@@ -239,7 +239,8 @@
 
     function save() { try { if (host.save) host.save(KEY, JSON.parse(JSON.stringify(state))); } catch (e) { } }
     function pic(id) { var p = host.pics && host.pics[id]; return p ? 'background-image:url(' + p + ')' : ''; }
-    function avatar(id, cls) { var h = heroOf(id), p = pic(id); return '<span class="' + (cls || 'bs-av') + '" style="' + p + '">' + (p ? '' : E(initials(h && h.n))) + '</span>'; }
+    // data-pic lets the host fill portraits in later when its picture file arrives after this render (it is large and loads async).
+    function avatar(id, cls) { var h = heroOf(id), p = pic(id); return '<span class="' + (cls || 'bs-av') + '" data-pic="' + E(String(id)) + '" style="' + p + '">' + (p ? '' : E(initials(h && h.n))) + '</span>'; }
 
     function heroSpec(id) {
       var c = state.heroes[id] || {}, sp = { hero: +id, level: c.level || state.level };
