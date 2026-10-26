@@ -96,7 +96,8 @@
     '.bs-legend i{display:inline-block;width:12px;height:8px;border-radius:2px;margin-right:6px;vertical-align:middle}',
     '.bs-heroes{display:grid;grid-template-columns:repeat(auto-fit,minmax(124px,1fr));gap:10px}',
     '@media (min-width:700px){.bs-heroes{grid-template-columns:repeat(5,minmax(0,1fr))}}',
-    '.bs-hc{background:var(--fill-2);border-radius:14px;padding:12px;display:grid;gap:8px;min-width:0;text-align:left;align-content:start}',
+    '.bs-hc{background:var(--fill-2);border-radius:14px;padding:10px 10px 12px;display:grid;gap:8px;min-width:0;text-align:left;align-content:start}',
+    '.bs-hc .bs-small{gap:6px}.bs-hc .bs-mv,.bs-kv dd{white-space:nowrap}.bs-hc .bs-kv{grid-template-columns:auto minmax(0,1fr);gap:3px 6px;font-size:11.5px}',
     '.bs-hc .top{display:flex;gap:10px;align-items:center;min-width:0}',
     '.bs-hc .bs-av{width:40px;height:40px;font-size:14px;flex:none}',
     '.bs-hc .nm{font:650 13.5px var(--font);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
@@ -146,7 +147,7 @@
     '.bs-st.c{background:color-mix(in srgb,var(--bs-ctl) 18%,transparent);color:var(--bs-ctl)}',
     '.bs-float{position:absolute;z-index:3;pointer-events:none;font:800 13px var(--font-d);font-variant-numeric:tabular-nums;animation:bsFloat 1s ease-out forwards;white-space:nowrap;text-shadow:0 0 3px var(--card-2),0 1px 2px var(--card-2)}',
     '.bs-float.dmg{color:var(--bs-dmg)}.bs-float.heal{color:var(--bs-heal)}.bs-float.shield{color:var(--bs-shield)}.bs-float.miss{color:var(--label-3);font-size:11px}.bs-float.crit{font-size:16px}',
-    '@keyframes bsFloat{from{transform:translateY(0);opacity:1}to{transform:translateY(-26px);opacity:0}}',
+    '@keyframes bsFloat{from{transform:translateY(0);opacity:1}to{transform:translateY(-10px);opacity:0}}',
     '.bs-toast{position:absolute;left:50%;top:10px;transform:translateX(-50%);padding:5px 12px;border-radius:12px;background:var(--float,var(--card));box-shadow:var(--shadow-sm);font:650 12.5px var(--font);white-space:nowrap;opacity:0;transition:opacity .2s;z-index:2;max-width:90%;overflow:hidden;text-overflow:ellipsis}',
     '.bs-toast.on{opacity:1}',
     '.bs-end{position:absolute;inset:0;display:grid;place-content:center;text-align:center;background:color-mix(in srgb,var(--card) 70%,transparent);font:750 28px var(--font-d);z-index:3}',
@@ -556,12 +557,13 @@
       if (rp.stage.querySelectorAll('.bs-float').length > 40) return;
       // Stack up to three numbers per unit above the portrait's left half, so they never smear over the name column.
       e.floats = (e.floats || []).filter(function (x) { return x.isConnected; });
-      if (e.floats.length >= 3) e.floats.shift().remove();
+      var used = e.floats.map(function (x) { return x._slot; }), slot = [0, 1, 2].filter(function (k) { return used.indexOf(k) < 0; })[0];
+      if (slot == null) { var old = e.floats.shift(); slot = old._slot; old.remove(); }
       var sr = rp.stage.getBoundingClientRect(), pr = e.pic.getBoundingClientRect();
       var f = document.createElement('span');
-      f.className = 'bs-float ' + cls; f.textContent = txt;
+      f.className = 'bs-float ' + cls; f.textContent = txt; f._slot = slot;
       f.style.left = (pr.left - sr.left - 4 + (dx || 0)) + 'px';
-      f.style.top = (pr.top - sr.top - 6 - 14 * e.floats.length) + 'px';
+      f.style.top = (pr.top - sr.top + 2 + 13 * slot) + 'px';
       rp.stage.appendChild(f); e.floats.push(f);
       setTimeout(function () { f.remove(); }, 1000);
     }
