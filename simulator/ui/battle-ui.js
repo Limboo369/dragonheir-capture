@@ -227,7 +227,7 @@
     { k: 'harpy', mode: 'grave_of_venom', g: 'Gear' }, { k: 'xenos', mode: 'grave_of_curse', g: 'Gear' }, { k: 'scavenger', mode: 'grave_of_rot', g: 'Gear' },
     { k: 'fyre', mode: 'heretical_ruins', g: 'Runes' }, { k: 'gruentius', mode: 'ancient_battlefield', g: 'Runes' },
     { k: 'goblin', mode: 'goblin_lair', g: 'Growth' }, { k: 'flameDomain', mode: 'talent', g: 'Growth' }, { k: 'tempestDomain', mode: 'talent', g: 'Growth' }, { k: 'frostDomain', mode: 'talent', g: 'Growth' },
-    { k: 'vortex', mode: 'temporal_vortex', g: 'Daily' }, { k: 'fey', mode: 'fey_corridor', g: 'Modes' }
+    { k: 'vortex', mode: 'temporal_vortex', g: 'Daily' }
   ];
   // Boss HP and damage are never published: this corrects our estimate, it is not a game difficulty.
   var ESTIMATE = [['−20%', 0.8], ['Estimate', 1], ['+30%', 1.3], ['+60%', 1.6]];
@@ -305,7 +305,8 @@
       state.captain = ci >= 0 ? ci : 0;
       save(); render();
     }
-    function bossEntry() { return BOSSES.filter(function (x) { return x.k === state.boss; })[0] || BOSSES[0]; }
+    // Fey Corridor stays in the engine but is not offered (Darko 2026-10-26: Fey help comes from Ask Claude).
+    function bossEntry() { var b = BOSSES.filter(function (x) { return x.k === state.boss; })[0]; if (!b) { b = BOSSES[0]; state.boss = b.k; } return b; }
     function stageOf(k) {
       var p = S.bosses()[k], st = state.stages && state.stages[k];
       if (!p || !p.stages) return null;
@@ -319,7 +320,7 @@
 
     // ------------------------------------------------------------ render --
     function render() {
-      var bp = S.bosses();
+      var bp = S.bosses(); bossEntry();
       var html = '';
       html += '<div class="bs-head"><div>' + (host.hideTitle ? '' : '<h2>Battle Simulator</h2>') + '<p>Hundreds of fights against a boss that hits back. See who survives, when heroes fall and what saves them.</p></div>' +
         '<button class="bs-tag" data-a="honesty" aria-label="How accurate is this?">Sim v' + E(S.VERSION) + ' · <b>estimates</b></button></div>';
@@ -338,7 +339,7 @@
             '<span class="nm">' + E(h ? h.n : '?') + '</span><span class="sub">Lv ' + E(c.level || state.level) + (c.artifact && c.artifact.name ? ' · ' + E(c.artifact.name.split(' ').slice(-1)[0]) : '') + '</span></button>';
         }).join('') + '</div></section>';
       // boss
-      var cur = bp[state.boss] || {}, stg = stageOf(state.boss), groups = ['Gear', 'Runes', 'Growth', 'Daily', 'Modes'];
+      var cur = bp[state.boss] || {}, stg = stageOf(state.boss), groups = ['Gear', 'Runes', 'Growth', 'Daily'];
       html += '<section class="bs-card"><div class="bs-ct"><span>Dungeon</span><button class="r bs-btn" data-a="bossinfo">Skills and targets</button></div>' +
         groups.map(function (g) {
           return '<div class="bs-dg"><span class="bs-dgl">' + g + '</span><div class="bs-row">' + BOSSES.filter(function (b) { return b.g === g; }).map(function (b) {
