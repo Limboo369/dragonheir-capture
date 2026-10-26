@@ -229,7 +229,7 @@
     var root = el.firstChild;
 
     Promise.resolve(host.load ? host.load(KEY) : null).then(function (v) {
-      if (v && v.team) state = Object.assign(blankState(host), v);
+      if (v && v.team) state = Object.assign(blankState(host), JSON.parse(JSON.stringify(v)));
       render();
     }, function () { render(); });
 
@@ -947,7 +947,7 @@
         '<div class="bs-small">Simulator v' + E(S.VERSION) + '. Every fight rolls crits, debuff chances and boss targets again, so 200 fights show the real spread.</div>');
     }
     // A host whose storage answers late (artifact db) hands the saved setup over here.
-    function setState(v) { if (v && v.team) { state = Object.assign(blankState(host), v); render(); } }
+    function setState(v) { if (v && v.team) { state = Object.assign(blankState(host), JSON.parse(JSON.stringify(v))); render(); } }
     return { rerender: render, state: function () { return state; }, setState: setState };
   }
 
