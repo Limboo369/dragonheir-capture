@@ -47,10 +47,11 @@
     '.bs-s1{font:700 9.5px/16px var(--font);font-style:normal;padding:0 5px;border-radius:5px;background:var(--good-soft);color:var(--good);align-self:flex-start}',
     '.bs-chip[aria-pressed="true"] .bs-s1{background:rgba(255,255,255,.22);color:inherit}',
     '.bs-dg{display:grid;grid-template-columns:62px minmax(0,1fr);gap:8px;align-items:start}',
+    '.bs-load{margin:-2px 0 2px}.bs-load .bs-chip{min-height:34px;padding:4px 10px 4px 6px;gap:6px}.bs-load .bs-avs{display:inline-flex;flex:none}.bs-load .bs-avs .bs-av{width:22px;height:22px;font-size:9px;box-shadow:0 0 0 2px var(--card-2,var(--card));margin-left:-7px}.bs-load .bs-avs .bs-av:first-child{margin-left:0}.bs-load .bs-chip[aria-pressed="true"] .bs-avs .bs-av{box-shadow:0 0 0 2px var(--accent-bg)}',
     '.bs-dgl{font:650 11px/36px var(--font);color:var(--label-3);text-transform:uppercase;letter-spacing:.05em}',
     '@media (max-width:560px){.bs-dg{grid-template-columns:1fr;gap:2px}.bs-dgl{line-height:18px}}',
     '.bs-step{display:inline-flex;align-items:center;background:var(--fill);border-radius:12px;padding:2px}',
-    '.bs-step button{width:36px;height:36px;border-radius:10px;font:600 18px var(--font)}',
+    '.bs-step button{width:36px;height:36px;border-radius:10px;font:600 20px/1 var(--font);display:grid;place-items:center;padding:0;text-align:center}',
     '.bs-step button:hover{background:var(--card)}',
     '.bs-step span{display:grid;justify-items:center;min-width:64px;font-variant-numeric:tabular-nums}',
     '.bs-step small{font:600 10px var(--font);color:var(--label-3);text-transform:uppercase;letter-spacing:.05em}',
@@ -76,8 +77,8 @@
     '.bs-verdict{display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px;align-items:center}',
     '.bs-ring{width:116px;height:116px;position:relative}',
     '.bs-ring svg{width:100%;height:100%;transform:rotate(-90deg)}',
-    '.bs-ring .v{position:absolute;inset:0;display:grid;place-content:center;text-align:center}',
-    '.bs-ring .v b{font:750 30px/1 var(--font-d);font-variant-numeric:tabular-nums;letter-spacing:-.02em}',
+    '.bs-ring .v{position:absolute;inset:14px;display:grid;place-content:center;text-align:center}',
+    '.bs-ring .v b{font:750 25px/1 var(--font-d);font-variant-numeric:tabular-nums;letter-spacing:-.03em}',
     '.bs-ring .v span{font:600 11px var(--font);color:var(--label-3);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}',
     '.bs-vt{display:grid;gap:8px;min-width:0}',
     '.bs-pill{display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:13px;font:700 12.5px var(--font)}',
@@ -253,6 +254,25 @@
       }
       return sp;
     }
+    // Teams the host app has saved (team builder plans and custom teams): [{id, name, sub, team: [heroId], captain: heroId|null}].
+    function hostTeams() {
+      var list; try { list = typeof host.teams === 'function' ? host.teams() : host.teams; } catch (e) { list = null; }
+      return (list || []).map(function (t) {
+        var ids = (t.team || []).map(Number).filter(function (id, i, a) { return S.kits()[id] && heroOf(id) && a.indexOf(id) === i; }).slice(0, 5);
+        return { id: String(t.id), name: t.name || 'Team', sub: t.sub || '', team: ids, captain: t.captain == null ? null : +t.captain };
+      }).filter(function (t) { return t.team.length; });
+    }
+    function sameTeam(ids) {
+      if (ids.length !== state.team.length) return false;
+      var cur = state.team.map(Number);
+      return ids.every(function (id) { return cur.indexOf(id) >= 0; });
+    }
+    function loadTeam(t) {
+      state.team = t.team.slice();
+      var ci = t.captain != null ? state.team.indexOf(t.captain) : -1;
+      state.captain = ci >= 0 ? ci : 0;
+      save(); render();
+    }
     function bossEntry() { return BOSSES.filter(function (x) { return x.k === state.boss; })[0] || BOSSES[0]; }
     function stageOf(k) {
       var p = S.bosses()[k], st = state.stages && state.stages[k];
@@ -272,7 +292,13 @@
       html += '<div class="bs-head"><div>' + (host.hideTitle ? '' : '<h2>Battle Simulator</h2>') + '<p>Hundreds of fights against a boss that hits back. See who survives, when heroes fall and what saves them.</p></div>' +
         '<button class="bs-tag" data-a="honesty" aria-label="How accurate is this?">Sim v' + E(S.VERSION) + ' · <b>estimates</b></button></div>';
       // team
-      html += '<section class="bs-card"><div class="bs-ct"><span>Your team</span><span class="r">Tap a hero for stats, artifact and sets</span></div><div class="bs-team">' +
+      var saved = hostTeams();
+      html += '<section class="bs-card"><div class="bs-ct"><span>Your team</span><span class="r">Tap a hero for stats, artifact and sets</span></div>' +
+        (saved.length ? '<div class="bs-row bs-load" role="group" aria-label="Load a saved team">' + saved.map(function (t) {
+          return '<button class="bs-chip" data-a="loadteam" data-k="' + E(t.id) + '" aria-pressed="' + sameTeam(t.team) + '" title="' + E(t.team.map(function (id) { var h = heroOf(id); return h ? h.n : ''; }).join(', ')) + '">' +
+            '<span class="bs-avs">' + t.team.map(function (id) { return avatar(id); }).join('') + '</span><span>' + E(t.name) + (t.sub ? '<small>' + E(t.sub) + '</small>' : '') + '</span></button>';
+        }).join('') + '</div>' : '') +
+        '<div class="bs-team">' +
         state.team.map(function (id, i) {
           var h = heroOf(id), c = state.heroes[id] || {}, typed = c.stats && STATS.some(function (s) { var v = c.stats[s[0]]; return v !== '' && v != null; });
           return '<button class="bs-slot" data-a="hero" data-i="' + i + '">' + (i === state.captain ? '<span class="bs-crown" title="Captain">C</span>' : '') +
@@ -608,6 +634,7 @@
       var act = a.dataset.a;
       if (act === 'run') run();
       else if (act === 'boss') { state.boss = a.dataset.k; save(); render(); }
+      else if (act === 'loadteam') { var lt = hostTeams().filter(function (t) { return t.id === a.dataset.k; })[0]; if (lt) loadTeam(lt); }
       else if (act === 'stg') {
         var p = S.bosses()[state.boss]; state.stages = state.stages || {};
         state.stages[state.boss] = Math.max(p.stages.min, Math.min(p.stages.max, stageOf(state.boss) + (+a.dataset.v)));
