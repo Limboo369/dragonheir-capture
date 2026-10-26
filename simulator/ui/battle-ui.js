@@ -56,6 +56,10 @@
     '.bs-step span{display:grid;justify-items:center;min-width:64px;font-variant-numeric:tabular-nums}',
     '.bs-step small{font:600 10px var(--font);color:var(--label-3);text-transform:uppercase;letter-spacing:.05em}',
     '.bs-step b{font:700 17px/1.1 var(--font-d)}',
+    '.bs-step label{display:grid;justify-items:center;min-width:64px}',
+    '.bs-step input{width:64px;height:24px;border:0;border-radius:6px;background:transparent;text-align:center;font:700 17px/1.1 var(--font-d);color:var(--label);font-variant-numeric:tabular-nums;-moz-appearance:textfield;padding:0}',
+    '.bs-step input:hover,.bs-step input:focus{background:var(--card)}',
+    '.bs-step input::-webkit-inner-spin-button,.bs-step input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}',
     '.bs-drop{border:1.5px dashed var(--sep-2);border-radius:14px;padding:14px;display:grid;gap:8px;justify-items:center;text-align:center;color:var(--label-2);font-size:13px;transition:background .15s}',
     '.bs-drop.on{background:var(--accent-soft);border-color:var(--accent)}',
     '.bs-drop .bs-small{max-width:46ch}',
@@ -342,7 +346,7 @@
             return '<button class="bs-chip" data-a="boss" data-k="' + b.k + '" aria-pressed="' + (state.boss === b.k) + '"><span>' + E(p.dungeon) + '<small>' + E(p.name) + ' · ' + E(p.farm || '') + '</small></span>' + (p.s1 ? '<em class="bs-s1" title="Available on Season 1 servers">S1</em>' : '') + '</button>';
           }).join('') + '</div></div>';
         }).join('') +
-        '<div class="bs-row">' + (cur.stages ? '<div class="bs-step" role="group" aria-label="' + E(cur.stages.label) + '"><button data-a="stg" data-v="-1" aria-label="Lower">−</button><span><small>' + E(cur.stages.label) + '</small><b>' + stg + '</b></span><button data-a="stg" data-v="1" aria-label="Higher">+</button></div>' : '') +
+        '<div class="bs-row">' + (cur.stages ? '<div class="bs-step" role="group" aria-label="' + E(cur.stages.label) + '"><button data-a="stg" data-v="-1" aria-label="Lower">−</button><label><small>' + E(cur.stages.label) + '</small><input id="bs-stg" type="number" inputmode="numeric" min="' + cur.stages.min + '" max="' + cur.stages.max + '" value="' + stg + '" aria-label="' + E(cur.stages.label) + ' (type a number)"></label><button data-a="stg" data-v="1" aria-label="Higher">+</button></div>' : '') +
         '<span class="bs-small">' + (cur.altName ? 'In game also "' + E(cur.altName) + '". ' : '') + (cur.score ? 'Score fight: damage before your team falls.' : cur.stars ? '3 stars = more than 50 s left.' : '') + '</span>' +
         '<button class="bs-btn" data-a="more" style="margin-left:auto">' + E(state.runs) + ' fights · Lv ' + E(state.level) + (state.strength !== 1 ? ' · boss ' + (state.strength > 1 ? '+' : '−') + Math.round(Math.abs(state.strength - 1) * 100) + '%' : '') + '</button></div>' + (state.boss === 'fey' ? feyRow() : '') + '</section>';
       // run
@@ -691,6 +695,11 @@
     }
 
     root.addEventListener('change', function (ev) {
+      if (ev.target.id === 'bs-stg') {
+        var p = S.bosses()[state.boss], n = Math.round(+ev.target.value); state.stages = state.stages || {};
+        if (p && p.stages && isFinite(n) && ev.target.value !== '') state.stages[state.boss] = Math.max(p.stages.min, Math.min(p.stages.max, n));
+        save(); render(); return;
+      }
       if (ev.target.id !== 'bs-foelv') return;
       var v = Math.round(+ev.target.value); feyState().level = v >= 1 && v <= 100 ? v : ''; save(); render();
     });
