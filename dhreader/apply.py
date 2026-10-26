@@ -39,6 +39,7 @@ def apply(store, res, context):
     if not hero:
         return changed, None
     rec = store.hero(hero)
+    guessed = bool(res.get("hero_from_context"))
     fields = {}
     for k in ("level", "rarity", "stars", "stats", "stats_base", "stats_bonus", "skill_levels", "talents", "atk_interval"):
         if res.get(k) is not None:
@@ -63,14 +64,21 @@ def apply(store, res, context):
         gear = [dict(g) for g in rec.get("gear") or []]
         for g in gear:
             if g.get("slot") == it.get("slot"):
-                g.update(it)
+                # A tooltip opened from the bag also shows unequipped items: only add to the
+                # recent hero when it matches the item already seen in that slot.
+                if not guessed or g.get("name") == it.get("name") or (it.get("set") and g.get("set") == it.get("set")):
+                    g.update(it)
+                    fields["gear"] = gear
                 break
         else:
-            gear.append(it)
-        fields["gear"] = gear
+            if not guessed:
+                gear.append(it)
+                fields["gear"] = gear
     if scr == "item_artifact" and res.get("item"):
         it = {k: v for k, v in res["item"].items() if v is not None}
         old = rec.get("artifact") or {}
+        if guessed and old.get("name") != it.get("name"):
+            return changed, hero["name"]
         fields["artifact"] = dict(old, **it) if old.get("name") in (None, it.get("name")) else it
     changed += store.merge(hero, fields)
     return changed, hero["name"]
