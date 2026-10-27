@@ -311,7 +311,8 @@ def cmd_gemini(args):
         text = (f"{prompt}\n\nWatch the video and write the note. Use what is said and what is shown "
                 f"on screen (team screens, stats, tier lists).\nChannel: {rec['channel']}\n"
                 f"Title: {rec['title']}\nPublished: {rec['published'][:10]}\n"
-                "Answer with JSON only, matching the schema.")
+                "Answer with JSON only, matching the schema.\n\n"
+                f"Known hero names, use these spellings (brand-new heroes may be missing from this list; then keep the name as said in the video): {', '.join(load(HERO_NAMES, []))}")
         url = f"https://www.youtube.com/watch?v={vid}"
         rec["gtries"] = rec.get("gtries", 0) + 1
         print(f"… {rec['channel']}: {rec['title'][:60]}", flush=True)
