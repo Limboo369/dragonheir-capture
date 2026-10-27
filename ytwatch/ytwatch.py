@@ -278,9 +278,22 @@ def cmd_gemini(args):
     from google.genai import types
     client = genai.Client(api_key=os.environ["GEMINI_API_KEY"],
                           http_options=types.HttpOptions(timeout=600_000))
-    model = os.environ.get("YTWATCH_GEMINI_MODEL", "gemini-3.8-flash")
+    models = os.environ.get("YTWATCH_GEMINI_MODEL",
+                            "gemini-3.8-flash,gemini-3.5-flash,gemini-2.5-flash").split(",")
+
+    def generate(**kw):
+        """Try the models in order; a busy (503) or unknown (404) model falls through."""
+        for i, m in enumerate(models):
+            try:
+                return m, client.models.generate_content(model=m.strip(), **kw)
+            except genai.errors.APIError as e:
+                if e.code not in (404, 500, 503) or i == len(models) - 1:
+                    raise
+                print(f"  {m}: {e.code}, trying {models[i + 1]}", flush=True)
+
     if args.ping:
-        print("Gemini:", client.models.generate_content(model=model, contents="Reply with OK").text)
+        m, r = generate(contents="Reply with OK")
+        print(f"Gemini ({m}):", r.text)
         return
     prompt = (ROOT / "SUMMARY_PROMPT.md").read_text(encoding="utf-8")
     state = load(STATE, {"videos": {}})
@@ -303,8 +316,7 @@ def cmd_gemini(args):
         rec["gtries"] = rec.get("gtries", 0) + 1
         print(f"… {rec['channel']}: {rec['title'][:60]}", flush=True)
         try:
-            res = client.models.generate_content(
-                model=model,
+            model, res = generate(
                 contents=types.Content(role="user", parts=[
                     types.Part(file_data=types.FileData(file_uri=url)),
                     types.Part(text=text)]),
