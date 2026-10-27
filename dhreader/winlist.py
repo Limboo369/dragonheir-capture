@@ -73,6 +73,30 @@ def list_windows():
     return out
 
 
+def _pid(hwnd):
+    try:
+        return win32process.GetWindowThreadProcessId(hwnd)[1]
+    except Exception:
+        return None
+
+
+def find_game():
+    """The game's window. Never our own window, whose title also says "Dragonheir"."""
+    import os
+
+    me = os.getpid()
+    best = None
+    for w in list_windows():
+        if _pid(w.hwnd) == me or "reader" in w.title.lower() or "dragonheirreader" in w.process.lower():
+            continue
+        t, pr = w.title.lower(), w.process.lower()
+        if "dragonheir" in pr:
+            return w
+        if "dragonheir" in t and best is None and not any(b in pr for b in ("chrome", "msedge", "firefox", "opera", "brave", "discord", "explorer")):
+            best = w
+    return best
+
+
 def window_alive(hwnd) -> bool:
     return IS_WINDOWS and bool(win32gui.IsWindow(hwnd))
 

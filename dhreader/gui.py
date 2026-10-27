@@ -46,6 +46,7 @@ class App:
         self.reader, self.store, self.watcher = reader, store, watcher
         self.hwnd = None
         self._rows_sig = None
+        self._seen = 0
         self._build()
         self.root.after(200, self._poll)
         self.root.after(500, self._find_game)
@@ -90,14 +91,18 @@ class App:
     def _find_game(self):
         if self.hwnd and winlist.window_alive(self.hwnd):
             return
-        wins = [w for w in winlist.list_windows() if "dragonheir" in (w.title + w.process).lower()]
-        if wins:
-            self.hwnd = wins[0].hwnd
+        w = winlist.find_game()
+        if w:
+            self.hwnd = w.hwnd
+            log.info("game window: %r [%s]", w.title, w.process)
             if self.watcher:
                 self.watcher.start(self.hwnd)
-            self._pill("Watching", GREEN)
+                if not self.watcher.paused:
+                    self._pill("Watching", GREEN)
+                    self.toast.configure(text="Found the game. Open any hero.", text_color=MUTED)
         else:
             self._pill("Game not found", ORANGE)
+            self.toast.configure(text="Start Dragonheir. Keep it open, not minimized.", text_color=ORANGE)
             self.root.after(3000, self._find_game)
 
     def _pill(self, text, colour):
@@ -107,8 +112,12 @@ class App:
         if not self.watcher:
             return
         self.watcher.paused = not self.watcher.paused
-        self.b_pause.configure(text="Resume" if self.watcher.paused else "Pause")
-        self._pill("Paused" if self.watcher.paused else "Watching", MUTED if self.watcher.paused else GREEN)
+        p = self.watcher.paused
+        self.b_pause.configure(text="Resume" if p else "Pause", fg_color=ORANGE if p else CARD_HI,
+                               text_color=BG if p else FG)
+        self._pill("Paused" if p else "Watching", ORANGE if p else GREEN)
+        self.toast.configure(text="Not reading. Click Resume to continue." if p else "Watching. Open any hero.",
+                             text_color=ORANGE if p else MUTED)
 
     def export(self):
         if not self.store:
@@ -121,11 +130,28 @@ class App:
     def more(self):
         m = tk.Menu(self.root, tearoff=0, bg=CARD_HI, fg=FG, activebackground=BLUE, bd=0)
         m.add_command(label="Read screen now", command=lambda: self.watcher and self.watcher.read_now())
+        m.add_command(label="Save test snapshot", command=self.snapshot)
         m.add_command(label="Open data folder", command=self.open_folder)
         m.add_separator()
         m.add_command(label="Clear all heroes", command=self.reset)
         x, y = self.b_more.winfo_rootx(), self.b_more.winfo_rooty() + 40
         m.tk_popup(x, y)
+
+    def snapshot(self):
+        """Save what the tool sees right now, so a screen it does not read can be checked."""
+        img = self.watcher.last_frame if self.watcher else None
+        if img is None and self.hwnd:
+            img = winlist.capture(self.hwnd)
+        if img is None:
+            self.toast.configure(text="No picture of the game yet.", text_color=ORANGE)
+            return
+        p = app_dir() / "data" / "snapshot.png"
+        p.parent.mkdir(exist_ok=True)
+        img.save(p)
+        self.toast.configure(text=f"Saved snapshot.png ({img.width}×{img.height})", text_color=GREEN)
+        self.open_folder()
+        if self.watcher:
+            self.watcher.read_now()
 
     def open_folder(self):
         d = app_dir() / "data"
@@ -165,8 +191,16 @@ class App:
                     self.store.write_export()
                 except Exception:
                     pass
+        elif k == "idle":
+            w, h = ev.get("size") or (0, 0)
+            self._seen += 1
+            self.toast.configure(text=f"Watching ({w}×{h}). This screen has no hero data. · {self._seen}",
+                                 text_color=MUTED)
+            if not self.watcher or not self.watcher.paused:
+                self._pill("Watching", GREEN)
         elif k == "nowindow":
             self._pill("Game minimized", ORANGE)
+            self.toast.configure(text="The game is minimized. Bring it back on screen.", text_color=ORANGE)
             self.hwnd = None
             self.root.after(2000, self._find_game)
         elif k == "error":

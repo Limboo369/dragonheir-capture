@@ -37,6 +37,7 @@ class Watcher:
         self.paused = False
         self._force = False
         self._t = None
+        self.last_frame = None
         self.stats = {"frames": 0, "reads": 0, "screens": 0}
 
     def start(self, hwnd):
@@ -54,7 +55,10 @@ class Watcher:
         self._force = True
 
     def _run(self):
-        last_read, prev = None, None
+        # A screen is read once it stops changing. Hero screens have animated models and
+        # effects, so a screen that keeps moving is also read, at most every few seconds;
+        # after several screens that are not ours the pace slows down to spare the CPU.
+        last_read, prev, last_try, misses = None, None, 0.0, 0
         while self.running:
             t0 = time.time()
             try:
@@ -67,13 +71,16 @@ class Watcher:
                     time.sleep(1.0)
                     continue
                 self.stats["frames"] += 1
+                self.last_frame = img
                 th = thumb(img)
                 stable = not differs(th, prev, 3.0)
                 prev = th
-                if self._force or (stable and differs(th, last_read)):
+                gap = 2.5 if misses < 3 else 6.0
+                new = differs(th, last_read)
+                if self._force or (new and (stable or t0 - last_try > gap)) or (not new and t0 - last_try > 30):
                     self._force = False
-                    last_read = th
-                    self._read(img)
+                    last_read, last_try = th, t0
+                    misses = 0 if self._read(img) else misses + 1
             except Exception as e:
                 log.error("watch loop: %s\n%s", e, traceback.format_exc())
                 self.on_event({"kind": "error", "text": str(e)})
@@ -87,9 +94,11 @@ class Watcher:
         self.stats["reads"] += 1
         res = self.reader.read(bgr)
         if not res or not res.get("screen"):
-            self.on_event({"kind": "idle", "result": res})
-            return
+            log.info("not a hero screen (%sx%s): %s", img.width, img.height, (res or {}).get("texts"))
+            self.on_event({"kind": "idle", "result": res, "size": img.size})
+            return False
         self.stats["screens"] += 1
         changed, who = apply(self.store, res, self.reader.context)
         log.info("%s %s -> %s", res.get("screen"), who, changed)
         self.on_event({"kind": "read", "result": res, "hero": who, "changed": changed})
+        return True
