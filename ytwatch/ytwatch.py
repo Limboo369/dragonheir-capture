@@ -411,6 +411,13 @@ def cmd_gemini(args):
 
 # ---------- build ----------
 
+def tail(path, n):
+    try:
+        return path.read_text(encoding="utf-8", errors="replace").splitlines()[-n:]
+    except FileNotFoundError:
+        return []
+
+
 def cmd_build(args):
     notes = [load(p, None) for p in sorted(NOTES.glob("*.json"))]
     notes = [n for n in notes if n]
@@ -434,6 +441,8 @@ def cmd_build(args):
                 for r in state["videos"].values() if r["status"] in ("retry", "failed")]
     save(KNOWLEDGE / "data" / "status.json", {
         "built": now(), "last_fetch": state.get("last_fetch"), "counts": counts, "problems": problems,
+        "budget": state.get("budget"), "log_tail": tail(ROOT / "run.log", 40),
+        "crontab": [l for l in os.popen("crontab -l 2>/dev/null").read().splitlines() if "ytwatch" in l],
         "channels": [{"name": c["name"], "id": c["id"], "enabled": c.get("enabled", True),
                       "checked": state["channels"].get(c["id"], {}).get("checked")}
                      for c in load(CHANNELS, [])]})
