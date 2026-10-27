@@ -306,10 +306,10 @@ def cmd_gemini(args):
         rec["gtries"] = rec.get("gtries", 0) + 1
         try:
             try:
-                res = client.interactions.create(model=model, input=inp, response_format={
+                res = client.interactions.create(model=model, input=inp, timeout=300, response_format={
                     "type": "text", "mime_type": "application/json", "schema": gemini_schema(SCHEMA)})
             except TypeError:
-                res = client.interactions.create(model=model, input=inp)
+                res = client.interactions.create(model=model, input=inp, timeout=300)
             raw = res.output_text.strip()
             raw = re.sub(r"^```(?:json)?|```$", "", raw).strip()
             s = json.loads(raw)

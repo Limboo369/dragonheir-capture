@@ -9,10 +9,10 @@ mkdir -p "$YTWATCH_OUT"
 date -u "+== %F %H:%M"
 if [ -n "$GEMINI_API_KEY" ]; then
   # Gemini watches the videos by URL, so YouTube's block on this server's IP doesn't matter
-  venv/bin/python ytwatch.py fetch --discover-only
-  venv/bin/python ytwatch.py gemini
+  venv/bin/python -u ytwatch.py fetch --discover-only
+  venv/bin/python -u ytwatch.py gemini
 else
-  venv/bin/python ytwatch.py fetch
-  [ -n "$YTWATCH_MODEL" ] && venv/bin/python ytwatch.py summarize
+  venv/bin/python -u ytwatch.py fetch
+  [ -n "$YTWATCH_MODEL" ] && venv/bin/python -u ytwatch.py summarize
 fi
-venv/bin/python ytwatch.py build
+venv/bin/python -u ytwatch.py build

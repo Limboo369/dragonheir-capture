@@ -35,5 +35,5 @@ systemctl daemon-reload && systemctl enable --now ytwatch-web >/dev/null 2>&1
 
 ( crontab -l 2>/dev/null | grep -v ytwatch/run.sh; echo "17 */3 * * * $DIR/run.sh >> $DIR/run.log 2>&1" ) | crontab -
 echo "First run (a few minutes)..."
-./run.sh 2>&1 | tee -a run.log | tail -12
+./run.sh 2>&1 | tee -a run.log
 echo "GOTOVO"
