@@ -14,6 +14,6 @@ Follows a list of Dragonheir YouTube channels. For every new video it downloads 
 curl -fsSL https://raw.githubusercontent.com/Limboo369/dragonheir-capture/main/ytwatch/install-vps.sh | bash
 ```
 
-It installs into `~/ytwatch`, tests whether YouTube serves transcripts to the server, adds the cron job and serves the `out` folder (summaries only) on port 8790. Summaries start once `YTWATCH_MODEL=...` is written to `~/ytwatch/.env`; the API key is read from the REGAL bot's `.env`.
+It installs into `~/ytwatch`, asks for the Gemini API key, adds the cron job, serves the `out` folder (notes only) on port 8790 and runs a first round. Without a Gemini key, `run.sh` falls back to transcripts + Claude (`YTWATCH_MODEL` and `ANTHROPIC_API_KEY` in `~/ytwatch/.env`).
 
-YouTube refuses transcript requests from many cloud and datacenter IPs. The installer prints `YOUTUBE BLOCKED` when that happens.
+YouTube refuses transcript requests from cloud and datacenter IPs (Darko's Contabo server included, 2026-10-27). So the server runs in Gemini mode: `fetch --discover-only` records new videos from the RSS feeds and `ytwatch.py gemini` gives each video's URL to the Gemini API (YouTube URL input, preview, free; free tier allows 8 hours of video per day), which watches it and returns the note in the same JSON schema. Titles with "live"/"stream" are skipped. The installer asks for the Gemini key once (hidden) and keeps it in `~/ytwatch/.env`.

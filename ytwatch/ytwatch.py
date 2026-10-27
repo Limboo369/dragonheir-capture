@@ -131,7 +131,7 @@ def cmd_fetch(args):
                     "status": "new", "tries": 0, "channel": ch["name"], "channel_id": ch["id"],
                     "title": v["title"], "published": v["published"], "url": v["url"],
                     "short": v["short"], "found": now()}
-            if rec["status"] not in ("new", "retry"):
+            if rec["status"] not in ("new", "retry") or args.discover_only:
                 continue
             rec["tries"] = rec.get("tries", 0) + 1
             try:
@@ -268,6 +268,79 @@ def cmd_summarize(args):
         tmp.unlink()
 
 
+LIVE = re.compile(r"\b(live|livestream|stream)\b", re.I)
+
+
+def gemini_schema(node):
+    """Gemini's schema subset has no additionalProperties."""
+    if isinstance(node, dict):
+        return {k: gemini_schema(v) for k, v in node.items() if k != "additionalProperties"}
+    return node
+
+
+def cmd_gemini(args):
+    """Gemini reads public YouTube videos by URL (Google fetches them), so no
+    transcript download is needed and server IP blocks do not matter."""
+    from google import genai
+    client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+    model = os.environ.get("YTWATCH_GEMINI_MODEL", "gemini-3.8-flash")
+    prompt = (ROOT / "SUMMARY_PROMPT.md").read_text(encoding="utf-8")
+    state = load(STATE, {"videos": {}})
+    todo = sorted((r["published"], vid) for vid, r in state["videos"].items()
+                  if r["status"] in ("new", "retry", "no_transcript"))
+    done = 0
+    for _, vid in todo:
+        if done >= args.limit:
+            break
+        rec = state["videos"][vid]
+        if LIVE.search(rec["title"]):
+            rec["status"] = "skipped_live"   # multi-hour streams would eat the daily video quota
+            save(STATE, state)
+            continue
+        text = (f"{prompt}\n\nWatch the video and write the note. Use what is said and what is shown "
+                f"on screen (team screens, stats, tier lists).\nChannel: {rec['channel']}\n"
+                f"Title: {rec['title']}\nPublished: {rec['published'][:10]}\n"
+                "Answer with JSON only, matching the schema.")
+        inp = [{"type": "text", "text": text},
+               {"type": "video", "uri": f"https://www.youtube.com/watch?v={vid}"}]
+        rec["gtries"] = rec.get("gtries", 0) + 1
+        try:
+            try:
+                res = client.interactions.create(model=model, input=inp, response_format={
+                    "type": "text", "mime_type": "application/json", "schema": gemini_schema(SCHEMA)})
+            except TypeError:
+                res = client.interactions.create(model=model, input=inp)
+            raw = res.output_text.strip()
+            raw = re.sub(r"^```(?:json)?|```$", "", raw).strip()
+            s = json.loads(raw)
+        except Exception as e:
+            msg = str(e)[:200]
+            print(f"! {vid}: {type(e).__name__}: {msg}")
+            rec["status"] = "retry" if rec["gtries"] < 3 else "failed"
+            rec["error"] = msg
+            save(STATE, state)
+            if "429" in msg or "RESOURCE_EXHAUSTED" in msg or "API key" in msg:
+                break
+            continue
+        s["id"] = vid
+        s["model"] = model
+        rec["status"] = "transcribed"   # lets add-summary accept it
+        save(STATE, state)
+        tmp = ROOT / f".summary-{vid}.json"
+        tmp.write_text(json.dumps(s, ensure_ascii=False), encoding="utf-8")
+        try:
+            cmd_add_summary(argparse.Namespace(file=tmp))
+        except SystemExit as e:
+            print(f"! {vid}: bad note: {e}")
+            state = load(STATE, {"videos": {}})
+            state["videos"][vid]["status"] = "retry"
+            save(STATE, state)
+        tmp.unlink()
+        state = load(STATE, {"videos": {}})
+        done += 1
+        print(f"+ {rec['channel']}: {rec['title'][:60]}")
+
+
 # ---------- build ----------
 
 def cmd_build(args):
@@ -319,15 +392,20 @@ def main():
     f = sp.add_parser("fetch")
     f.add_argument("--backfill", type=int, default=3,
                    help="on a channel's first run, take this many latest videos")
+    f.add_argument("--discover-only", action="store_true",
+                   help="only record new videos (for the gemini command), no transcripts")
     sp.add_parser("pending")
     a = sp.add_parser("add-summary")
     a.add_argument("file")
     sp.add_parser("build")
     s = sp.add_parser("summarize", help="summarize pending transcripts with the Claude API")
     s.add_argument("--limit", type=int, default=15)
+    g = sp.add_parser("gemini", help="let Gemini watch new videos by URL and write the notes")
+    g.add_argument("--limit", type=int, default=6)
     args = p.parse_args()
     {"fetch": cmd_fetch, "pending": cmd_pending, "add-summary": cmd_add_summary,
-     "build": cmd_build, "summarize": cmd_summarize}[args.cmd](args)
+     "build": cmd_build, "summarize": cmd_summarize,
+     "gemini": cmd_gemini}[args.cmd](args)
 
 
 if __name__ == "__main__":
