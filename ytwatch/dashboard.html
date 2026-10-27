@@ -123,7 +123,7 @@ function render(){
       :'<div class="empty">No tips yet</div>';
   }else{
     const c=S.counts||{};
-    m.innerHTML=`<div class="list"><div class="row"><b>Last update</b> ${esc(S.built||"–")} <small>(${ago(S.built)}) · runs every 3 hours</small></div>
+    m.innerHTML=`<div class="list"><div class="row"><b>Last update</b> ${esc(S.built||"–")} <small>(${ago(S.built)}) · videos every hour, updates every 10 min</small></div>
       <div class="row"><b>Videos</b><div class="chips">${Object.entries(c).map(([k,v])=>`<span class="chip">${esc(k)}: ${v}</span>`).join("")}</div></div>
       <div class="row"><b>Channels</b><div class="chips">${(S.channels||[]).map(x=>`<a class="chip" href="https://www.youtube.com/channel/${esc(x.id)}" target="_blank">${esc(x.name)}</a>`).join("")}</div></div>
       ${(S.problems||[]).map(p=>`<div class="row"><span class="b">${esc(p.status)}</span> ${esc(p.title)} <small>· ${esc(p.channel)}</small><div class="err">${esc(p.error)}</div></div>`).join("")}</div>`;

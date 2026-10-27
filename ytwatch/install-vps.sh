@@ -35,7 +35,7 @@ WantedBy=multi-user.target
 UNIT
 systemctl daemon-reload && systemctl enable --now ytwatch-web >/dev/null 2>&1
 
-( crontab -l 2>/dev/null | grep -v ytwatch/run.sh; echo "17 */3 * * * $DIR/run.sh >> $DIR/run.log 2>&1" ) | crontab -
+( crontab -l 2>/dev/null | grep -v ytwatch/run.sh; echo "*/10 * * * * $DIR/run.sh --update-only >/dev/null 2>&1"; echo "17 * * * * $DIR/run.sh >> $DIR/run.log 2>&1" ) | crontab -
 echo "First run (a few minutes)..."
 ./run.sh 2>&1 | tee -a run.log
 echo "GOTOVO"
