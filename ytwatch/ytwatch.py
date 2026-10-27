@@ -281,80 +281,92 @@ def cmd_gemini(args):
     models = os.environ.get("YTWATCH_GEMINI_MODEL",
                             "gemini-3.8-flash,gemini-3.5-flash,gemini-2.5-flash").split(",")
 
+    busy = set()   # models that answered 503/404 are skipped for the rest of this run
+
     def generate(**kw):
         """Try the models in order; a busy (503) or unknown (404) model falls through."""
-        for i, m in enumerate(models):
+        usable = [m for m in models if m not in busy] or models[-1:]
+        for i, m in enumerate(usable):
             try:
                 return m, client.models.generate_content(model=m.strip(), **kw)
             except genai.errors.APIError as e:
-                if e.code not in (404, 500, 503) or i == len(models) - 1:
+                if e.code not in (404, 500, 503) or i == len(usable) - 1:
                     raise
-                print(f"  {m}: {e.code}, trying {models[i + 1]}", flush=True)
+                if m not in busy:
+                    busy.add(m)
+                    print(f"  {m}: {e.code}, using {usable[i + 1]}", flush=True)
 
     if args.ping:
         m, r = generate(contents="Reply with OK")
         print(f"Gemini ({m}):", r.text)
         return
     prompt = (ROOT / "SUMMARY_PROMPT.md").read_text(encoding="utf-8")
+    names = ", ".join(load(HERO_NAMES, []))
     state = load(STATE, {"videos": {}})
-    todo = sorted((r["published"], vid) for vid, r in state["videos"].items()
-                  if r["status"] in ("new", "retry", "no_transcript"))
-    done = 0
-    for _, vid in todo:
-        if done >= args.limit:
-            break
+    todo = []
+    for _, vid in sorted((r["published"], vid) for vid, r in state["videos"].items()
+                         if r["status"] in ("new", "retry", "no_transcript")):
         rec = state["videos"][vid]
         if LIVE.search(rec["title"]):
             rec["status"] = "skipped_live"   # multi-hour streams would eat the daily video quota
-            save(STATE, state)
-            continue
+        elif len(todo) < args.limit:
+            todo.append(vid)
+    save(STATE, state)
+
+    def watch(vid):
+        """Runs in a worker thread: one video -> (model, note dict) or raises."""
+        rec = state["videos"][vid]
         text = (f"{prompt}\n\nWatch the video and write the note. Use what is said and what is shown "
                 f"on screen (team screens, stats, tier lists).\nChannel: {rec['channel']}\n"
                 f"Title: {rec['title']}\nPublished: {rec['published'][:10]}\n"
                 "Answer with JSON only, matching the schema.\n\n"
-                f"Known hero names, use these spellings (brand-new heroes may be missing from this list; then keep the name as said in the video): {', '.join(load(HERO_NAMES, []))}")
-        url = f"https://www.youtube.com/watch?v={vid}"
-        rec["gtries"] = rec.get("gtries", 0) + 1
+                "Known hero names, use these spellings (brand-new heroes may be missing from this list; "
+                f"then keep the name as said in the video): {names}")
         print(f"… {rec['channel']}: {rec['title'][:60]}", flush=True)
-        try:
-            model, res = generate(
-                contents=types.Content(role="user", parts=[
-                    types.Part(file_data=types.FileData(file_uri=url)),
-                    types.Part(text=text)]),
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    response_json_schema=SCHEMA,
-                    media_resolution=types.MediaResolution.MEDIA_RESOLUTION_LOW))
-            raw = (res.text or "").strip()
-            raw = re.sub(r"^```(?:json)?|```$", "", raw).strip()
-            s = json.loads(raw)
-        except Exception as e:
-            msg = str(e)[:200]
-            print(f"! {vid}: {type(e).__name__}: {msg}")
-            rec["status"] = "retry" if rec["gtries"] < 3 else "failed"
-            rec["error"] = msg
-            save(STATE, state)
-            if "429" in msg or "RESOURCE_EXHAUSTED" in msg or "API key" in msg:
-                break
-            continue
-        s["id"] = vid
-        s["model"] = model
-        rec["status"] = "transcribed"   # lets add-summary accept it
-        save(STATE, state)
-        tmp = ROOT / f".summary-{vid}.json"
-        tmp.write_text(json.dumps(s, ensure_ascii=False), encoding="utf-8")
-        try:
-            cmd_add_summary(argparse.Namespace(file=tmp))
-        except SystemExit as e:
-            print(f"! {vid}: bad note: {e}")
-            state = load(STATE, {"videos": {}})
-            state["videos"][vid]["status"] = "retry"
-            save(STATE, state)
-        tmp.unlink()
-        state = load(STATE, {"videos": {}})
-        done += 1
-        print(f"+ {rec['channel']}: {rec['title'][:60]}")
+        model, res = generate(
+            contents=types.Content(role="user", parts=[
+                types.Part(file_data=types.FileData(file_uri=f"https://www.youtube.com/watch?v={vid}")),
+                types.Part(text=text)]),
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_json_schema=SCHEMA,
+                media_resolution=types.MediaResolution.MEDIA_RESOLUTION_LOW))
+        raw = re.sub(r"^```(?:json)?|```$", "", (res.text or "").strip()).strip()
+        return model, json.loads(raw)
 
+    # A few videos at once; more would hit the free tier's requests-per-minute limit.
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    with ThreadPoolExecutor(max_workers=args.workers) as pool:
+        jobs = {pool.submit(watch, vid): vid for vid in todo}
+        for job in as_completed(jobs):
+            vid = jobs[job]
+            state = load(STATE, {"videos": {}})
+            rec = state["videos"][vid]
+            rec["gtries"] = rec.get("gtries", 0) + 1
+            try:
+                model, s = job.result()
+            except Exception as e:
+                msg = str(e)[:200]
+                print(f"! {rec['title'][:50]}: {type(e).__name__}: {msg}")
+                rec["status"] = "retry" if rec["gtries"] < 3 else "failed"
+                rec["error"] = msg
+                save(STATE, state)
+                continue
+            s["id"] = vid
+            s["model"] = model
+            rec["status"] = "transcribed"   # lets add-summary accept it
+            save(STATE, state)
+            tmp = ROOT / f".summary-{vid}.json"
+            tmp.write_text(json.dumps(s, ensure_ascii=False), encoding="utf-8")
+            try:
+                cmd_add_summary(argparse.Namespace(file=tmp))
+                print(f"+ {rec['channel']}: {rec['title'][:60]}", flush=True)
+            except SystemExit as e:
+                print(f"! {vid}: bad note: {e}")
+                state = load(STATE, {"videos": {}})
+                state["videos"][vid]["status"] = "retry"
+                save(STATE, state)
+            tmp.unlink()
 
 # ---------- build ----------
 
@@ -433,7 +445,8 @@ def main():
     s = sp.add_parser("summarize", help="summarize pending transcripts with the Claude API")
     s.add_argument("--limit", type=int, default=15)
     g = sp.add_parser("gemini", help="let Gemini watch new videos by URL and write the notes")
-    g.add_argument("--limit", type=int, default=6)
+    g.add_argument("--limit", type=int, default=12)
+    g.add_argument("--workers", type=int, default=4)
     g.add_argument("--ping", action="store_true", help="only check that the key works")
     args = p.parse_args()
     {"fetch": cmd_fetch, "pending": cmd_pending, "add-summary": cmd_add_summary,
