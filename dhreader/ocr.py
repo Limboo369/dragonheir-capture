@@ -14,8 +14,19 @@ def engine():
     global _engine
     with _lock:
         if _engine is None:
+            import rapidocr_onnxruntime.utils as ru
             from rapidocr_onnxruntime import RapidOCR
 
+            # Two threads: reading stays fast enough and leaves the CPU to the game.
+            base = ru.SessionOptions
+
+            def opts():
+                o = base()
+                o.intra_op_num_threads = 2
+                o.inter_op_num_threads = 1
+                return o
+
+            ru.SessionOptions = opts
             _engine = RapidOCR()
     return _engine
 
