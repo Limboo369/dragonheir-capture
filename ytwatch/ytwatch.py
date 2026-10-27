@@ -271,19 +271,17 @@ def cmd_summarize(args):
 LIVE = re.compile(r"\b(live|livestream|stream)\b", re.I)
 
 
-def gemini_schema(node):
-    """Gemini's schema subset has no additionalProperties."""
-    if isinstance(node, dict):
-        return {k: gemini_schema(v) for k, v in node.items() if k != "additionalProperties"}
-    return node
-
-
 def cmd_gemini(args):
     """Gemini reads public YouTube videos by URL (Google fetches them), so no
     transcript download is needed and server IP blocks do not matter."""
     from google import genai
-    client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+    from google.genai import types
+    client = genai.Client(api_key=os.environ["GEMINI_API_KEY"],
+                          http_options=types.HttpOptions(timeout=600_000))
     model = os.environ.get("YTWATCH_GEMINI_MODEL", "gemini-3.8-flash")
+    if args.ping:
+        print("Gemini:", client.models.generate_content(model=model, contents="Reply with OK").text)
+        return
     prompt = (ROOT / "SUMMARY_PROMPT.md").read_text(encoding="utf-8")
     state = load(STATE, {"videos": {}})
     todo = sorted((r["published"], vid) for vid, r in state["videos"].items()
@@ -301,16 +299,20 @@ def cmd_gemini(args):
                 f"on screen (team screens, stats, tier lists).\nChannel: {rec['channel']}\n"
                 f"Title: {rec['title']}\nPublished: {rec['published'][:10]}\n"
                 "Answer with JSON only, matching the schema.")
-        inp = [{"type": "text", "text": text},
-               {"type": "video", "uri": f"https://www.youtube.com/watch?v={vid}"}]
+        url = f"https://www.youtube.com/watch?v={vid}"
         rec["gtries"] = rec.get("gtries", 0) + 1
+        print(f"… {rec['channel']}: {rec['title'][:60]}", flush=True)
         try:
-            try:
-                res = client.interactions.create(model=model, input=inp, timeout=300, response_format={
-                    "type": "text", "mime_type": "application/json", "schema": gemini_schema(SCHEMA)})
-            except TypeError:
-                res = client.interactions.create(model=model, input=inp, timeout=300)
-            raw = res.output_text.strip()
+            res = client.models.generate_content(
+                model=model,
+                contents=types.Content(role="user", parts=[
+                    types.Part(file_data=types.FileData(file_uri=url)),
+                    types.Part(text=text)]),
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                    response_json_schema=SCHEMA,
+                    media_resolution=types.MediaResolution.MEDIA_RESOLUTION_LOW))
+            raw = (res.text or "").strip()
             raw = re.sub(r"^```(?:json)?|```$", "", raw).strip()
             s = json.loads(raw)
         except Exception as e:
@@ -402,6 +404,7 @@ def main():
     s.add_argument("--limit", type=int, default=15)
     g = sp.add_parser("gemini", help="let Gemini watch new videos by URL and write the notes")
     g.add_argument("--limit", type=int, default=6)
+    g.add_argument("--ping", action="store_true", help="only check that the key works")
     args = p.parse_args()
     {"fetch": cmd_fetch, "pending": cmd_pending, "add-summary": cmd_add_summary,
      "build": cmd_build, "summarize": cmd_summarize,
