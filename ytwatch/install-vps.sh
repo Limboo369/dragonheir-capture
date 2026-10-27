@@ -6,7 +6,7 @@ BRANCH="${YTWATCH_BRANCH:-main}"
 RAW="https://raw.githubusercontent.com/Limboo369/dragonheir-capture/$BRANCH/ytwatch"
 DIR=~/ytwatch
 mkdir -p "$DIR/out" && cd "$DIR"
-for f in ytwatch.py run.sh SUMMARY_PROMPT.md hero-names.json; do curl -fsSL "$RAW/$f" -o "$f"; done
+for f in ytwatch.py run.sh SUMMARY_PROMPT.md hero-names.json dashboard.html; do curl -fsSL "$RAW/$f" -o "$f"; done
 [ -f channels.json ] || curl -fsSL "$RAW/channels.json" -o channels.json
 chmod +x run.sh
 
@@ -19,6 +19,8 @@ if ! grep -q '^GEMINI_API_KEY=.' .env 2>/dev/null; then
   touch .env && chmod 600 .env
   sed -i '/^GEMINI_API_KEY=/d' .env && echo "GEMINI_API_KEY=$K" >> .env
 fi
+touch .env && chmod 600 .env
+sed -i '/^YTWATCH_BRANCH=/d' .env && echo "YTWATCH_BRANCH=$BRANCH" >> .env
 
 # Read-only web page with the notes (not the videos) on port 8790
 tee /etc/systemd/system/ytwatch-web.service >/dev/null <<UNIT

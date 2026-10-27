@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dragonheir Watch</title>
+<style>
+:root{--bg:#f4f5fb;--card:#fff;--ink:#1d2033;--mute:#6b7090;--line:#e6e8f2;--acc:#6c63ff;--acc2:#ece9ff;
+--s1:#1f9d6b;--s1b:#e2f6ee;--s9:#c46a12;--s9b:#fdf0e1;--mx:#4b6bd6;--mxb:#e6edff;--bad:#d64545;--badb:#fde8e8}
+@media (prefers-color-scheme:dark){:root{--bg:#12131c;--card:#1b1d2a;--ink:#e9eaf5;--mute:#9a9fbd;--line:#2a2d40;
+--acc:#9a93ff;--acc2:#2a2750;--s1:#4fd39e;--s1b:#163428;--s9:#f0a35a;--s9b:#3a2a17;--mx:#8aa4ff;--mxb:#1f2a4d;--bad:#ff8080;--badb:#3d1f22}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{padding:20px 16px 8px;max-width:1100px;margin:auto}
+h1{margin:0;font-size:22px;letter-spacing:.2px}
+h1 span{color:var(--acc)}
+.stats{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:8px 12px;min-width:92px}
+.stat b{display:block;font-size:18px}.stat small{color:var(--mute)}
+.stat.bad b{color:var(--bad)}
+nav{position:sticky;top:0;z-index:5;background:var(--bg);max-width:1100px;margin:auto;padding:10px 16px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+nav button{border:0;background:var(--card);color:var(--mute);padding:8px 14px;border-radius:999px;font:inherit;cursor:pointer;border:1px solid var(--line)}
+nav button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+nav .sp{flex:1}
+input,select{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:7px 12px}
+label.tg{color:var(--mute);font-size:13px;display:flex;gap:6px;align-items:center;cursor:pointer}
+main{max-width:1100px;margin:auto;padding:4px 16px 40px}
+.grid{display:grid;align-items:start;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;cursor:pointer;transition:transform .12s}
+.card:hover{transform:translateY(-2px)}
+.card img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:var(--line)}
+.cb{padding:10px 12px 12px}
+.ct{font-weight:600;font-size:14px;margin:0 0 6px}
+.meta{color:var(--mute);font-size:12px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.b{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--acc2);color:var(--acc)}
+.b.S1{background:var(--s1b);color:var(--s1)}.b.S9{background:var(--s9b);color:var(--s9)}.b.mixed{background:var(--mxb);color:var(--mx)}
+.b.low{opacity:.6}
+.chips{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+.chip{font-size:12px;color:inherit;text-decoration:none;background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:2px 9px}
+.more{display:none;border-top:1px solid var(--line);padding:10px 12px 12px;font-size:14px}
+.card.open .more{display:block}
+.more h4{margin:10px 0 4px;font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--mute)}
+.more ul{margin:0;padding-left:18px}.more p{margin:0}
+.more a{color:var(--acc)}
+table{width:100%;border-collapse:separate;border-spacing:0 8px}
+td{background:var(--card);padding:10px 12px;vertical-align:top;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+td:first-child{border-left:1px solid var(--line);border-radius:14px 0 0 14px;font-weight:600;width:170px}
+td:last-child{border-right:1px solid var(--line);border-radius:0 14px 14px 0}
+.v{margin:2px 0}.v small{color:var(--mute)}
+.list .row{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:8px}
+.row small{color:var(--mute)}
+.empty{color:var(--mute);text-align:center;padding:40px}
+.err{color:var(--bad);font-size:12px}
+@media (max-width:560px){td:first-child{width:auto}nav .sp{display:none}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Dragonheir <span>Watch</span></h1>
+  <div class="stats" id="stats"></div>
+</header>
+<nav>
+  <button data-t="videos" class="on">Videos</button>
+  <button data-t="heroes">Heroes</button>
+  <button data-t="teams">Teams</button>
+  <button data-t="tips">Tips</button>
+  <button data-t="status">Status</button>
+  <span class="sp"></span>
+  <input id="q" placeholder="Search…" size="12">
+  <select id="ch"><option value="">All channels</option></select>
+  <label class="tg"><input type="checkbox" id="s1">S1 only</label>
+</nav>
+<main id="main"></main>
+<script>
+let D={videos:[],heroes:{}},S={},tab="videos";
+const $=s=>document.querySelector(s),esc=t=>String(t??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const ago=t=>{if(!t)return"–";const m=(Date.now()-Date.parse(t.replace(/Z?$/,"Z")))/6e4;return m<60?Math.round(m)+"m ago":m<1440?Math.round(m/60)+"h ago":Math.round(m/1440)+"d ago"};
+async function load(){
+  try{D=await (await fetch("data/youtube.json?"+Date.now())).json()}catch(e){}
+  try{S=await (await fetch("data/status.json?"+Date.now())).json()}catch(e){}
+  const chs=[...new Set(D.videos.map(v=>v.channel))].sort();
+  $("#ch").innerHTML='<option value="">All channels</option>'+chs.map(c=>`<option>${esc(c)}</option>`).join("");
+  const c=S.counts||{},queue=(c.new||0)+(c.retry||0),bad=(S.problems||[]).filter(p=>p.status=="failed").length;
+  $("#stats").innerHTML=[["Notes",D.videos.length],["Heroes",Object.keys(D.heroes).length],["Queue",queue],
+    ["Updated",ago(S.built)],["Failed",bad,bad?"bad":""]].map(([k,v,cl])=>`<div class="stat ${cl||""}"><b>${v}</b><small>${k}</small></div>`).join("");
+  render();
+}
+function vids(){
+  const q=$("#q").value.toLowerCase(),ch=$("#ch").value,s1=$("#s1").checked;
+  return D.videos.filter(v=>(!ch||v.channel==ch)&&(!s1||v.server_scope!="S9")&&
+    (!q||JSON.stringify(v).toLowerCase().includes(q)));
+}
+function render(){
+  const m=$("#main"),V=vids();
+  if(tab=="videos"){
+    m.innerHTML=V.length?'<div class="grid">'+V.map(v=>`<div class="card" onclick="this.classList.toggle('open')">
+      <img loading="lazy" src="https://i.ytimg.com/vi/${esc(v.id)}/mqdefault.jpg" alt="">
+      <div class="cb"><p class="ct">${esc(v.title)}</p>
+      <div class="meta">${esc(v.channel)} · ${esc(v.published.slice(0,10))}
+        <span class="b ${esc(v.server_scope)}">${esc(v.server_scope)}</span><span class="b ${esc(v.value)}">${esc(v.value)}</span></div>
+      <div class="chips">${v.heroes.slice(0,8).map(h=>`<span class="chip">${esc(h.name)}</span>`).join("")}</div></div>
+      <div class="more"><p>${esc(v.summary)}</p>
+      ${v.heroes.length?`<h4>Heroes</h4><ul>${v.heroes.map(h=>`<li><b>${esc(h.name)}</b>: ${esc(h.verdict)}${h.note?` <small>— ${esc(h.note)}</small>`:""}</li>`).join("")}</ul>`:""}
+      ${v.teams.length?`<h4>Teams</h4><ul>${v.teams.map(t=>`<li><b>${esc(t.mode)}</b>: ${esc(t.heroes.join(", "))}${t.note?` <small>— ${esc(t.note)}</small>`:""}</li>`).join("")}</ul>`:""}
+      ${v.meta_changes.length?`<h4>Meta</h4><ul>${v.meta_changes.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}
+      ${v.tips.length?`<h4>Tips</h4><ul>${v.tips.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}
+      <h4>Source</h4><a href="${esc(v.url)}" target="_blank" onclick="event.stopPropagation()">Watch on YouTube ↗</a></div></div>`).join("")+"</div>"
+      :'<div class="empty">No notes yet</div>';
+  }else if(tab=="heroes"){
+    const H={};V.forEach(v=>v.heroes.forEach(h=>(H[h.name]=H[h.name]||[]).push({...h,channel:v.channel,date:v.published.slice(0,10),url:v.url})));
+    const names=Object.keys(H).sort((a,b)=>H[b].length-H[a].length||a.localeCompare(b));
+    m.innerHTML=names.length?"<table>"+names.map(n=>`<tr><td>${esc(n)}<br><small class="b">${H[n].length}×</small></td><td>${
+      H[n].sort((a,b)=>b.date.localeCompare(a.date)).map(x=>`<div class="v">${esc(x.verdict)} <small>· <a href="${esc(x.url)}" target="_blank">${esc(x.channel)}</a>, ${esc(x.date)}</small></div>`).join("")}</td></tr>`).join("")+"</table>"
+      :'<div class="empty">No heroes yet</div>';
+  }else if(tab=="teams"){
+    const T=V.flatMap(v=>v.teams.map(t=>({...t,v})));
+    m.innerHTML=T.length?'<div class="list">'+T.map(t=>`<div class="row"><b>${esc(t.mode)}</b><div class="chips">${t.heroes.map(h=>`<span class="chip">${esc(h)}</span>`).join("")}</div>
+      ${t.note?`<p>${esc(t.note)}</p>`:""}<small>${esc(t.v.channel)} · ${esc(t.v.published.slice(0,10))} · <a href="${esc(t.v.url)}" target="_blank">video</a> · <span class="b ${esc(t.v.server_scope)}">${esc(t.v.server_scope)}</span></small></div>`).join("")+"</div>"
+      :'<div class="empty">No teams yet</div>';
+  }else if(tab=="tips"){
+    const T=V.flatMap(v=>[...v.meta_changes.map(x=>["Meta",x,v]),...v.tips.map(x=>["Tip",x,v])]);
+    m.innerHTML=T.length?'<div class="list">'+T.map(([k,x,v])=>`<div class="row"><span class="b">${k}</span> ${esc(x)}<br><small>${esc(v.channel)} · ${esc(v.published.slice(0,10))} · <a href="${esc(v.url)}" target="_blank">video</a></small></div>`).join("")+"</div>"
+      :'<div class="empty">No tips yet</div>';
+  }else{
+    const c=S.counts||{};
+    m.innerHTML=`<div class="list"><div class="row"><b>Last update</b> ${esc(S.built||"–")} <small>(${ago(S.built)}) · runs every 3 hours</small></div>
+      <div class="row"><b>Videos</b><div class="chips">${Object.entries(c).map(([k,v])=>`<span class="chip">${esc(k)}: ${v}</span>`).join("")}</div></div>
+      <div class="row"><b>Channels</b><div class="chips">${(S.channels||[]).map(x=>`<a class="chip" href="https://www.youtube.com/channel/${esc(x.id)}" target="_blank">${esc(x.name)}</a>`).join("")}</div></div>
+      ${(S.problems||[]).map(p=>`<div class="row"><span class="b">${esc(p.status)}</span> ${esc(p.title)} <small>· ${esc(p.channel)}</small><div class="err">${esc(p.error)}</div></div>`).join("")}</div>`;
+  }
+}
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("on",x==b));tab=b.dataset.t;render()});
+["#q","#ch","#s1"].forEach(s=>$(s).addEventListener("input",render));
+load();setInterval(load,5*60e3);
+</script>
+</body>
+</html>
