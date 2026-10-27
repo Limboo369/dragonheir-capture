@@ -13,7 +13,7 @@ if [ "$1" != "--updated" ]; then
   # Self-update from GitHub, so fixes arrive without logging in to the server.
   # Files are swapped with mv (safe while this script runs), then the new run.sh takes over.
   RAW="https://raw.githubusercontent.com/Limboo369/dragonheir-capture/${YTWATCH_BRANCH:-main}/ytwatch"
-  for f in ytwatch.py run.sh SUMMARY_PROMPT.md hero-names.json channels.json dashboard.html; do
+  for f in ytwatch.py run.sh SUMMARY_PROMPT.md hero-names.json channels.json dashboard.html backlog.json; do
     curl -fsSL "$RAW/$f?$(date +%s)" -o ".$f.new" && [ -s ".$f.new" ] && mv ".$f.new" "$f" || rm -f ".$f.new"
   done
   chmod +x run.sh
@@ -38,6 +38,7 @@ date -u "+== %F %H:%M"
 if [ -n "$GEMINI_API_KEY" ]; then
   # Gemini watches the videos by URL, so YouTube's block on this server's IP doesn't matter
   venv/bin/python -u ytwatch.py fetch --discover-only
+  venv/bin/python -u ytwatch.py backlog
   venv/bin/python -u ytwatch.py gemini
 else
   venv/bin/python -u ytwatch.py fetch

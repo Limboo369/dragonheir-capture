@@ -161,6 +161,28 @@ def cmd_fetch(args):
     print(f"fetch done: {got} new transcripts, {failed} not available yet")
 
 
+SKIP_TITLE = re.compile(r"giveaway|winners|you won|prize draw", re.I)
+
+
+def cmd_backlog(args):
+    """Queue older videos listed in backlog.json (made with yt-dlp's channel listing)."""
+    state = load(STATE, {"videos": {}, "channels": {}})
+    added = 0
+    for v in load(ROOT / "backlog.json", []):
+        rec = state["videos"].get(v["id"])
+        if rec and rec["status"] != "baseline":
+            continue
+        state["videos"][v["id"]] = {
+            "status": "skipped_giveaway" if SKIP_TITLE.search(v["title"]) else "new", "tries": 0,
+            "channel": v["channel"], "channel_id": v["channel_id"], "title": v["title"],
+            "published": v["published"], "url": f"https://www.youtube.com/watch?v={v['id']}",
+            "short": False, "duration_s": v.get("duration_s", 0), "found": now(), "source": "backlog"}
+        added += 1
+    save(STATE, state)
+    if added:
+        print(f"backlog: {added} videos queued")
+
+
 def cmd_pending(args):
     state = load(STATE, {"videos": {}})
     rows = [(vid, r) for vid, r in state["videos"].items() if r["status"] == "transcribed"]
@@ -303,14 +325,26 @@ def cmd_gemini(args):
     prompt = (ROOT / "SUMMARY_PROMPT.md").read_text(encoding="utf-8")
     names = ", ".join(load(HERO_NAMES, []))
     state = load(STATE, {"videos": {}})
+    # Free tier: about 8 hours of YouTube video per day. Track it so we stop before Google says no.
+    today = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d")
+    budget = state.setdefault("budget", {})
+    if budget.get("day") != today:
+        budget.update(day=today, seconds=0)
+    limit_s = int(os.environ.get("YTWATCH_DAILY_SECONDS", 7 * 3600 + 1800))
     todo = []
-    for _, vid in sorted((r["published"], vid) for vid, r in state["videos"].items()
-                         if r["status"] in ("new", "retry", "no_transcript")):
+    for _, vid in sorted(((r["published"], vid) for vid, r in state["videos"].items()
+                          if r["status"] in ("new", "retry", "no_transcript")), reverse=True):
         rec = state["videos"][vid]
         if LIVE.search(rec["title"]):
             rec["status"] = "skipped_live"   # multi-hour streams would eat the daily video quota
-        elif len(todo) < args.limit:
-            todo.append(vid)
+            continue
+        cost = rec.get("duration_s") or 1200
+        if len(todo) >= args.limit or budget["seconds"] + cost > limit_s:
+            break
+        budget["seconds"] += cost
+        todo.append(vid)
+    if not todo and budget["seconds"]:
+        print(f"daily video budget used ({budget['seconds'] // 60} min), waiting for tomorrow")
     save(STATE, state)
 
     def watch(vid):
@@ -348,6 +382,13 @@ def cmd_gemini(args):
             except Exception as e:
                 msg = str(e)[:200]
                 print(f"! {rec['title'][:50]}: {type(e).__name__}: {msg}")
+                if "429" in msg or "RESOURCE_EXHAUSTED" in msg:
+                    # quota, not the video's fault: try again later, close today's budget
+                    rec["gtries"] -= 1
+                    rec["status"] = "retry"
+                    state.setdefault("budget", {}).update(day=today, seconds=limit_s)
+                    save(STATE, state)
+                    continue
                 rec["status"] = "retry" if rec["gtries"] < 3 else "failed"
                 rec["error"] = msg
                 save(STATE, state)
@@ -439,6 +480,7 @@ def main():
     f.add_argument("--discover-only", action="store_true",
                    help="only record new videos (for the gemini command), no transcripts")
     sp.add_parser("pending")
+    sp.add_parser("backlog")
     a = sp.add_parser("add-summary")
     a.add_argument("file")
     sp.add_parser("build")
@@ -451,7 +493,7 @@ def main():
     args = p.parse_args()
     {"fetch": cmd_fetch, "pending": cmd_pending, "add-summary": cmd_add_summary,
      "build": cmd_build, "summarize": cmd_summarize,
-     "gemini": cmd_gemini}[args.cmd](args)
+     "gemini": cmd_gemini, "backlog": cmd_backlog}[args.cmd](args)
 
 
 if __name__ == "__main__":
