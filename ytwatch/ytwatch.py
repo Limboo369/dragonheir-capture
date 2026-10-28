@@ -77,6 +77,24 @@ def read_feed(channel_id):
     return out
 
 
+def read_listing(channel_id, n=15):
+    """Fallback when the RSS feed fails (YouTube's feeds return 404 for hours at a time):
+    the channel's Videos tab through yt-dlp. Upload dates are approximate ("2 days ago")."""
+    import yt_dlp
+    opts = {"extract_flat": True, "playlistend": n, "quiet": True, "no_warnings": True,
+            "extractor_args": {"youtubetab": {"approximate_date": [""]}}}
+    with yt_dlp.YoutubeDL(opts) as ydl:
+        info = ydl.extract_info(f"https://www.youtube.com/channel/{channel_id}/videos", download=False)
+    out = []
+    for e in info.get("entries") or []:
+        d = e.get("upload_date") or dt.datetime.now(dt.timezone.utc).strftime("%Y%m%d")
+        out.append({"id": e["id"], "title": e.get("title") or "",
+                    "published": f"{d[:4]}-{d[4:6]}-{d[6:]}T12:00:00+00:00",
+                    "url": f"https://www.youtube.com/watch?v={e['id']}", "short": False,
+                    "description": "", "duration_s": int(e.get("duration") or 0)})
+    return out
+
+
 def wanted(video, ch):
     kw = [k.lower() for k in ch.get("keywords", ["dragonheir"])]
     text = (video["title"] + " " + video["description"]).lower()
@@ -116,8 +134,11 @@ def cmd_fetch(args):
         try:
             feed = read_feed(ch["id"])
         except Exception as e:
-            print(f"! feed {ch['name']}: {e}")
-            continue
+            try:
+                feed = read_listing(ch["id"])
+            except Exception as e2:
+                print(f"! {ch['name']}: feed {e}; listing {type(e2).__name__}: {str(e2)[:120]}")
+                continue
         first_run = ch["id"] not in state["channels"]
         state["channels"][ch["id"]] = {"name": ch["name"], "checked": now()}
         relevant = [v for v in feed if wanted(v, ch)]
@@ -130,7 +151,7 @@ def cmd_fetch(args):
                 rec = state["videos"][v["id"]] = {
                     "status": "new", "tries": 0, "channel": ch["name"], "channel_id": ch["id"],
                     "title": v["title"], "published": v["published"], "url": v["url"],
-                    "short": v["short"], "found": now()}
+                    "short": v["short"], "found": now(), "duration_s": v.get("duration_s", 0)}
             if rec["status"] not in ("new", "retry") or args.discover_only:
                 continue
             rec["tries"] = rec.get("tries", 0) + 1

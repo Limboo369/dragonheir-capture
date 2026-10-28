@@ -34,7 +34,7 @@ main{max-width:1100px;margin:auto;padding:4px 16px 40px}
 .meta{color:var(--mute);font-size:12px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .b{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--acc2);color:var(--acc)}
 .b.S1{background:var(--s1b);color:var(--s1)}.b.S9{background:var(--s9b);color:var(--s9)}.b.mixed{background:var(--mxb);color:var(--mx)}
-.b.low{opacity:.6}
+.b.low{opacity:.6}.b.bad{background:var(--badb);color:var(--bad)}
 .chips{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
 .chip{font-size:12px;color:inherit;text-decoration:none;background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:2px 9px}
 .more{display:none;border-top:1px solid var(--line);padding:10px 12px 12px;font-size:14px}
@@ -72,17 +72,19 @@ td:last-child{border-right:1px solid var(--line);border-radius:0 14px 14px 0}
 </nav>
 <main id="main"></main>
 <script>
-let D={videos:[],heroes:{}},S={},tab="videos";
+let D={videos:[],heroes:{}},S={},LR={},LU={},tab="videos";
 const $=s=>document.querySelector(s),esc=t=>String(t??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const ago=t=>{if(!t)return"–";const m=(Date.now()-Date.parse(t.replace(/Z?$/,"Z")))/6e4;return m<60?Math.round(m)+"m ago":m<1440?Math.round(m/60)+"h ago":Math.round(m/1440)+"d ago"};
 async function load(){
   try{D=await (await fetch("data/youtube.json?"+Date.now())).json()}catch(e){}
   try{S=await (await fetch("data/status.json?"+Date.now())).json()}catch(e){}
+  try{LR=await (await fetch("data/last_run.json?"+Date.now())).json()}catch(e){LR={}}
+  try{LU=await (await fetch("data/last_update.json?"+Date.now())).json()}catch(e){LU={}}
   const chs=[...new Set(D.videos.map(v=>v.channel))].sort();
   $("#ch").innerHTML='<option value="">All channels</option>'+chs.map(c=>`<option>${esc(c)}</option>`).join("");
   const c=S.counts||{},queue=(c.new||0)+(c.retry||0),bad=(S.problems||[]).filter(p=>p.status=="failed").length;
   $("#stats").innerHTML=[["Notes",D.videos.length],["Heroes",Object.keys(D.heroes).length],["Queue",queue],
-    ["Updated",ago(S.built)],["Failed",bad,bad?"bad":""]].map(([k,v,cl])=>`<div class="stat ${cl||""}"><b>${v}</b><small>${k}</small></div>`).join("");
+    ["Last round",ago(LR.time||S.built)],["Failed",bad,bad?"bad":""]].map(([k,v,cl])=>`<div class="stat ${cl||""}"><b>${v}</b><small>${k}</small></div>`).join("");
   render();
 }
 function vids(){
@@ -123,10 +125,15 @@ function render(){
       :'<div class="empty">No tips yet</div>';
   }else{
     const c=S.counts||{};
-    m.innerHTML=`<div class="list"><div class="row"><b>Last update</b> ${esc(S.built||"–")} <small>(${ago(S.built)}) · videos every hour, updates every 10 min</small></div>
+    const run=(x,label)=>`<div class="row"><b>${label}</b> ${x.time?`${esc(x.time)} <small>(${ago(x.time)})</small> <span class="b ${x.exit?"bad":"S1"}">${x.exit?"exit "+x.exit:"OK"}</span>`:"<small>no record yet</small>"}</div>`;
+    const bud=S.budget||{};
+    m.innerHTML=`<div class="list">${run(LR,"Last video round")}${run(LU,"Last code update")}
+      <div class="row"><b>Schedule</b> <small>videos every hour at :17 · code updates every 10 min · Gemini budget today: ${Math.round((bud.seconds||0)/60)} / 450 min</small></div>
+      <div class="row"><b>Dashboard data built</b> ${esc(S.built||"–")} <small>(${ago(S.built)})</small></div>
       <div class="row"><b>Videos</b><div class="chips">${Object.entries(c).map(([k,v])=>`<span class="chip">${esc(k)}: ${v}</span>`).join("")}</div></div>
       <div class="row"><b>Channels</b><div class="chips">${(S.channels||[]).map(x=>`<a class="chip" href="https://www.youtube.com/channel/${esc(x.id)}" target="_blank">${esc(x.name)}</a>`).join("")}</div></div>
-      ${(S.problems||[]).map(p=>`<div class="row"><span class="b">${esc(p.status)}</span> ${esc(p.title)} <small>· ${esc(p.channel)}</small><div class="err">${esc(p.error)}</div></div>`).join("")}</div>`;
+      ${(S.problems||[]).map(p=>`<div class="row"><span class="b">${esc(p.status)}</span> ${esc(p.title)} <small>· ${esc(p.channel)}</small><div class="err">${esc(p.error)}</div></div>`).join("")}
+      ${(S.log_tail||[]).length?`<div class="row"><b>Log</b><pre style="white-space:pre-wrap;font-size:12px;margin:6px 0 0">${esc(S.log_tail.join("\n"))}</pre></div>`:""}</div>`;
   }
 }
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("on",x==b));tab=b.dataset.t;render()});
