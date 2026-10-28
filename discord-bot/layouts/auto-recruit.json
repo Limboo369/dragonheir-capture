@@ -1,0 +1,5 @@
+[
+  {"do": "edit", "channel": "welcome",
+   "find": "An Officer will give you the **Recruit** role and the guild channels will open",
+   "to": "You get the **Recruit** role automatically and the guild channels open"}
+]

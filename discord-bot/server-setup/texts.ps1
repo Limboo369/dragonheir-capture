@@ -40,7 +40,7 @@ $Posts = @{
     welcome = @(@{
         title = '👋 Welcome to the guild!'
         color = 0xF1C40F
-        description = "We play **Dragonheir: Silent Gods** together.`n`n**1.** Read the rules in {rules}`n**2.** Introduce yourself in {recruitment} with your in-game name and level`n**3.** An Officer will give you the **Recruit** role and the guild channels will open`n`nHave fun and good luck with your pulls! 🐉"
+        description = "We play **Dragonheir: Silent Gods** together.`n`n**1.** Read the rules in {rules}`n**2.** Introduce yourself in {recruitment} with your in-game name and level`n**3.** You get the **Recruit** role automatically and the guild channels open`n`nHave fun and good luck with your pulls! 🐉"
     })
     rules = @(@{
         title = '📜 Guild rules'

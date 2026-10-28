@@ -4,7 +4,7 @@ Features
 - Reminders posted to the announcements channel (Alliance Rally, Golden Wing, Sparkle Tournament, GvE), /reminder
 - Events and summon banners board: official Steam calendars read automatically, Beginner Season days (/event serverday),
   officers' /event add and /event scan (screenshot); /events for everyone
-- Welcome post for new players with buttons to give Recruit/Member, /promote
+- New players get the Recruit role automatically; welcome post with a Make Member button, /promote
 - /hero <name>   hero card: tier, element, school, best gear sets and artifacts
 - /school <name> best heroes of one school
 - /ask <question> Dragonheir questions answered by Claude, with per-user and server-wide daily limits
@@ -766,6 +766,13 @@ async def events_cmd(interaction: discord.Interaction):
 async def on_member_join(member: discord.Member):
     if member.bot:
         return
+    # everyone who joins becomes Recruit right away; officers promote to Member later
+    recruit = discord.utils.get(member.guild.roles, name="Recruit")
+    if recruit:
+        try:
+            await member.add_roles(recruit, reason="Joined the server")
+        except discord.Forbidden:
+            log.warning("Can't give Recruit: move REGAL Bot above Recruit in Server Settings > Roles")
     ch = find_channel(member.guild, "recruitment") or find_channel(member.guild, "welcome")
     if not ch:
         return
@@ -774,12 +781,11 @@ async def on_member_join(member: discord.Member):
         title=f"👋 Welcome, {member.display_name}!",
         description=(f"Please read {rules.mention if rules else 'the rules'} and tell us here:\n"
                      "• In-game name\n• Player level\n• Server\n\n"
-                     "An Officer will give you the **Recruit** role and the guild channels will open."),
+                     "You are now a 🌱 **Recruit** and the guild channels are open. "
+                     "An Officer will make you a **Member** once you've joined the alliance in the game."),
         color=0x2ECC71)
     e.set_thumbnail(url=member.display_avatar.url)
     view = discord.ui.View(timeout=None)
-    view.add_item(discord.ui.Button(label="Make Recruit", emoji="🌱", style=discord.ButtonStyle.success,
-                                    custom_id=f"{PROMOTE_PREFIX}Recruit:{member.id}"))
     view.add_item(discord.ui.Button(label="Make Member", emoji="⚔️", style=discord.ButtonStyle.primary,
                                     custom_id=f"{PROMOTE_PREFIX}Member:{member.id}"))
     await ch.send(content=member.mention, embed=e, view=view)

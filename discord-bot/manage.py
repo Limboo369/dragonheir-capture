@@ -7,6 +7,7 @@ The JSON is one action or a list of actions:
    "topic": "...", "access": "guild"}            type: text | voice | forum (forum takes "tags": ["Boss", ...])
   {"do": "rename", "name": "old-name", "to": "new-name"}
   {"do": "post", "channel": "announcements", "title": "...", "text": "...", "pin": true}
+  {"do": "edit", "channel": "welcome", "find": "old words", "to": "new words"}   changes a bot post
   {"do": "delete", "name": "old-channel"}         asks for confirmation
 access: public (everyone), readonly (everyone reads, officers write), guild (guild roles only),
         guildann (guild reads, officers write), commands (guild reads, only slash commands),
@@ -147,6 +148,19 @@ def run(server, a):
                 except SystemExit:
                     print("  (could not pin the message)")
         print(f"> posted in {c['name']}")
+    elif do == "edit":   # change a bot post: replace text inside its embed
+        c = server.find(a["channel"])
+        if not c:
+            raise SystemExit(f"No channel called {a['channel']}")
+        for msg in call("GET", f"/channels/{c['id']}/messages?limit=50"):
+            embeds = msg.get("embeds") or []
+            if msg["author"].get("bot") and embeds and a["find"] in embeds[0].get("description", ""):
+                embed = dict(embeds[0], description=embeds[0]["description"].replace(a["find"], a["to"]))
+                call("PATCH", f"/channels/{c['id']}/messages/{msg['id']}", {"embeds": [embed]})
+                print(f"~ edited post in {c['name']}")
+                break
+        else:
+            print(f"= no post in {c['name']} contains that text (maybe already changed)")
     elif do == "delete":
         c = server.find(a["name"])
         if not c:
