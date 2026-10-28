@@ -1,6 +1,6 @@
 # Dragonheir creator knowledge (check this FIRST)
 
-Digest of 37 YouTube videos from Fastidious Dragonheir, Gorax, Neff Gaming, OddOneGaming RPGs, Skratch Gaming, Skyasterix Gaming, Suzi Plays, Volkin Dragonheir, liveranov. Updated 2026-10-28T10:57Z UTC, newest video 2026-10-28. Written by Claude from Gemini notes of each video; every verdict names its channels and date.
+Digest of 38 YouTube videos from Fastidious Dragonheir, Gorax, Neff Gaming, OddOneGaming RPGs, Skratch Gaming, Skyasterix Gaming, Suzi Plays, Volkin Dragonheir, liveranov. Updated 2026-10-28T18:02Z UTC, newest video 2026-10-28. Written by Claude from Gemini notes of each video; every verdict names its channels and date.
 
 How to use: answer from this file first. Use other sources (site tier lists, knowledge base) only for what it does not cover, and say when you do. The player is on a NEW server in Beginner Season 1: hero strength carries over, but Season 9 bosses, sets, banners and new S9 heroes do not; prefer lines marked S1 ok.
 
@@ -49,7 +49,7 @@ The newest videos (Oct 19-28) focus on Season 9: Aura teams led by Talethia are 
 - **Blah Blah**: Overall B. liveranov: top solo tank for Toxin on Mekkatorque Phase 2. [partly S1 (Most verdicts come from the Season 8/9 Mekkatorque boss.); confidence low; 1 videos, liveranov; last 2026-10-28]
 - **Calavera**: Overall B. liveranov: key Toxin support in 1.5B runs. [partly S1 (Most verdicts come from the Season 8/9 Mekkatorque boss.); confidence low; 1 videos, liveranov; last 2026-10-28]
 - **Caroux**: Arena A, Overall B. Skyasterix: powerful Arena support (control immunity, shields, damage reduction). [S1 ok; confidence low; 1 videos, Skyasterix Gaming; last 2026-10-23]
-- **Celestine**: Overall S, Temporal Vortex S. New Season 9 Ice/Aura tank rated top-tier by 6 channels: stores damage to heal, raises team Max HP. Volkin calls her too expensive for F2P when Solmo is enough. [S9 only (A Season 9 hero; it may not be summonable on a new Season 1 server.); confidence high; 9 videos, Fastidious Dragonheir, Gorax, Neff Gaming, Skratch Gaming, Skyasterix Gaming, Volkin Dragonheir; last 2026-10-28]
+- **Celestine**: Overall S, Temporal Vortex S. New Season 9 Ice/Aura tank rated top-tier by 6 channels: stores damage to heal, raises team Max HP. Volkin calls her too expensive for F2P when Solmo is enough. liveranov (Oct 26) rates Celestine S-tier for survival, support and PvE, but the targeted banner ends Oct 28. [S9 only (A Season 9 hero; it may not be summonable on a new Season 1 server.); confidence high; 10 videos, Fastidious Dragonheir, Gorax, Neff Gaming, Skratch Gaming, Skyasterix Gaming, Volkin Dragonheir, liveranov; last 2026-10-28]
 - **Cervinia**: Overall C. Fastidious: decent free Epic support. [S1 ok; confidence low; 1 videos, Fastidious Dragonheir; last 2026-10-22]
 - **Child of Chaos**: Overall S. Versatile support named by 7 channels: switches element, ignores resistance, cleanses and controls; core in Aura, Toxin, Corrosion and Shadow teams. Needs 80+ Skill Haste. [S1 ok; confidence high; 9 videos, Fastidious Dragonheir, Gorax, Neff Gaming, OddOneGaming RPGs, Skratch Gaming, Skyasterix Gaming, Volkin Dragonheir; last 2026-10-28]
 - **Daphne**: Overall A. Top-tier Necrosis DPS (Neff) and a near-equal substitute for Saverio on Mekkatorque (liveranov). [partly S1 (Praise is for Shadow/Necrosis endgame teams; the Shadow school is not on a Season 1 server yet.); confidence medium; 4 videos, Neff Gaming, Skratch Gaming, liveranov; last 2026-10-28]
@@ -305,6 +305,7 @@ The newest videos (Oct 19-28) focus on Season 9: Aura teams led by Talethia are 
 - Tip (S9): Use Deluxe Mimic familiar to inflict an initial recharge penalty on bosses at the start of battle. [OddOneGaming RPGs, 2026-10-26]
 - Tip (S9): Position Anneliesis behind Vinyara to guarantee Vinyara receives the initial energy boost. [OddOneGaming RPGs, 2026-10-26]
 - Tip (S9): If Grave of Venom wipes your squad due to Lincos dying early, swap Lincos for a defensive tank like Ardreth or Eurion. [OddOneGaming RPGs, 2026-10-26]
+- Tip: Consider pulling for Celestine before his targeted summon banner ends on October 28. [liveranov, 2026-10-26]
 - Meta (S9): Season 9 Continental Challenge introduces six distinct bosses with specific faction, elemental, and positioning rules. [Neff Gaming, 2026-10-24]
 - Meta (S9): Amalfriede added as the milestone hero reward at 450 points in the Season 9 Continental Challenge. [Neff Gaming, 2026-10-24]
 - Tip (S9): Each hero on your roster can only be deployed once per week across all Continental Challenge bosses, so plan your compositions carefully. [Neff Gaming, 2026-10-24]
