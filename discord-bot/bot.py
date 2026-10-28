@@ -18,6 +18,7 @@ import os
 import re
 import sqlite3
 import sys
+import time
 import urllib.request
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -133,11 +134,45 @@ as they appear in the game. English is the default language. Answer in another l
 say so instead of guessing. Many members play on newer servers that start in Season 1, so season-bound content
 (gear sets, events, modes) may not be available to them yet; mention this when it matters.
 
+Sources, in this order: 1) the CREATOR ADVICE section at the end (digest of recent videos by top Dragonheir
+YouTube creators; follow its own How to use notes, and prefer lines marked S1 ok). Always check it first; when it covers the question, base your answer on it, and it wins over
+everything else. 2) The reference data below. 3) Your own memory, only when neither covers it.
+
 Reference data (AllClash Season 9 tier list and recommended builds, October 2026). Prefer it over memory:
 {knowledge_block()}
 """
 
 claude = anthropic.AsyncAnthropic(api_key=ANTHROPIC_KEY) if ANTHROPIC_KEY else None
+
+# Creator advice: the digested store if ADVICE_URL is set, else the local YouTube notes ytwatch builds on this VPS
+ADVICE_URL = os.environ.get("ADVICE_URL", "https://raw.githubusercontent.com/Limboo369/dragonheir-capture/claude/project-thread-s73ujw/ytwatch/companion/knowledge/creator-knowledge.md")
+ADVICE_FILE = Path(os.environ.get("ADVICE_FILE", "/root/ytwatch/out/youtube-knowledge.md"))
+ADVICE_MAX_CHARS = int(os.environ.get("ADVICE_MAX_CHARS", "150000"))
+_advice = {"text": "", "at": 0.0}
+
+
+async def creator_advice() -> str:
+    now = time.time()
+    if _advice["at"] and now - _advice["at"] < 1800:   # reload every 30 minutes
+        return _advice["text"]
+    text = ""
+    if ADVICE_URL:
+        try:
+            text = (await http_get(ADVICE_URL)).decode("utf-8")
+        except Exception as exc:
+            log.warning("Advice URL failed: %s", exc)
+    if not text and ADVICE_FILE.exists():
+        text = ADVICE_FILE.read_text(encoding="utf-8")
+    _advice.update(text=text[:ADVICE_MAX_CHARS], at=now)
+    return _advice["text"]
+
+
+def system_blocks(advice: str) -> list[dict]:
+    blocks = [{"type": "text", "text": SYSTEM_PROMPT, "cache_control": {"type": "ephemeral", "ttl": "1h"}}]
+    if advice:
+        blocks.append({"type": "text", "text": "CREATOR ADVICE (check this first):\n\n" + advice,
+                       "cache_control": {"type": "ephemeral", "ttl": "1h"}})
+    return blocks
 
 
 async def ask_claude(question: str) -> str:
@@ -145,7 +180,7 @@ async def ask_claude(question: str) -> str:
         model=MODEL,
         max_tokens=2000,
         output_config={"effort": "low"},
-        system=[{"type": "text", "text": SYSTEM_PROMPT, "cache_control": {"type": "ephemeral", "ttl": "1h"}}],
+        system=system_blocks(await creator_advice()),
         messages=[{"role": "user", "content": question}],
     )
     if response.stop_reason == "refusal":
