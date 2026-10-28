@@ -45,4 +45,9 @@ Notes: public repo Limboo369/dragonheir-watch-data, folder `notes/` (one Gemini 
 6. Write the docs in `/tmp/work/db/` to collection `yt` with ONE ArtifactData `batch`: `set` each file
    (doc id = file name without .json, `file_path` = the file), with `if_version` for docs that already
    exist; also `delete` the doc ids listed in `/tmp/work/delete.json`. On a version conflict, re-list and redo.
-7. Check: ArtifactData `get` yt/meta shows the new `built` time. Done.
+7. Check: ArtifactData `get` yt/meta shows the new `built` time.
+8. Write the single knowledge file every assistant reads first (project Claude threads, Companion Ask Claude,
+   REGAL Discord bot /ask): `python3 ytwatch/companion/to_md.py /tmp/work/db ytwatch/companion/knowledge/creator-knowledge.md`,
+   copy it to `/mnt/project-files/dragonheir/knowledge/creator-knowledge.md` when that folder exists, then commit only
+   that file and push to branch claude/project-thread-s73ujw (the bot fetches
+   https://raw.githubusercontent.com/Limboo369/dragonheir-capture/claude/project-thread-s73ujw/ytwatch/companion/knowledge/creator-knowledge.md). Done.
