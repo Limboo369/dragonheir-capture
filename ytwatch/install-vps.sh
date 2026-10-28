@@ -6,7 +6,7 @@ BRANCH="${YTWATCH_BRANCH:-main}"
 RAW="https://raw.githubusercontent.com/Limboo369/dragonheir-capture/$BRANCH/ytwatch"
 DIR=~/ytwatch
 mkdir -p "$DIR/out" && cd "$DIR"
-for f in ytwatch.py run.sh SUMMARY_PROMPT.md hero-names.json dashboard.html backlog.json; do curl -fsSL "$RAW/$f" -o "$f"; done
+for f in ytwatch.py run.sh SUMMARY_PROMPT.md hero-names.json dashboard.html backlog.json publish.sh web.py; do curl -fsSL "$RAW/$f" -o "$f"; done
 [ -f channels.json ] || curl -fsSL "$RAW/channels.json" -o channels.json
 chmod +x run.sh
 
@@ -28,12 +28,14 @@ tee /etc/systemd/system/ytwatch-web.service >/dev/null <<UNIT
 Description=Dragonheir YouTube watcher output
 After=network-online.target
 [Service]
-ExecStart=/usr/bin/python3 -m http.server 8790 --directory $DIR/out
+WorkingDirectory=$DIR
+ExecStart=/bin/bash -c '/usr/bin/python3 $DIR/web.py 8790 || exec /usr/bin/python3 -m http.server 8790 --directory $DIR/out'
+RestartSec=5
 Restart=always
 [Install]
 WantedBy=multi-user.target
 UNIT
-systemctl daemon-reload && systemctl enable --now ytwatch-web >/dev/null 2>&1
+systemctl daemon-reload && systemctl enable ytwatch-web >/dev/null 2>&1 && systemctl restart ytwatch-web && md5sum web.py | cut -c1-32 > .web.sum
 command -v ufw >/dev/null && ufw status | grep -q "Status: active" && ufw allow 8790/tcp >/dev/null
 
 # Schedule with systemd timers (cron did not fire on this server). Old cron lines are removed.

@@ -29,6 +29,7 @@ TRANSCRIPTS = ROOT / "transcripts"
 NOTES = ROOT / "notes"
 KNOWLEDGE = Path(os.environ.get("YTWATCH_OUT", ROOT.parent / "knowledge"))
 HERO_NAMES = ROOT / "hero-names.json"
+PRIORITY = ROOT / "priority.json"   # links pasted on the dashboard (web.py), watched first
 OUT_MD = KNOWLEDGE / "youtube-knowledge.md"
 OUT_JSON = KNOWLEDGE / "data" / "youtube.json"
 
@@ -374,6 +375,8 @@ def cmd_gemini(args):
     prompt = (ROOT / "SUMMARY_PROMPT.md").read_text(encoding="utf-8")
     names = ", ".join(load(HERO_NAMES, []))
     state = load(STATE, {"videos": {}})
+    if merge_priority(state):
+        save(STATE, state)
     # Free tier: about 8 hours of YouTube video per day. Track it so we stop before Google says no.
     today = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d")
     budget = state.setdefault("budget", {})
@@ -397,10 +400,9 @@ def cmd_gemini(args):
             rec.update(status="retry", gtries=0)   # the model was gone, not the video's fault
             rec.pop("error", None)
     todo = []
-    for _, vid in sorted(((r["published"], vid) for vid, r in state["videos"].items()
-                          if r["status"] in ("new", "retry", "no_transcript")), reverse=True):
+    for vid in queue_order(state):
         rec = state["videos"][vid]
-        if LIVE.search(rec["title"]):
+        if LIVE.search(rec["title"]) and not rec.get("priority"):
             rec["status"] = "skipped_live"   # multi-hour streams would eat the daily video quota
             continue
         cost = rec.get("duration_s") or 1200
@@ -479,6 +481,45 @@ def cmd_gemini(args):
                 save(STATE, state)
             tmp.unlink()
 
+# ---------- queue ----------
+
+QUEUED = ("new", "retry", "no_transcript")
+
+
+def queue_order(state):
+    """Video ids in the order Gemini watches them: pasted links first (newest paste first),
+    then everything else from the newest video to the oldest."""
+    q = [(bool(r.get("priority")), r.get("priority", 0), r.get("published", ""), vid)
+         for vid, r in state["videos"].items() if r["status"] in QUEUED]
+    return [vid for *_, vid in sorted(q, reverse=True)]
+
+
+def merge_priority(state):
+    """Moves pasted links from priority.json into the state, at the top of the queue."""
+    import fcntl
+    with open(ROOT / ".priority.lock", "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        items = load(PRIORITY, [])
+        for it in items:
+            rec = state["videos"].get(it["id"])
+            if rec and rec["status"] == "summarized":
+                continue
+            if rec is None:
+                rec = state["videos"][it["id"]] = {
+                    "channel": it.get("channel", ""), "channel_id": "", "title": it.get("title", ""),
+                    "published": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S+00:00"),
+                    "url": f"https://www.youtube.com/watch?v={it['id']}", "short": False,
+                    "found": now(), "duration_s": 0}
+            for k in ("channel", "title", "url", "published"):
+                rec.setdefault(k, "")
+            rec.setdefault("short", False)
+            rec.update(status="new", tries=0, gtries=0, priority=it["added"])
+            rec.pop("error", None)
+        if items:
+            PRIORITY.write_text("[]", encoding="utf-8")
+    return len(items)
+
+
 # ---------- build ----------
 
 def tail(path, n):
@@ -516,6 +557,17 @@ def cmd_build(args):
         "channels": [{"name": c["name"], "id": c["id"], "enabled": c.get("enabled", True),
                       "checked": state["channels"].get(c["id"], {}).get("checked")}
                      for c in load(CHANNELS, [])]})
+    # the whole waiting list, in the order it will be watched; pasted links not merged yet go first
+    pending = [{"id": it["id"], "title": it.get("title", ""), "channel": it.get("channel", ""),
+                "published": "", "status": "pasted", "priority": True, "duration_s": 0}
+               for it in reversed(load(PRIORITY, []))]
+    seen = {p["id"] for p in pending}
+    save(KNOWLEDGE / "data" / "queue.json", {"built": now(), "videos": pending + [
+        {"id": vid, "title": r.get("title", ""), "channel": r.get("channel", ""),
+         "published": r.get("published", ""), "status": r["status"], "priority": bool(r.get("priority")),
+         "duration_s": r.get("duration_s") or 0, "error": r.get("error", "")[:120]}
+        for vid in queue_order(state) if vid not in seen
+        for r in [state["videos"][vid]]]})
     dash = ROOT / "dashboard.html"
     if dash.exists():
         (KNOWLEDGE / "index.html").write_text(dash.read_text(encoding="utf-8"), encoding="utf-8")

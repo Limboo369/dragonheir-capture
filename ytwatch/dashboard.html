@@ -64,6 +64,7 @@ td:last-child{border-right:1px solid var(--line);border-radius:0 14px 14px 0}
   <button data-t="heroes">Heroes</button>
   <button data-t="teams">Teams</button>
   <button data-t="tips">Tips</button>
+  <button data-t="queue">Queue</button>
   <button data-t="status">Status</button>
   <span class="sp"></span>
   <input id="q" placeholder="Search…" size="12">
@@ -72,7 +73,7 @@ td:last-child{border-right:1px solid var(--line);border-radius:0 14px 14px 0}
 </nav>
 <main id="main"></main>
 <script>
-let D={videos:[],heroes:{}},S={},LR={},LU={},PB={},tab="videos";
+let D={videos:[],heroes:{}},S={},LR={},LU={},PB={},Q={videos:[]},addMsg="",tab="videos";
 const $=s=>document.querySelector(s),esc=t=>String(t??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const ago=t=>{if(!t)return"–";const m=(Date.now()-Date.parse(t.replace(/Z?$/,"Z")))/6e4;return m<60?Math.round(m)+"m ago":m<1440?Math.round(m/60)+"h ago":Math.round(m/1440)+"d ago"};
 async function load(){
@@ -81,9 +82,10 @@ async function load(){
   try{LR=await (await fetch("data/last_run.json?"+Date.now())).json()}catch(e){LR={}}
   try{LU=await (await fetch("data/last_update.json?"+Date.now())).json()}catch(e){LU={}}
   try{PB=await (await fetch("data/publish.json?"+Date.now())).json()}catch(e){PB={}}
+  try{Q=await (await fetch("data/queue.json?"+Date.now())).json()}catch(e){Q={videos:[]}}
   const chs=[...new Set(D.videos.map(v=>v.channel))].sort();
   $("#ch").innerHTML='<option value="">All channels</option>'+chs.map(c=>`<option>${esc(c)}</option>`).join("");
-  const c=S.counts||{},queue=(c.new||0)+(c.retry||0),bad=(S.problems||[]).filter(p=>p.status=="failed").length;
+  const c=S.counts||{},queue=Q.videos.length||(c.new||0)+(c.retry||0),bad=(S.problems||[]).filter(p=>p.status=="failed").length;
   $("#stats").innerHTML=[["Notes",D.videos.length],["Heroes",Object.keys(D.heroes).length],["Queue",queue],
     ["Last round",ago(LR.time||S.built)],["Failed",bad,bad?"bad":""]].map(([k,v,cl])=>`<div class="stat ${cl||""}"><b>${v}</b><small>${k}</small></div>`).join("");
   render();
@@ -124,6 +126,20 @@ function render(){
     const T=V.flatMap(v=>[...v.meta_changes.map(x=>["Meta",x,v]),...v.tips.map(x=>["Tip",x,v])]);
     m.innerHTML=T.length?'<div class="list">'+T.map(([k,x,v])=>`<div class="row"><span class="b">${k}</span> ${esc(x)}<br><small>${esc(v.channel)} · ${esc(v.published.slice(0,10))} · <a href="${esc(v.url)}" target="_blank">video</a></small></div>`).join("")+"</div>"
       :'<div class="empty">No tips yet</div>';
+  }else if(tab=="queue"){
+    const q=$("#q").value.toLowerCase(),ch=$("#ch").value;
+    const L=Q.videos.map((v,i)=>({...v,n:i+1})).filter(v=>(!ch||v.channel==ch)&&(!q||(v.title+" "+v.channel).toLowerCase().includes(q)));
+    const keep=$("#addurl")?.value||"";
+    m.innerHTML=`<div class="list"><div class="row"><b>Watch a video next</b>
+      <form id="addf" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><input id="addurl" placeholder="Paste a YouTube link" style="flex:1;min-width:220px" value="${esc(keep)}">
+      <button class="chip" style="cursor:pointer">Add to top</button></form>${addMsg?`<div style="margin-top:6px"><small>${addMsg}</small></div>`:""}</div>
+      <div class="row"><small>${Q.videos.length} videos waiting, watched from the top. About 35-40 a day (Google's free daily limit).</small></div>
+      ${L.map(v=>`<div class="row" style="display:flex;gap:10px;align-items:center"><b style="min-width:34px;color:var(--mute)">${v.n}</b>
+        <div style="flex:1"><a href="https://www.youtube.com/watch?v=${esc(v.id)}" target="_blank" style="color:inherit">${esc(v.title)}</a>
+        <br><small>${esc(v.channel)}${v.published?" · "+esc(v.published.slice(0,10)):""}${v.duration_s?" · "+Math.round(v.duration_s/60)+" min":""}</small>
+        ${v.error?`<div class="err">${esc(v.error)}</div>`:""}</div>
+        ${v.priority?'<span class="b S1">pasted</span>':""}${v.status=="retry"?'<span class="b bad">retry</span>':""}</div>`).join("")}</div>`;
+    $("#addf").onsubmit=addVideo;
   }else{
     const c=S.counts||{};
     const run=(x,label)=>`<div class="row"><b>${label}</b> ${x.time?`${esc(x.time)} <small>(${ago(x.time)})</small> <span class="b ${x.exit?"bad":"S1"}">${x.exit?"exit "+x.exit:"OK"}</span>`:"<small>no record yet</small>"}</div>`;
@@ -141,6 +157,16 @@ function render(){
       ${(S.problems||[]).map(p=>`<div class="row"><span class="b">${esc(p.status)}</span> ${esc(p.title)} <small>· ${esc(p.channel)}</small><div class="err">${esc(p.error)}</div></div>`).join("")}
       ${(S.log_tail||[]).length?`<div class="row"><b>Log</b><pre style="white-space:pre-wrap;font-size:12px;margin:6px 0 0">${esc(S.log_tail.join("\n"))}</pre></div>`:""}</div>`;
   }
+}
+async function addVideo(ev){
+  ev.preventDefault();const url=$("#addurl").value.trim();if(!url)return;
+  addMsg="Adding…";render();
+  try{const r=await fetch("api/queue",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url})});
+    const d=await r.json();
+    addMsg=r.ok?`Added on top: <b>${esc(d.title)}</b> (${esc(d.channel)}). A round starts now; if Google's daily limit is used up, it is watched first after the reset (about 08:00).`:esc(d.error||"Could not add");
+    if(r.ok)$("#addurl").value="";
+  }catch(e){addMsg="The server did not answer"}
+  await load();
 }
 // http page: navigator.clipboard is missing, so select the text and copy it the old way
 function copyKey(btn){const r=document.createRange();r.selectNodeContents(document.getElementById("pk"));
