@@ -69,9 +69,13 @@ json.dump({"notes": len(notes), "latest_video": latest, "queue": st.get("counts"
            "pushed": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%MZ")},
           open("index.json.new", "w", encoding="utf-8"), indent=1)
 PY
-# only push when notes changed (index.json alone changes every round)
+# server health for Claude in the cloud, which can't reach the server: log tail, last runs, budget
+mkdir -p status
+cp "$OUT"/data/status.json "$OUT"/data/last_run.json "$OUT"/data/last_update.json status/ 2>/dev/null
+# push when notes changed, or every 30 minutes for the status (index.json alone changes every round)
 git add notes
-if git diff --cached --quiet; then
+last=$(git log -1 --format=%ct 2>/dev/null || echo 0)
+if git diff --cached --quiet && [ $(( $(date +%s) - last )) -lt 1800 ]; then
   rm -f index.json.new
   result true "up to date ($(ls notes | wc -l) notes)"
   exit 0
@@ -79,7 +83,7 @@ fi
 mv index.json.new index.json
 [ -f README.md ] || printf '# Dragonheir Watch data\n\nVideo notes written by Dragonheir Watch (Gemini watches Dragonheir creator videos). Pushed by the server; read by the Dragonheir Companion digest. Data only.\n' > README.md
 git add -A
-git commit -qm "notes: $(ls notes | wc -l) videos"
+git commit -qm "notes: $(ls notes | wc -l) videos" || { result true "up to date ($(ls notes | wc -l) notes)"; exit 0; }
 if out=$(git push -q "$REMOTE" "HEAD:$branch" 2>&1); then
   result true "pushed ($(ls notes | wc -l) notes)"
 else

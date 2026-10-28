@@ -511,7 +511,7 @@ def cmd_build(args):
                 for r in state["videos"].values() if r["status"] in ("retry", "failed")]
     save(KNOWLEDGE / "data" / "status.json", {
         "built": now(), "last_fetch": state.get("last_fetch"), "counts": counts, "problems": problems,
-        "budget": state.get("budget"), "log_tail": tail(ROOT / "run.log", 40),
+        "budget": state.get("budget"), "log_tail": tail(ROOT / "run.log", 80),
         "crontab": [l for l in os.popen("crontab -l 2>/dev/null").read().splitlines() if "ytwatch" in l],
         "channels": [{"name": c["name"], "id": c["id"], "enabled": c.get("enabled", True),
                       "checked": state["channels"].get(c["id"], {}).get("checked")}
