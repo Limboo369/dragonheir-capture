@@ -331,18 +331,20 @@ def cmd_gemini(args):
     except Exception as e:
         print(f"  model list failed ({e}), using {wanted}", flush=True)
         offered = wanted
-    flash = sorted((m for m in offered if re.fullmatch(r"gemini-[\d.]+-flash(-latest)?", m)),
+    # gemini-2.x are listed but refuse new keys (404), so only 3.x and newer
+    flash = sorted((m for m in offered if re.fullmatch(r"gemini-([3-9]|\d\d)[\d.]*-flash(-latest)?", m)),
                    key=lambda m: [int(x) for x in re.findall(r"\d+", m)], reverse=True)
     models = [m for m in wanted if m in offered] + [m for m in flash if m not in wanted]
     if not models:
         models = wanted
     print("  models:", ", ".join(models), flush=True)
 
-    gone = set()   # models that answered 404 are skipped for the rest of this run
+    gone = set()   # models that answered 404 or used up their daily quota: skipped for this run
 
     def generate(**kw):
-        """Try the models in order. A busy model (500/503/504) gets two more tries after a
-        pause before the next model is used; a missing model (404) is dropped."""
+        """Try the models in order. A busy model (500/503/504) or a per-minute quota (429) gets
+        two more tries after a pause before the next model is used; a missing model (404) or
+        one whose daily quota is used up is dropped (each model has its own free quota)."""
         usable = [m for m in models if m not in gone] or models[-1:]
         for i, m in enumerate(usable):
             for attempt in range(3):
@@ -350,20 +352,20 @@ def cmd_gemini(args):
                     return m, client.models.generate_content(model=m, **kw)
                 except genai.errors.APIError as e:
                     last = i == len(usable) - 1
-                    if e.code == 404:
+                    if e.code == 404 or (e.code == 429 and "PerDay" in str(e)):
                         gone.add(m)
                         if last:
                             raise
-                        print(f"  {m}: 404, using {usable[i + 1]}", flush=True)
+                        print(f"  {m}: {e.code}, using {usable[i + 1]}", flush=True)
                         break
-                    if e.code not in (500, 503, 504):
+                    if e.code not in (429, 500, 503, 504):
                         raise
                     if attempt == 2:
                         if last:
                             raise
                         print(f"  {m}: {e.code}, using {usable[i + 1]}", flush=True)
                         break
-                    time.sleep(30 * (attempt + 1))
+                    time.sleep((65 if e.code == 429 else 30) * (attempt + 1))
 
     if args.ping:
         m, r = generate(contents="Reply with OK")
@@ -376,7 +378,19 @@ def cmd_gemini(args):
     today = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d")
     budget = state.setdefault("budget", {})
     if budget.get("day") != today:
+        budget.clear()
         budget.update(day=today, seconds=0)
+    if "v2" not in budget:
+        # before 2026-10-28 a quota error closed the whole day; recount what was really watched
+        budget["seconds"] = sum(r.get("duration_s") or 1200 for vid, r in state["videos"].items()
+                                if r["status"] == "summarized"
+                                and load(NOTES / f"{vid}.json", {}).get("summarized", "")[:10] == today)
+        budget["v2"] = 1
+    hit = budget.get("quota_hit")
+    if hit and time.time() - hit < 3600:
+        print("Gemini quota was full less than an hour ago, trying again next round")
+        save(STATE, state)
+        return
     limit_s = int(os.environ.get("YTWATCH_DAILY_SECONDS", 7 * 3600 + 1800))
     for rec in state["videos"].values():
         if rec["status"] in ("retry", "failed") and "NOT_FOUND" in rec.get("error", ""):
@@ -434,10 +448,12 @@ def cmd_gemini(args):
                 msg = str(e)[:200]
                 print(f"! {rec['title'][:50]}: {type(e).__name__}: {msg}")
                 if "429" in msg or "RESOURCE_EXHAUSTED" in msg:
-                    # quota, not the video's fault: try again later, close today's budget
+                    # quota on every model, not the video's fault: retry it after an hour's pause
                     rec["gtries"] -= 1
                     rec["status"] = "retry"
-                    state.setdefault("budget", {}).update(day=today, seconds=limit_s)
+                    b = state.setdefault("budget", {})
+                    b["seconds"] = b.get("seconds", 0) - (rec.get("duration_s") or 1200)
+                    b["quota_hit"] = time.time()
                     save(STATE, state)
                     continue
                 if "NOT_FOUND" in msg:
