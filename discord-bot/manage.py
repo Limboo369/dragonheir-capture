@@ -134,7 +134,7 @@ def run(server, a):
         call("PATCH", f"/channels/{c['id']}", {"name": a["to"]})
         print(f"~ {c['name']} -> {a['to']}")
     elif do == "post":
-        c = server.find(a["channel"])
+        c = server.find(a["channel"], "text")
         if not c:
             raise SystemExit(f"No channel called {a['channel']}")
         embed = {"title": a.get("title", ""), "description": a.get("text", ""), "color": 0xF1C40F}
@@ -149,7 +149,7 @@ def run(server, a):
                     print("  (could not pin the message)")
         print(f"> posted in {c['name']}")
     elif do == "edit":   # change a bot post: replace text inside its embed
-        c = server.find(a["channel"])
+        c = server.find(a["channel"], "text")
         if not c:
             raise SystemExit(f"No channel called {a['channel']}")
         for msg in call("GET", f"/channels/{c['id']}/messages?limit=50"):
