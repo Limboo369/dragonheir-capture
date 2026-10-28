@@ -7,7 +7,7 @@ Discord bot for the REGAL alliance (Dragonheir: Silent Gods).
 - Welcome post for new players with "Make Recruit" / "Make Member" buttons, plus `/promote` (needs "Server Members Intent" on in the Developer Portal)
 - `/hero <name>`: tier, school, element, best gear sets and artifacts (AllClash Season 9 data)
 - `/school <school>`: best heroes of a school
-- `/ask <question>`: Dragonheir-only answers from Claude, 20 questions per person per day, 500 per server per day
+- `/ask <question>`: Dragonheir-only answers from Claude, 10 questions per day for Members, 20 for Officers and the Leader, none for Recruits, 500 per server per day
 
 ## Install on Linux (Ubuntu/Debian)
 

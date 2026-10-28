@@ -34,7 +34,9 @@ load_dotenv(HERE / ".env")
 DISCORD_TOKEN = os.environ["DISCORD_BOT_TOKEN"]
 ANTHROPIC_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 MODEL = os.environ.get("CLAUDE_MODEL", "claude-haiku-5-5")
-ASK_PER_USER = int(os.environ.get("ASK_LIMIT_PER_USER", "20"))
+# daily /ask questions by rank; Recruits (and people without a guild role) can't ask
+ASK_PER_OFFICER = int(os.environ.get("ASK_LIMIT_OFFICER", os.environ.get("ASK_LIMIT_PER_USER", "20")))
+ASK_PER_MEMBER = int(os.environ.get("ASK_LIMIT_MEMBER", "10"))
 ASK_PER_SERVER = int(os.environ.get("ASK_LIMIT_PER_SERVER", "500"))
 TZ = ZoneInfo(os.environ.get("TIMEZONE", "Europe/Belgrade"))
 RALLY_TIME = os.environ.get("RALLY_REMINDER_TIME", "20:00")          # every day
@@ -208,7 +210,15 @@ async def school_cmd(interaction: discord.Interaction, school: app_commands.Choi
 AGENT_CHANNEL = os.environ.get("AGENT_CHANNEL", "regal-agent")
 
 
-@bot.tree.command(name="ask", description=f"Ask REGAL Agent a Dragonheir question ({ASK_PER_USER} per day)")
+def ask_limit(member) -> int:
+    roles = {r.name for r in getattr(member, "roles", [])}
+    perms = getattr(member, "guild_permissions", None)
+    if roles & {"Leader", "Officer"} or (perms and perms.manage_messages):
+        return ASK_PER_OFFICER
+    return ASK_PER_MEMBER if "Member" in roles else 0
+
+
+@bot.tree.command(name="ask", description="Ask REGAL Agent a Dragonheir question (Members and Officers)")
 @app_commands.describe(question="Your Dragonheir question")
 async def ask_cmd(interaction: discord.Interaction, question: str):
     uid = str(interaction.user.id)
@@ -220,10 +230,15 @@ async def ask_cmd(interaction: discord.Interaction, question: str):
     if len(question) > 500:
         await interaction.response.send_message("Please keep the question under 500 characters.", ephemeral=True)
         return
-    if asks_used(uid) >= ASK_PER_USER:
+    limit = ask_limit(interaction.user)
+    if limit == 0:
         await interaction.response.send_message(
-            f"You've used all {ASK_PER_USER}/{ASK_PER_USER} questions for today. New ones tomorrow! 🌙",
+            "REGAL Agent is for alliance **Members**. An Officer will promote you once you've joined REGAL in the game.",
             ephemeral=True)
+        return
+    if asks_used(uid) >= limit:
+        await interaction.response.send_message(
+            f"You've used all {limit}/{limit} questions for today. New ones tomorrow! 🌙", ephemeral=True)
         return
     if asks_used() >= ASK_PER_SERVER:
         await interaction.response.send_message("The server's daily question limit is reached. Try tomorrow!",
@@ -238,7 +253,7 @@ async def ask_cmd(interaction: discord.Interaction, question: str):
         answer = "Something went wrong while asking REGAL Agent. Try again in a minute."
     e = discord.Embed(description=answer[:4000], color=0xF1C40F)
     e.set_author(name=f"❓ {question[:250]}")
-    e.set_footer(text=f"🤖 REGAL Agent · {asks_used(uid)}/{ASK_PER_USER} questions today")
+    e.set_footer(text=f"🤖 REGAL Agent · {asks_used(uid)}/{limit} questions today")
     await interaction.followup.send(embed=e, ephemeral=private)
 
 
