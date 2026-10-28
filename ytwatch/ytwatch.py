@@ -320,24 +320,50 @@ def cmd_gemini(args):
     from google import genai
     from google.genai import types
     client = genai.Client(api_key=os.environ["GEMINI_API_KEY"],
-                          http_options=types.HttpOptions(timeout=600_000))
-    models = os.environ.get("YTWATCH_GEMINI_MODEL",
-                            "gemini-3.8-flash,gemini-3.5-flash,gemini-2.5-flash").split(",")
+                          http_options=types.HttpOptions(timeout=900_000))
+    wanted = [m.strip() for m in os.environ.get(
+        "YTWATCH_GEMINI_MODEL", "gemini-3.8-flash,gemini-3.5-flash,gemini-3-flash").split(",") if m.strip()]
+    # Google retires models without notice (gemini-2.5-flash did on 2026-10-28), so ask which
+    # models this key can use right now and add any other plain flash model as a last resort.
+    try:
+        offered = [m.name.split("/")[-1] for m in client.models.list()
+                   if "generateContent" in (m.supported_actions or [])]
+    except Exception as e:
+        print(f"  model list failed ({e}), using {wanted}", flush=True)
+        offered = wanted
+    flash = sorted((m for m in offered if re.fullmatch(r"gemini-[\d.]+-flash(-latest)?", m)),
+                   key=lambda m: [int(x) for x in re.findall(r"\d+", m)], reverse=True)
+    models = [m for m in wanted if m in offered] + [m for m in flash if m not in wanted]
+    if not models:
+        models = wanted
+    print("  models:", ", ".join(models), flush=True)
 
-    busy = set()   # models that answered 503/404 are skipped for the rest of this run
+    gone = set()   # models that answered 404 are skipped for the rest of this run
 
     def generate(**kw):
-        """Try the models in order; a busy (503) or unknown (404) model falls through."""
-        usable = [m for m in models if m not in busy] or models[-1:]
+        """Try the models in order. A busy model (500/503/504) gets two more tries after a
+        pause before the next model is used; a missing model (404) is dropped."""
+        usable = [m for m in models if m not in gone] or models[-1:]
         for i, m in enumerate(usable):
-            try:
-                return m, client.models.generate_content(model=m.strip(), **kw)
-            except genai.errors.APIError as e:
-                if e.code not in (404, 500, 503) or i == len(usable) - 1:
-                    raise
-                if m not in busy:
-                    busy.add(m)
-                    print(f"  {m}: {e.code}, using {usable[i + 1]}", flush=True)
+            for attempt in range(3):
+                try:
+                    return m, client.models.generate_content(model=m, **kw)
+                except genai.errors.APIError as e:
+                    last = i == len(usable) - 1
+                    if e.code == 404:
+                        gone.add(m)
+                        if last:
+                            raise
+                        print(f"  {m}: 404, using {usable[i + 1]}", flush=True)
+                        break
+                    if e.code not in (500, 503, 504):
+                        raise
+                    if attempt == 2:
+                        if last:
+                            raise
+                        print(f"  {m}: {e.code}, using {usable[i + 1]}", flush=True)
+                        break
+                    time.sleep(30 * (attempt + 1))
 
     if args.ping:
         m, r = generate(contents="Reply with OK")
@@ -352,6 +378,10 @@ def cmd_gemini(args):
     if budget.get("day") != today:
         budget.update(day=today, seconds=0)
     limit_s = int(os.environ.get("YTWATCH_DAILY_SECONDS", 7 * 3600 + 1800))
+    for rec in state["videos"].values():
+        if rec["status"] in ("retry", "failed") and "NOT_FOUND" in rec.get("error", ""):
+            rec.update(status="retry", gtries=0)   # the model was gone, not the video's fault
+            rec.pop("error", None)
     todo = []
     for _, vid in sorted(((r["published"], vid) for vid, r in state["videos"].items()
                           if r["status"] in ("new", "retry", "no_transcript")), reverse=True):
@@ -410,6 +440,9 @@ def cmd_gemini(args):
                     state.setdefault("budget", {}).update(day=today, seconds=limit_s)
                     save(STATE, state)
                     continue
+                if "NOT_FOUND" in msg:
+                    rec["gtries"] -= 1   # no model available, the video itself is fine
+                    state.setdefault("budget", {})["seconds"] -= rec.get("duration_s") or 1200
                 rec["status"] = "retry" if rec["gtries"] < 3 else "failed"
                 rec["error"] = msg
                 save(STATE, state)
