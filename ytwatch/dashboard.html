@@ -72,7 +72,7 @@ td:last-child{border-right:1px solid var(--line);border-radius:0 14px 14px 0}
 </nav>
 <main id="main"></main>
 <script>
-let D={videos:[],heroes:{}},S={},LR={},LU={},tab="videos";
+let D={videos:[],heroes:{}},S={},LR={},LU={},PB={},tab="videos";
 const $=s=>document.querySelector(s),esc=t=>String(t??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const ago=t=>{if(!t)return"–";const m=(Date.now()-Date.parse(t.replace(/Z?$/,"Z")))/6e4;return m<60?Math.round(m)+"m ago":m<1440?Math.round(m/60)+"h ago":Math.round(m/1440)+"d ago"};
 async function load(){
@@ -80,6 +80,7 @@ async function load(){
   try{S=await (await fetch("data/status.json?"+Date.now())).json()}catch(e){}
   try{LR=await (await fetch("data/last_run.json?"+Date.now())).json()}catch(e){LR={}}
   try{LU=await (await fetch("data/last_update.json?"+Date.now())).json()}catch(e){LU={}}
+  try{PB=await (await fetch("data/publish.json?"+Date.now())).json()}catch(e){PB={}}
   const chs=[...new Set(D.videos.map(v=>v.channel))].sort();
   $("#ch").innerHTML='<option value="">All channels</option>'+chs.map(c=>`<option>${esc(c)}</option>`).join("");
   const c=S.counts||{},queue=(c.new||0)+(c.retry||0),bad=(S.problems||[]).filter(p=>p.status=="failed").length;
@@ -127,7 +128,12 @@ function render(){
     const c=S.counts||{};
     const run=(x,label)=>`<div class="row"><b>${label}</b> ${x.time?`${esc(x.time)} <small>(${ago(x.time)})</small> <span class="b ${x.exit?"bad":"S1"}">${x.exit?"exit "+x.exit:"OK"}</span>`:"<small>no record yet</small>"}</div>`;
     const bud=S.budget||{};
-    m.innerHTML=`<div class="list">${run(LR,"Last video round")}${run(LU,"Last code update")}
+    const pub=PB.time?(PB.ok?`<div class="row"><b>Companion link</b> <span class="b S1">OK</span> <small>${esc(PB.message)} · ${ago(PB.time)}</small></div>`
+      :`<div class="row"><b>Companion link</b> <span class="b bad">not connected</span> <small>${esc(PB.message)}</small>
+        ${PB.key?`<div style="margin-top:8px">Copy this key and send it to Claude in the project thread (it is a public key, safe to share):</div>
+        <pre id="pk" style="white-space:pre-wrap;word-break:break-all;font-size:12px;margin:6px 0">${esc(PB.key)}</pre>
+        <button class="chip" onclick="copyKey(this)">Copy key</button>`:""}</div>`):"";
+    m.innerHTML=`<div class="list">${pub}${run(LR,"Last video round")}${run(LU,"Last code update")}
       <div class="row"><b>Schedule</b> <small>videos every hour at :17 · code updates every 10 min · Gemini budget today: ${Math.round((bud.seconds||0)/60)} / 450 min</small></div>
       <div class="row"><b>Dashboard data built</b> ${esc(S.built||"–")} <small>(${ago(S.built)})</small></div>
       <div class="row"><b>Videos</b><div class="chips">${Object.entries(c).map(([k,v])=>`<span class="chip">${esc(k)}: ${v}</span>`).join("")}</div></div>
@@ -136,6 +142,9 @@ function render(){
       ${(S.log_tail||[]).length?`<div class="row"><b>Log</b><pre style="white-space:pre-wrap;font-size:12px;margin:6px 0 0">${esc(S.log_tail.join("\n"))}</pre></div>`:""}</div>`;
   }
 }
+// http page: navigator.clipboard is missing, so select the text and copy it the old way
+function copyKey(btn){const r=document.createRange();r.selectNodeContents(document.getElementById("pk"));
+  const sel=getSelection();sel.removeAllRanges();sel.addRange(r);try{document.execCommand("copy");btn.textContent="Copied"}catch(e){btn.textContent="Press Ctrl+C"}}
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("on",x==b));tab=b.dataset.t;render()});
 ["#q","#ch","#s1"].forEach(s=>$(s).addEventListener("input",render));
 load();setInterval(load,5*60e3);

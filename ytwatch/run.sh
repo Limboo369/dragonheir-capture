@@ -13,7 +13,7 @@ if [ "$1" != "--updated" ]; then
   # Self-update from GitHub, so fixes arrive without logging in to the server.
   # Files are swapped with mv (safe while this script runs), then the new run.sh takes over.
   RAW="https://raw.githubusercontent.com/Limboo369/dragonheir-capture/${YTWATCH_BRANCH:-main}/ytwatch"
-  for f in ytwatch.py run.sh SUMMARY_PROMPT.md hero-names.json channels.json dashboard.html backlog.json; do
+  for f in ytwatch.py run.sh SUMMARY_PROMPT.md hero-names.json channels.json dashboard.html backlog.json publish.sh; do
     curl -fsSL "$RAW/$f?$(date +%s)" -o ".$f.new" && [ -s ".$f.new" ] && mv ".$f.new" "$f" || rm -f ".$f.new"
   done
   chmod +x run.sh
@@ -26,8 +26,11 @@ mkdir -p "$YTWATCH_OUT/data"
 MODE="${1:-full}"
 # Last attempt and its exit code, shown on the dashboard's Status tab
 trap 'rc=$?; printf "{\"time\": \"%s\", \"mode\": \"%s\", \"exit\": %d}\n" "$(date -u +%FT%TZ)" "$MODE" "$rc" > "$YTWATCH_OUT/data/last_$( [ "$MODE" = full ] && echo run || echo update ).json"' EXIT
+# Copies the notes to the public data repo that the Dragonheir Companion reads (see publish.sh)
+publish() { [ -f publish.sh ] || return 0; bash publish.sh >> publish.log 2>&1; tail -n 200 publish.log > .publish.log; mv .publish.log publish.log; }
 if [ "$1" = "--update-only" ]; then
   venv/bin/python -u ytwatch.py build >/dev/null
+  publish
   exit 0
 fi
 
@@ -47,4 +50,5 @@ else
   [ -n "$YTWATCH_MODEL" ] && step venv/bin/python -u ytwatch.py summarize
 fi
 step venv/bin/python -u ytwatch.py build
+publish
 exit $rc
