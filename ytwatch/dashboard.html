@@ -130,7 +130,7 @@ function render(){
     const bud=S.budget||{};
     const pub=PB.time?(PB.ok?`<div class="row"><b>Companion link</b> <span class="b S1">OK</span> <small>${esc(PB.message)} · ${ago(PB.time)}</small></div>`
       :`<div class="row"><b>Companion link</b> <span class="b bad">not connected</span> <small>${esc(PB.message)}</small>
-        ${PB.key?`<div style="margin-top:8px">Copy this key and send it to Claude in the project thread (it is a public key, safe to share):</div>
+        ${PB.key?`<div style="margin-top:8px">1. Copy this key (public key, safe to share). 2. Open <a href="https://github.com/${esc(PB.repo)}/settings/keys/new" target="_blank">${esc(PB.repo)} → Deploy keys → Add</a>, paste it into Key, tick <b>Allow write access</b>, click <b>Add key</b>.</div>
         <pre id="pk" style="white-space:pre-wrap;word-break:break-all;font-size:12px;margin:6px 0">${esc(PB.key)}</pre>
         <button class="chip" onclick="copyKey(this)">Copy key</button>`:""}</div>`):"";
     m.innerHTML=`<div class="list">${pub}${run(LR,"Last video round")}${run(LU,"Last code update")}
