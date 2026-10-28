@@ -61,7 +61,7 @@ class Handler(SimpleHTTPRequestHandler):
         try:
             title, channel = oembed(vid)
         except Exception:
-            return self.reply(400, {"error": "YouTube does not know this video (private or deleted?)"})
+            title, channel = f"Video {vid} (title arrives with the note)", ""   # Gemini still gets the URL
         add(vid, title, channel)
         # the queue view, then a round now (if one is running, the video goes first in the next one)
         subprocess.run([str(ROOT / "venv/bin/python"), str(ROOT / "ytwatch.py"), "build"],

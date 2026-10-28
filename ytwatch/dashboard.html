@@ -162,7 +162,7 @@ async function addVideo(ev){
   ev.preventDefault();const url=$("#addurl").value.trim();if(!url)return;
   addMsg="Adding…";render();
   try{const r=await fetch("api/queue",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url})});
-    const d=await r.json();
+    const d=await r.json().catch(()=>({error:"The server is still updating, try again in 10 minutes"}));
     addMsg=r.ok?`Added on top: <b>${esc(d.title)}</b> (${esc(d.channel)}). A round starts now; if Google's daily limit is used up, it is watched first after the reset (about 08:00).`:esc(d.error||"Could not add");
     if(r.ok)$("#addurl").value="";
   }catch(e){addMsg="The server did not answer"}
