@@ -115,7 +115,7 @@ class Overlay(ctk.CTkToplevel):
         st = snap["status"]
         self.dot.configure(text=ICON[st], text_color=STATUS[st])
         self.ping.configure(text=ms(g["ping"]))
-        d = g["icmp"]["loss"] if g["server"] else None
+        d = g["drops"] if g["server"] else None
         self.drops.configure(text=pct(d), text_color=App._lvl(d, 15, 25))
 
     def _press(self, e):
@@ -270,10 +270,10 @@ class App:
         self.where.configure(text=(place + ("\n" + g["server"][2] if g["server"] else "")) if g["server"] else
                              ("Start the game" if not g["running"] else "Waiting for server"))
         self.chips["loss"].configure(text=pct(g["loss"]), text_color=self._lvl(g["loss"], 0.5, 2))
-        self.chips["drops"].configure(text=pct(g["icmp"]["loss"]), text_color=self._lvl(g["icmp"]["loss"], 15, 25))
+        self.chips["drops"].configure(text=pct(g["drops"]), text_color=self._lvl(g["drops"], 15, 25))
         self.chips["jitter"].configure(text=ms(g["jitter"]), text_color=self._lvl(g["jitter"], 40, 80))
         self.chips["stalls"].configure(text="–" if g["stalls"] is None else str(g["stalls"]),
-                                       text_color=self._lvl(g["stalls"], 1, 1))
+                                       text_color=self._lvl(g["stalls"], 1, 2))
         self.hint.configure(text=(f"Problem: {s['where']}" if s["where"] else
                                   ("~220 ms is normal for Singapore" if g.get("place") == "Singapore" else "")))
         self.hint.configure(text_color=STATUS[st] if s["where"] else FAINT)
@@ -384,6 +384,10 @@ class App:
                           anchor="w" if frac == 1 else "e" if frac == 0 else "center")
         if not pts:
             c.create_text((L + R) / 2, (T + B) / 2, text="Waiting for the game", fill=FAINT, font=(FONT, 10))
+            return
+        if drops and min(p[1] for p in pts) >= 100:
+            c.create_text((L + R) / 2, (T + B) / 2, text="This server ignores pings right now", fill=FAINT,
+                          font=(FONT, 10))
             return
         if drops:
             xy = [v for p in pts for v in (sx(p[0]), sy(p[1]))]
@@ -508,6 +512,10 @@ class App:
                 "Run as admin to measure the game's own packets.")
 
     def _drops_tip(self):
+        g = self.snap and self.snap["game"]
+        if g and g["server"] and g["drops"] is None and g["icmp"]["n"] >= 10:
+            return ("This server does not answer pings at all right now,\n"
+                    "so Drops can't be measured. Loss and Stalls still work.")
         return ("Pings the server did not answer in the last minute.\n"
                 "Around 10% is normal for this server, 30% or more matched real lag.")
 

@@ -39,9 +39,9 @@ def grade(ping, loss, jit, stalls, base_ping=300):
     """'good' | 'warn' | 'bad' for one hop."""
     if ping is None and loss is None:
         return "idle"
-    if (loss or 0) >= 2 or (stalls or 0) >= 1 or (ping or 0) > base_ping + 150 or (jit or 0) > 80:
+    if (loss or 0) >= 2 or (stalls or 0) >= 2 or (ping or 0) > base_ping + 150 or (jit or 0) > 80:
         return "bad"
-    if (loss or 0) >= 0.5 or (ping or 0) > base_ping or (jit or 0) > 40:
+    if (loss or 0) >= 0.5 or (stalls or 0) >= 1 or (ping or 0) > base_ping or (jit or 0) > 40:
         return "warn"
     return "good"
 
@@ -242,7 +242,9 @@ class Monitor:
         gg = grade(g["ping"], g["loss"], g["jitter"], g["stalls"], base_ping=300) if self.server else "idle"
         # The game server drops some pings even when all is well (~10%); ~30% matched real lag (2026-10-29)
         il, n = g["icmp"]["loss"], g["icmp"]["n"]
-        if self.server and il is not None and n >= 20:
+        # a server that answers no ping at all tells us nothing; Loss and Stalls carry the signal then
+        g["drops"] = None if (il is None or (il >= 100 and n >= 10)) else il
+        if self.server and g["drops"] is not None and n >= 20:
             if il >= 25:
                 gg = "bad"
             elif il >= 15 and gg == "good":
