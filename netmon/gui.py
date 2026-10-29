@@ -7,6 +7,8 @@ import tkinter as tk
 
 import customtkinter as ctk
 
+from . import winpos
+
 BG, CARD, CARD_HI, LINE, GRID = "#0e0f13", "#17181d", "#1f2128", "#2a2c34", "#23252c"
 FG, MUTED, FAINT = "#f2f3f5", "#8b8d98", "#5c5f6b"
 SERIES = "#3987e5"
@@ -89,6 +91,7 @@ class Overlay(ctk.CTkToplevel):
             pass
         self.configure(fg_color=bg)
         self.on_open, self.on_hide, self.on_move = on_open, on_hide, on_move
+        self.dragging, self.visible = False, True
         box = ctk.CTkFrame(self, fg_color=CARD, corner_radius=14, border_width=1, border_color=LINE, bg_color=bg)
         box.pack()
         self.dot = ctk.CTkLabel(box, text="○", font=f(13, "bold"), text_color=STATUS["idle"], width=14)
@@ -124,6 +127,7 @@ class Overlay(ctk.CTkToplevel):
         self._start = (e.x_root, e.y_root)
         self._dx, self._dy = e.x_root - self.winfo_x(), e.y_root - self.winfo_y()
         self._moved = False
+        self.dragging = True
 
     def _drag(self, e):
         if abs(e.x_root - self._start[0]) + abs(e.y_root - self._start[1]) > 4:
@@ -131,10 +135,19 @@ class Overlay(ctk.CTkToplevel):
         self.geometry(f"+{e.x_root - self._dx}+{e.y_root - self._dy}")
 
     def _release(self, e):
+        self.dragging = False
         if self._moved:
             self.on_move(self.winfo_x(), self.winfo_y())
         else:
             self.on_open()
+
+    def set_visible(self, on):
+        if on != self.visible:
+            self.visible = on
+            (self.deiconify if on else self.withdraw)()
+            if on:
+                self.attributes("-topmost", True)
+                self.lift()
 
     def _menu(self, e):
         m = tk.Menu(self, tearoff=0, bg=CARD_HI, fg=FG, activebackground=SERIES, bd=0)
@@ -157,11 +170,13 @@ class App:
         self.metric = self.prefs.get("metric") if self.prefs.get("metric") in METRICS else "Ping"
         self.on_prefs = on_prefs
         self.overlay = None
+        self.game_hwnd, self._hwnd_checked = None, 0
         self.snap = None
         self.hover_x = None
         self.tip = Tip(self.root)
         self._build()
         self.root.after(300, self._tick)
+        self.root.after(500, self._dock)
         if self.prefs.get("overlay", True):
             self.root.after(600, lambda: self.set_overlay(True))
 
@@ -659,7 +674,7 @@ class App:
     def set_overlay(self, on):
         if on and self.overlay is None:
             self.overlay = Overlay(self.root, self.open_main, lambda: self.set_overlay(False),
-                                   lambda x, y: self._save(overlay_pos=[x, y]), pos=self.prefs.get("overlay_pos"))
+                                   self._overlay_moved, pos=self.prefs.get("overlay_pos"))
             if self.snap:
                 self.overlay.show(self.snap)
         elif not on and self.overlay is not None:
@@ -667,6 +682,40 @@ class App:
             self.overlay = None
         self.ov_btn.configure(fg_color=SERIES if on else CARD_HI)
         self._save(overlay=on)
+
+    # The bar is docked to the game window: it keeps its corner when the game moves or resizes,
+    # and hides while the game is minimized or another program is in front.
+    DEFAULT_ANCHOR = {"corner": "tr", "dx": 16, "dy": 12}
+
+    def _dock(self):
+        self.root.after(250, self._dock)
+        ov = self.overlay
+        if ov is None or ov.dragging or not winpos.WIN:
+            return
+        pids = self.mon.tracker.pids if self.mon else []
+        now = time.time()
+        if not winpos.client_rect(self.game_hwnd) or now - self._hwnd_checked > 3:
+            self._hwnd_checked = now
+            self.game_hwnd = winpos.find_window(pids)
+        rect = winpos.client_rect(self.game_hwnd)
+        if not rect or winpos.minimized(self.game_hwnd):
+            ov.set_visible(False)
+            return
+        fg = winpos.foreground_pid()
+        ov.set_visible(fg in pids or fg == os.getpid())
+        if ov.visible:
+            size = (ov.winfo_width(), ov.winfo_height())
+            x, y = winpos.place(rect, self.prefs.get("overlay_anchor") or self.DEFAULT_ANCHOR, size)
+            if (x, y) != (ov.winfo_x(), ov.winfo_y()):
+                ov.geometry(f"+{x}+{y}")
+
+    def _overlay_moved(self, x, y):
+        rect = winpos.client_rect(self.game_hwnd)
+        if rect:
+            ov = self.overlay
+            self._save(overlay_anchor=winpos.anchor(rect, (x, y), (ov.winfo_width(), ov.winfo_height())))
+        else:
+            self._save(overlay_pos=[x, y])
 
     def toggle_overlay(self):
         self.set_overlay(self.overlay is None)
