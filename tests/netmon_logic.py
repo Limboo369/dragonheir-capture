@@ -2,6 +2,7 @@
 from collections import namedtuple
 
 from netmon.game import Tracker, is_public
+from netmon.history import History, blocks, grade_minute, overall
 from netmon.monitor import grade, jitter, verdict
 
 A = namedtuple("A", "ip port")
@@ -32,6 +33,19 @@ def main():
     t2 = Tracker()
     t2.candidates([web], now=1)
     assert t2.candidates([web, game], now=50)[0][0][2] == "43.134.181.208"
+    assert grade_minute(220, 0, 5, 0, 215) == "Excellent"
+    assert grade_minute(220, 0.3, 20, 0, 215) == "Good"
+    assert grade_minute(220, 1, 40, 1, 215) == "OK"
+    assert grade_minute(220, 3, 60, 2, 215) == "Poor"
+    assert grade_minute(220, 8, 5, 0, 215) == "Bad"
+    assert grade_minute(470, 0, 5, 0, 215) == "Bad"  # twice the usual ping
+    assert overall([{"q": "Excellent"}] * 3 + [{"q": "Good"}]) == "Excellent"
+    assert overall([{"q": "Good"}, {"q": "Poor"}]) == "OK"
+    h = History()
+    for k in range(25):
+        h.add_minute("43.134.181.208", 9031, 220, 0, 5, 0, t=1000 + 60 * k)
+    s = h.summary()[0]
+    assert s["grade"] == "Excellent" and s["minutes"] == 25 and len(s["blocks"]) == 3, s
     print("netmon logic ok")
 
 

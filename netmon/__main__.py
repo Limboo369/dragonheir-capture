@@ -68,7 +68,9 @@ def main():
         except OSError:
             pass
 
-    mon = Monitor(log_dir=logs)
+    from .history import History
+
+    mon = Monitor(log_dir=logs, history=History(logs / "servers.json"))
     mon.start()
     App(monitor=mon, log_dir=logs, prefs=prefs, on_prefs=save).run()
     return 0
