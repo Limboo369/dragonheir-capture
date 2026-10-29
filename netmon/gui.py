@@ -16,6 +16,8 @@ ICON = {"good": "●", "warn": "▲", "bad": "✕", "idle": "○"}
 WORD = {"good": "Smooth", "warn": "Unstable", "bad": "Lagging", "idle": "Waiting"}
 FONT = "Segoe UI" if sys.platform == "win32" else "Helvetica"
 RANGES = {"1m": 60, "5m": 300, "10m": 600}
+# five quality grades, best to worst; always shown with their word, never colour alone
+QUAL = {"Excellent": "#0ca30c", "Good": "#7cc95a", "OK": "#fab219", "Poor": "#ec835a", "Bad": "#d03b3b"}
 METRICS = ("Ping", "Drops")
 DROP_WINDOW = 30  # seconds each Drops point looks back over
 
@@ -180,8 +182,21 @@ class App:
         self.pill.pack(side="right")
         self.tip.bind(self.pill, self._status_tip)
 
+        tabs = ctk.CTkFrame(self.root, fg_color=BG)
+        tabs.pack(fill="x", padx=16, pady=(0, 4))
+        self.tab = ctk.CTkSegmentedButton(tabs, values=["Live", "Servers"], command=self.set_tab, font=f(12),
+                                          height=28, fg_color=CARD_HI, selected_color=SERIES,
+                                          selected_hover_color=SERIES, unselected_color=CARD_HI,
+                                          unselected_hover_color=LINE, text_color=FG)
+        self.tab.set("Live")
+        self.tab.pack(fill="x")
+        self.live = ctk.CTkFrame(self.root, fg_color=BG)
+        self.live.pack(fill="both", expand=True)
+        self.servers_view = ctk.CTkScrollableFrame(self.root, fg_color=BG)
+        self._servers_sig = None
+
         # hero: the one number that matters
-        hero = ctk.CTkFrame(self.root, fg_color=CARD, corner_radius=18)
+        hero = ctk.CTkFrame(self.live, fg_color=CARD, corner_radius=18)
         hero.pack(fill="x", padx=16, pady=6)
         row = ctk.CTkFrame(hero, fg_color=CARD)
         row.pack(fill="x", padx=16, pady=(12, 0))
@@ -209,14 +224,14 @@ class App:
                 self.tip.bind(w, tip)
 
         # route: PC -> router -> internet -> server, each hop coloured by its own health
-        route = ctk.CTkFrame(self.root, fg_color=CARD, corner_radius=18)
+        route = ctk.CTkFrame(self.live, fg_color=CARD, corner_radius=18)
         route.pack(fill="x", padx=16, pady=6)
         self.route = tk.Canvas(route, height=84, bg=CARD, highlightthickness=0)
         self.route.pack(fill="x", padx=12, pady=8)
         self.route.bind("<Configure>", lambda e: self._draw_route())
 
         # chart
-        chart = ctk.CTkFrame(self.root, fg_color=CARD, corner_radius=18)
+        chart = ctk.CTkFrame(self.live, fg_color=CARD, corner_radius=18)
         chart.pack(fill="both", expand=True, padx=16, pady=6)
         head = ctk.CTkFrame(chart, fg_color=CARD)
         head.pack(fill="x", padx=14, pady=(10, 0))
@@ -237,7 +252,7 @@ class App:
         self.chart.bind("<Motion>", self._chart_hover)
         self.chart.bind("<Leave>", self._chart_leave)
 
-        foot = ctk.CTkFrame(self.root, fg_color=BG)
+        foot = ctk.CTkFrame(self.live, fg_color=BG)
         foot.pack(fill="x", padx=18, pady=(2, 12))
         self.hint = ctk.CTkLabel(foot, text="", font=f(11), text_color=FAINT, anchor="w")
         self.hint.pack(side="left")
@@ -246,6 +261,107 @@ class App:
         b.pack(side="right")
         self.tip.bind(b, "Open the folder with the per-second log (one CSV per day)")
 
+    # ---------- servers tab ----------
+    def set_tab(self, v):
+        if v == "Servers":
+            self.live.pack_forget()
+            self.servers_view.pack(fill="both", expand=True, padx=8, pady=(0, 10))
+            self._servers_sig = None
+            self._render_servers()
+        else:
+            self.servers_view.pack_forget()
+            self.live.pack(fill="both", expand=True)
+
+    def _render_servers(self):
+        hist = self.mon.history.summary() if self.mon else []
+        cur = self.snap["game"]["server"][2] if self.snap and self.snap["game"]["server"] else None
+        sig = (cur, [(h["ip"], h["minutes"], h["grade"]) for h in hist])
+        if sig == self._servers_sig:
+            return
+        self._servers_sig = sig
+        for w in self.servers_view.winfo_children():
+            w.destroy()
+        legend = ctk.CTkFrame(self.servers_view, fg_color=BG)
+        legend.pack(fill="x", padx=8, pady=(2, 6))
+        for lv, col in QUAL.items():
+            d = ctk.CTkLabel(legend, text="●", font=f(11), text_color=col, width=10)
+            d.pack(side="left", padx=(0, 3))
+            l = ctk.CTkLabel(legend, text=lv, font=f(11), text_color=MUTED)
+            l.pack(side="left", padx=(0, 9))
+            for w in (d, l):
+                self.tip.bind(w, self._grade_rules)
+        if not hist:
+            ctk.CTkLabel(self.servers_view, text="Servers appear here after a minute of play.", font=f(12),
+                         text_color=FAINT).pack(pady=30)
+            return
+        hist.sort(key=lambda h: h["ip"] != cur)  # the server you are on now always sits on top
+        for h in hist:
+            self._server_card(h, h["ip"] == cur)
+
+    def _server_card(self, h, now):
+        card = ctk.CTkFrame(self.servers_view, fg_color=CARD, corner_radius=16, border_width=2 if now else 0,
+                            border_color=SERIES)
+        card.pack(fill="x", padx=8, pady=5)
+        row = ctk.CTkFrame(card, fg_color=CARD)
+        row.pack(fill="x", padx=14, pady=(10, 2))
+        pl = h["place"] or {}
+        city, country = pl.get("city"), pl.get("country")
+        name = (city if not country or country == city else f"{city}, {country}") if city else (country or "Server")
+        left = ctk.CTkFrame(row, fg_color=CARD)
+        left.pack(side="left")
+        top = ctk.CTkFrame(left, fg_color=CARD)
+        top.pack(anchor="w")
+        ctk.CTkLabel(top, text=name, font=f(14, "bold"), text_color=FG).pack(side="left")
+        if now:
+            ctk.CTkLabel(top, text=" Now ", font=f(10, "bold"), corner_radius=8, height=18, fg_color=SERIES,
+                         text_color=FG).pack(side="left", padx=(8, 0))
+        ctk.CTkLabel(left, text=h["ip"], font=f(11), text_color=MUTED).pack(anchor="w")
+        g = h["grade"]
+        badge = ctk.CTkLabel(row, text=f"  ● {g}  " if g else "  –  ", font=f(13, "bold"), corner_radius=12,
+                             height=28, fg_color=CARD_HI, text_color=QUAL.get(g, FAINT))
+        badge.pack(side="right")
+        self.tip.bind(badge, lambda h=h: self._server_summary_tip(h))
+        strip = tk.Canvas(card, height=26, bg=CARD, highlightthickness=0)
+        strip.pack(fill="x", padx=14, pady=(6, 12))
+        strip.bind("<Configure>", lambda e, c=strip, b=h["blocks"]: self._draw_strip(c, b))
+
+    def _draw_strip(self, c, blocks):
+        c.delete("all")
+        w = max(c.winfo_width(), 100)
+        n = 36
+        cell = (w - 2 * (n - 1)) / n
+        if not blocks:
+            c.create_text(w / 2, 13, text="Not enough play yet", fill=FAINT, font=(FONT, 9))
+            return
+        start = n - len(blocks)
+        for i in range(n):
+            x = i * (cell + 2)
+            if i < start:
+                c.create_rectangle(x, 6, x + cell, 20, fill=CARD_HI, outline="")
+                continue
+            t, g, mins = blocks[i - start]
+            tag = f"b{i}"
+            c.create_rectangle(x, 2, x + cell, 24, fill=QUAL[g], outline="", tags=tag)
+            when = time.strftime("%d %b %H:%M", time.localtime(t))
+            self.tip.bind(c, f"{when} · {mins} min\n● {g}", tag=tag)
+
+    def _grade_rules(self):
+        from .history import RULES
+        return "Quality per minute of play:\n" + "\n".join(f"● {lv}: {txt}" for lv, txt in RULES) + \
+               "\n\nEach bar is 10 minutes, newest on the right."
+
+    def _server_summary_tip(self, h):
+        tot = max(1, h["minutes"])
+        mins = h["minutes"]
+        dur = f"{mins // 60} h {mins % 60} min" if mins >= 60 else f"{mins} min"
+        lines = [f"Played here: {dur}",
+                 f"Last seen: {time.strftime('%d %b %H:%M', time.localtime(h['last']))}" if h["last"] else "",
+                 f"Usual ping: {h['ping']} ms" if h["ping"] else ""]
+        lines += [f"● {lv}: {100 * k / tot:.0f}%" for lv, k in h["share"].items() if k]
+        if h["place"].get("org"):
+            lines.append(h["place"]["org"])
+        return "\n".join(x for x in lines if x)
+
     # ---------- updates ----------
     def _tick(self):
         if self.mon:
@@ -253,6 +369,8 @@ class App:
             self._render()
             if self.overlay is not None:
                 self.overlay.show(self.snap)
+            if self.tab.get() == "Servers" and int(time.time()) % 5 == 0:
+                self._render_servers()
         self.root.after(1000, self._tick)
 
     def _render(self):

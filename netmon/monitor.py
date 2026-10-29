@@ -8,6 +8,7 @@ from datetime import datetime
 
 from . import probes
 from .game import Tracker
+from .history import History
 
 INTERNET = "1.1.1.1"
 KEEP = 600  # seconds of history
@@ -81,7 +82,7 @@ class Series:
 
 
 class Monitor:
-    def __init__(self, log_dir=None):
+    def __init__(self, log_dir=None, history=None):
         self.router_ip = None
         self.router, self.internet, self.game_icmp, self.game_tcp = Series(), Series(), Series(), Series()
         self.game = Series()  # per second: (t, ms, {"lost": n, "src": ...})
@@ -96,6 +97,8 @@ class Monitor:
         self.stop = threading.Event()
         self.log_dir = log_dir
         self._csv = None
+        self.history = history or History()
+        self._minute = None  # (server, start time) of the minute being collected
 
     # ---------- threads ----------
     def start(self):
@@ -123,6 +126,7 @@ class Monitor:
                 self.link_window.clear()
                 if best:
                     self.link = probes.LinkStats((best[0], best[1]), (best[2], best[3]))
+                    self.history.seen(best[2], best[3])
                     if best[2] not in [s[0] for s in self.servers_seen]:
                         self.servers_seen.append((best[2], best[3], time.time()))
                         threading.Thread(target=self._geo, args=(best[2],), daemon=True).start()
@@ -132,6 +136,9 @@ class Monitor:
         g = probes.geolocate(ip)
         if g:
             self.place[ip] = g
+            self.history.seen(ip, self.server[3] if self.server and self.server[2] == ip else None,
+                              {"city": g.get("city"), "country": COUNTRIES.get(g.get("country"), g.get("country")),
+                               "org": g.get("org")})
 
     def _ping_router(self):
         self._every(1, lambda: self.router.add(probes.icmp_ping(self.router_ip, 900)) if self.router_ip else None)
@@ -177,6 +184,23 @@ class Monitor:
             lost = 1 if (last and last[-1][1] is None) else 0
         self.game.add(ms, now, lost=lost, src=src)
         self._log(now, ms, lost)
+        self._grade_minute(now)
+
+    def _grade_minute(self, now):
+        """Once a minute of play on one server is complete, file its quality grade."""
+        key = self.server[2:] if self.server else None
+        if not self._minute or self._minute[0] != key:
+            self._minute = (key, now)
+            return
+        if now - self._minute[1] < 60:
+            return
+        self._minute = (key, now)
+        pts = self.game.since(60)
+        vals = [p[1] for p in pts if p[1] is not None]
+        if len(pts) < 40:
+            return
+        g = self.snapshot()["game"]
+        self.history.add_minute(key[0], key[1], median(vals), g["loss"], g["jitter"], g["stalls"], now)
 
     def _log(self, now, ms, lost):
         if not self.log_dir:
