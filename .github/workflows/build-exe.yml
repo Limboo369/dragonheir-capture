@@ -3,6 +3,7 @@ name: Build Windows exe
 on:
   push:
     branches: [main, "claude/**"]
+    paths-ignore: ["netmon/**", "DragonheirNet.py", "tests/netmon_*", ".github/workflows/netmon.yml"]
   workflow_dispatch:
 
 permissions:

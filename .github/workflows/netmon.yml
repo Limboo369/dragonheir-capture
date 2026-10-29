@@ -1,0 +1,43 @@
+name: Build Dragonheir Net
+
+on:
+  push:
+    branches: [main, "claude/**"]
+    paths: ["netmon/**", "DragonheirNet.py", "tests/netmon_*", ".github/workflows/netmon.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install psutil customtkinter pyinstaller
+      - name: Logic tests
+        run: python -m tests.netmon_logic
+      - name: Smoke test window
+        run: python -m tests.netmon_gui
+      - name: Build
+        run: pyinstaller --noconfirm --onefile --windowed --uac-admin --name DragonheirNet --collect-data customtkinter DragonheirNet.py
+      - name: Test the exe (real pings and connection stats)
+        run: python -m tests.netmon_exe_check dist\DragonheirNet.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DragonheirNet
+          path: dist/DragonheirNet.exe
+      - name: Release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: net-latest
+          name: Dragonheir Net (latest)
+          make_latest: false
+          files: dist/DragonheirNet.exe
