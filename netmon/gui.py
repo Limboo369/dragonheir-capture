@@ -121,7 +121,7 @@ class Overlay(ctk.CTkToplevel):
         self.dot.configure(text=ICON[st], text_color=STATUS[st])
         self.ping.configure(text=ms(g["ping"]))
         d = g["drops"] if g["server"] else None
-        self.drops.configure(text=pct(d), text_color=App._lvl(d, 15, 25))
+        self.drops.configure(text=pct(d))
 
     def _press(self, e):
         self._start = (e.x_root, e.y_root)
@@ -403,7 +403,7 @@ class App:
         self.where.configure(text=(place + ("\n" + g["server"][2] if g["server"] else "")) if g["server"] else
                              ("Start the game" if not g["running"] else "Waiting for server"))
         self.chips["loss"].configure(text=pct(g["loss"]), text_color=self._lvl(g["loss"], 0.5, 2))
-        self.chips["drops"].configure(text=pct(g["drops"]), text_color=self._lvl(g["drops"], 15, 25))
+        self.chips["drops"].configure(text=pct(g["drops"]), text_color=MUTED)
         self.chips["jitter"].configure(text=ms(g["jitter"]), text_color=self._lvl(g["jitter"], 40, 80))
         self.chips["stalls"].configure(text="–" if g["stalls"] is None else str(g["stalls"]),
                                        text_color=self._lvl(g["stalls"], 1, 2))
@@ -497,8 +497,7 @@ class App:
         pts = (self._drops_points(span) if self.snap else []) if drops else self._points()
         vals = [p[1] for p in pts if p[1] is not None]
         if drops:
-            top = 100 if vals and max(vals) > 45 else 50
-            step = 25 if top == 100 else 10
+            top, step = 100, 25
         else:
             top = max(300, (max(vals) if vals else 0) * 1.15)
             step = 100 if top <= 600 else 250 if top <= 1500 else 500
@@ -518,19 +517,11 @@ class App:
         if not pts:
             c.create_text((L + R) / 2, (T + B) / 2, text="Waiting for the game", fill=FAINT, font=(FONT, 10))
             return
-        if drops and min(p[1] for p in pts) >= 100:
-            c.create_text((L + R) / 2, (T + B) / 2, text="This server ignores pings right now", fill=FAINT,
-                          font=(FONT, 10))
-            return
         if drops:
             xy = [v for p in pts for v in (sx(p[0]), sy(p[1]))]
             if len(pts) > 1:
                 c.create_polygon([sx(pts[0][0]), B] + xy + [sx(pts[-1][0]), B], fill="#142131", outline="")
                 c.create_line(*xy, fill=SERIES, width=2, capstyle="round", joinstyle="round")
-            # what the numbers mean for this server: ~10% is normal, 30%+ matched real lag
-            for lvl, lab, col in ((10, "normal", MUTED), (30, "lag", STATUS["bad"])):
-                c.create_line(L, sy(lvl), R, sy(lvl), fill=col, dash=(3, 4))
-                c.create_text(R - 2, sy(lvl) - 7, text=lab, fill=col, font=(FONT, 8), anchor="e")
             if self.hover_x is not None:
                 self._draw_hover(pts)
             return
@@ -645,12 +636,10 @@ class App:
                 "Run as admin to measure the game's own packets.")
 
     def _drops_tip(self):
-        g = self.snap and self.snap["game"]
-        if g and g["server"] and g["drops"] is None and g["icmp"]["n"] >= 10:
-            return ("This server does not answer pings at all right now,\n"
-                    "so Drops can't be measured. Loss and Stalls still work.")
-        return ("Pings the server did not answer in the last minute.\n"
-                "Around 10% is normal for this server, 30% or more matched real lag.")
+        return ("Test pings the server did not answer in the last minute.\n"
+                "Game servers answer pings only when they have spare time,\n"
+                "so a high value here is not lag by itself.\n"
+                "Loss and Stalls measure the game's own packets.")
 
     def _jitter_tip(self):
         return "How much the ping jumps around.\nAbove 40 ms movement feels uneven."

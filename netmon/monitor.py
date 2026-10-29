@@ -264,15 +264,10 @@ class Monitor:
         ig = grade(i["ping"], i["loss"], i["jitter"], None, base_ping=80)
         # ~220 ms is normal to Singapore from Europe, so the game hop is graded around that
         gg = grade(g["ping"], g["loss"], g["jitter"], g["stalls"], base_ping=300) if self.server else "idle"
-        # The game server drops some pings even when all is well (~10%); ~30% matched real lag (2026-10-29)
+        # Pings to the game server are answered only when it has time for them (25-100% ignored while the
+        # game itself ran clean, 2026-10-29), so Drops is shown but never decides the status.
         il, n = g["icmp"]["loss"], g["icmp"]["n"]
-        # a server that answers no ping at all tells us nothing; Loss and Stalls carry the signal then
-        g["drops"] = None if (il is None or (il >= 100 and n >= 10)) else il
-        if self.server and g["drops"] is not None and n >= 20:
-            if il >= 25:
-                gg = "bad"
-            elif il >= 15 and gg == "good":
-                gg = "warn"
+        g["drops"] = il if n >= 10 else None
         status, where = verdict(rg, ig, gg)
         if not self.running:
             status, where = ("idle" if status == "good" else status), where
