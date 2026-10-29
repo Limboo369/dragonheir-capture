@@ -33,3 +33,11 @@ python DragonheirReader.py
 ```
 
 `tools/build_gamedata.py` and `tools/build_icons.py` rebuild `dhreader/data` from the Companion database and the official icon files. GitHub Actions builds the exe on Windows, runs the tests and the exe self-test, and publishes the release on every push to `main`.
+
+# Dragonheir Net
+
+A live lag monitor to keep open beside the game. It finds Dragonheir and the server it is connected to by itself, then shows the round trip to that server, lost packets, jitter and freezes, plus your router and the internet (1.1.1.1) so you can see where lag starts: Wi-Fi, your internet, or the route to the server.
+
+Download `DragonheirNet.exe` from [the net-latest release](https://github.com/Limboo369/dragonheir-capture/releases/tag/net-latest). Windows asks for admin rights: with them the tool reads Windows' own counters for the game's connection (round trip, resent packets, timeouts). It only reads connection metadata and sends pings. It never reads game memory, game traffic or game files.
+
+Every second goes into `data/net-YYYY-MM-DD.csv` next to the exe.
