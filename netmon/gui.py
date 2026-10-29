@@ -16,6 +16,8 @@ ICON = {"good": "●", "warn": "▲", "bad": "✕", "idle": "○"}
 WORD = {"good": "Smooth", "warn": "Unstable", "bad": "Lagging", "idle": "Waiting"}
 FONT = "Segoe UI" if sys.platform == "win32" else "Helvetica"
 RANGES = {"1m": 60, "5m": 300, "10m": 600}
+METRICS = ("Ping", "Drops")
+DROP_WINDOW = 30  # seconds each Drops point looks back over
 
 
 def f(size, weight="normal"):
@@ -63,8 +65,84 @@ class Tip:
             self.win = None
 
 
+class Overlay(ctk.CTkToplevel):
+    """Tiny always-on-top pill over the game: status, ping and drops. Drag to move, click to open the monitor."""
+
+    KEY = "#010203"  # painted transparent on Windows so the pill keeps its rounded corners
+
+    def __init__(self, master, on_open, on_hide, on_move, pos=None):
+        super().__init__(master)
+        self.overrideredirect(True)
+        self.attributes("-topmost", True)
+        bg = BG
+        if sys.platform == "win32":
+            try:
+                self.attributes("-transparentcolor", self.KEY)
+                bg = self.KEY
+            except tk.TclError:
+                pass
+        try:
+            self.attributes("-alpha", 0.93)
+        except tk.TclError:
+            pass
+        self.configure(fg_color=bg)
+        self.on_open, self.on_hide, self.on_move = on_open, on_hide, on_move
+        box = ctk.CTkFrame(self, fg_color=CARD, corner_radius=14, border_width=1, border_color=LINE, bg_color=bg)
+        box.pack()
+        self.dot = ctk.CTkLabel(box, text="○", font=f(13, "bold"), text_color=STATUS["idle"], width=14)
+        self.dot.pack(side="left", padx=(12, 6), pady=6)
+        self.ping = ctk.CTkLabel(box, text="–", font=f(17, "bold"), text_color=FG)
+        self.ping.pack(side="left")
+        ctk.CTkLabel(box, text=" ms", font=f(11), text_color=MUTED).pack(side="left", pady=(3, 0))
+        ctk.CTkFrame(box, fg_color=LINE, width=1, height=18).pack(side="left", padx=10)
+        self.drops = ctk.CTkLabel(box, text="–", font=f(17, "bold"), text_color=FG)
+        self.drops.pack(side="left")
+        ctk.CTkLabel(box, text=" drops", font=f(11), text_color=MUTED).pack(side="left", padx=(0, 14), pady=(3, 0))
+        for w in (box, *box.winfo_children()):
+            w.bind("<ButtonPress-1>", self._press)
+            w.bind("<B1-Motion>", self._drag)
+            w.bind("<ButtonRelease-1>", self._release)
+            w.bind("<Button-3>", self._menu)
+        self.update_idletasks()
+        if pos:
+            x, y = pos
+        else:
+            x, y = (self.winfo_screenwidth() - self.winfo_reqwidth()) // 2, 8
+        self.geometry(f"+{int(x)}+{int(y)}")
+
+    def show(self, snap):
+        g = snap["game"]
+        st = snap["status"]
+        self.dot.configure(text=ICON[st], text_color=STATUS[st])
+        self.ping.configure(text=ms(g["ping"]))
+        d = g["icmp"]["loss"] if g["server"] else None
+        self.drops.configure(text=pct(d), text_color=App._lvl(d, 15, 25))
+
+    def _press(self, e):
+        self._start = (e.x_root, e.y_root)
+        self._dx, self._dy = e.x_root - self.winfo_x(), e.y_root - self.winfo_y()
+        self._moved = False
+
+    def _drag(self, e):
+        if abs(e.x_root - self._start[0]) + abs(e.y_root - self._start[1]) > 4:
+            self._moved = True
+        self.geometry(f"+{e.x_root - self._dx}+{e.y_root - self._dy}")
+
+    def _release(self, e):
+        if self._moved:
+            self.on_move(self.winfo_x(), self.winfo_y())
+        else:
+            self.on_open()
+
+    def _menu(self, e):
+        m = tk.Menu(self, tearoff=0, bg=CARD_HI, fg=FG, activebackground=SERIES, bd=0)
+        m.add_command(label="Open monitor", command=self.on_open)
+        m.add_command(label="Hide this bar", command=self.on_hide)
+        m.tk_popup(e.x_root, e.y_root)
+
+
 class App:
-    def __init__(self, monitor=None, log_dir=None):
+    def __init__(self, monitor=None, log_dir=None, prefs=None, on_prefs=None):
         ctk.set_appearance_mode("dark")
         self.root = ctk.CTk()
         self.root.title("Dragonheir Net")
@@ -72,12 +150,18 @@ class App:
         self.root.minsize(360, 540)
         self.root.configure(fg_color=BG)
         self.mon, self.log_dir = monitor, log_dir
-        self.range = "5m"
+        self.prefs = prefs if prefs is not None else {}
+        self.range = self.prefs.get("range", "5m") if self.prefs.get("range") in RANGES else "5m"
+        self.metric = self.prefs.get("metric") if self.prefs.get("metric") in METRICS else "Ping"
+        self.on_prefs = on_prefs
+        self.overlay = None
         self.snap = None
         self.hover_x = None
         self.tip = Tip(self.root)
         self._build()
         self.root.after(300, self._tick)
+        if self.prefs.get("overlay", True):
+            self.root.after(600, lambda: self.set_overlay(True))
 
     # ---------- layout ----------
     def _build(self):
@@ -87,7 +171,11 @@ class App:
         self.pin = ctk.CTkButton(top, text="📌", width=30, height=26, corner_radius=8, font=f(12),
                                  fg_color=CARD_HI, hover_color=LINE, command=self.toggle_pin)
         self.pin.pack(side="right", padx=(6, 0))
-        self.tip.bind(self.pin, "Keep on top of the game")
+        self.tip.bind(self.pin, "Keep this window on top of the game")
+        self.ov_btn = ctk.CTkButton(top, text="▭", width=30, height=26, corner_radius=8, font=f(13),
+                                    fg_color=CARD_HI, hover_color=LINE, command=self.toggle_overlay)
+        self.ov_btn.pack(side="right", padx=(6, 0))
+        self.tip.bind(self.ov_btn, "Small ping bar over the game")
         self.pill = ctk.CTkLabel(top, text="", font=f(12, "bold"), corner_radius=12, height=26, fg_color=CARD_HI)
         self.pill.pack(side="right")
         self.tip.bind(self.pill, self._status_tip)
@@ -132,7 +220,12 @@ class App:
         chart.pack(fill="both", expand=True, padx=16, pady=6)
         head = ctk.CTkFrame(chart, fg_color=CARD)
         head.pack(fill="x", padx=14, pady=(10, 0))
-        ctk.CTkLabel(head, text="Game ping", font=f(12, "bold"), text_color=FG).pack(side="left")
+        self.metric_seg = ctk.CTkSegmentedButton(head, values=list(METRICS), command=self.set_metric, font=f(11),
+                                                 height=24, fg_color=CARD_HI, selected_color=SERIES,
+                                                 selected_hover_color=SERIES, unselected_color=CARD_HI,
+                                                 unselected_hover_color=LINE, text_color=FG)
+        self.metric_seg.set(self.metric)
+        self.metric_seg.pack(side="left")
         self.seg = ctk.CTkSegmentedButton(head, values=list(RANGES), command=self.set_range, font=f(11), height=24,
                                           fg_color=CARD_HI, selected_color=LINE, selected_hover_color=LINE,
                                           unselected_color=CARD_HI, unselected_hover_color=LINE, text_color=FG)
@@ -158,6 +251,8 @@ class App:
         if self.mon:
             self.snap = self.mon.snapshot()
             self._render()
+            if self.overlay is not None:
+                self.overlay.show(self.snap)
         self.root.after(1000, self._tick)
 
     def _render(self):
@@ -222,7 +317,31 @@ class App:
     # ---------- chart ----------
     def set_range(self, v):
         self.range = v
+        self._save(range=v)
         self._draw_chart()
+
+    def set_metric(self, v):
+        self.metric = v
+        self._save(metric=v)
+        self._draw_chart()
+
+    def _save(self, **kw):
+        self.prefs.update(kw)
+        if self.on_prefs:
+            self.on_prefs(self.prefs)
+
+    def _drops_points(self, span):
+        """Share of pings without answer over the last DROP_WINDOW seconds, one point per ping."""
+        raw = self.mon.game_icmp.since(span + DROP_WINDOW)
+        out, j, miss = [], 0, 0
+        for i, (t, v) in enumerate(raw):
+            miss += v is None
+            while raw[j][0] <= t - DROP_WINDOW:
+                miss -= raw[j][1] is None
+                j += 1
+            if i - j + 1 >= 10 and t >= time.time() - span:
+                out.append((t, 100.0 * miss / (i - j + 1)))
+        return out
 
     def _chart_geom(self):
         c = self.chart
@@ -239,13 +358,18 @@ class App:
         c = self.chart
         c.delete("all")
         L, T, R, B = self._chart_geom()
-        pts = self._points()
         now = time.time()
         span = RANGES[self.range]
+        drops = self.metric == "Drops"
+        pts = (self._drops_points(span) if self.snap else []) if drops else self._points()
         vals = [p[1] for p in pts if p[1] is not None]
-        top = max(300, (max(vals) if vals else 0) * 1.15)
-        step = 100 if top <= 600 else 250 if top <= 1500 else 500
-        top = step * -(-top // step)
+        if drops:
+            top = 100 if vals and max(vals) > 45 else 50
+            step = 25 if top == 100 else 10
+        else:
+            top = max(300, (max(vals) if vals else 0) * 1.15)
+            step = 100 if top <= 600 else 250 if top <= 1500 else 500
+            top = step * -(-top // step)
         sx = lambda t: R - (now - t) / span * (R - L)
         sy = lambda v: B - min(v, top) / top * (B - T)
         self._scale = (L, T, R, B, now, span, sx, sy)
@@ -253,13 +377,25 @@ class App:
         while v <= top:
             yy = sy(v)
             c.create_line(L, yy, R, yy, fill=GRID if v else LINE, width=1)
-            c.create_text(L - 6, yy, text=f"{v:.0f}", fill=FAINT, font=(FONT, 8), anchor="e")
+            c.create_text(L - 6, yy, text=f"{v:.0f}{'%' if drops else ''}", fill=FAINT, font=(FONT, 8), anchor="e")
             v += step
         for frac, lab in ((1, f"-{span // 60}m"), (0.5, f"-{span // 120}m" if span >= 120 else "-30s"), (0, "now")):
             c.create_text(R - frac * (R - L), B + 12, text=lab, fill=FAINT, font=(FONT, 8),
                           anchor="w" if frac == 1 else "e" if frac == 0 else "center")
         if not pts:
             c.create_text((L + R) / 2, (T + B) / 2, text="Waiting for the game", fill=FAINT, font=(FONT, 10))
+            return
+        if drops:
+            xy = [v for p in pts for v in (sx(p[0]), sy(p[1]))]
+            if len(pts) > 1:
+                c.create_polygon([sx(pts[0][0]), B] + xy + [sx(pts[-1][0]), B], fill="#142131", outline="")
+                c.create_line(*xy, fill=SERIES, width=2, capstyle="round", joinstyle="round")
+            # what the numbers mean for this server: ~10% is normal, 30%+ matched real lag
+            for lvl, lab, col in ((10, "normal", MUTED), (30, "lag", STATUS["bad"])):
+                c.create_line(L, sy(lvl), R, sy(lvl), fill=col, dash=(3, 4))
+                c.create_text(R - 2, sy(lvl) - 7, text=lab, fill=col, font=(FONT, 8), anchor="e")
+            if self.hover_x is not None:
+                self._draw_hover(pts)
             return
         # line segments, broken where there was no answer
         seg, segs, last = [], [], None
@@ -315,8 +451,11 @@ class App:
             self.chart.create_oval(x - 5, y - 5, x + 5, y + 5, fill=SERIES, outline=CARD, width=2)
         lost = (p[2].get("lost") if len(p) > 2 else 0) or 0
         when = time.strftime("%H:%M:%S", time.localtime(p[0]))
-        txt = f"{when}\n{ms(p[1])} ms" + (f"\n{lost} packet(s) resent" if lost else "") + \
-              ("\nno answer" if p[1] is None and not lost else "")
+        if self.metric == "Drops":
+            txt = f"{when}\n{pct(p[1])} drops (last {DROP_WINDOW} s)"
+        else:
+            txt = f"{when}\n{ms(p[1])} ms" + (f"\n{lost} packet(s) resent" if lost else "") + \
+                  ("\nno answer" if p[1] is None and not lost else "")
         rx, ry = self.chart.winfo_rootx(), self.chart.winfo_rooty()
         self.tip.show(None, txt, x=rx + int(x), y=ry - 70)
 
@@ -391,6 +530,26 @@ class App:
                 f"jitter {ms(h['jitter'])} ms\n{ICON[h['grade']]} {WORD[h['grade']]}")
 
     # ---------- actions ----------
+    def set_overlay(self, on):
+        if on and self.overlay is None:
+            self.overlay = Overlay(self.root, self.open_main, lambda: self.set_overlay(False),
+                                   lambda x, y: self._save(overlay_pos=[x, y]), pos=self.prefs.get("overlay_pos"))
+            if self.snap:
+                self.overlay.show(self.snap)
+        elif not on and self.overlay is not None:
+            self.overlay.destroy()
+            self.overlay = None
+        self.ov_btn.configure(fg_color=SERIES if on else CARD_HI)
+        self._save(overlay=on)
+
+    def toggle_overlay(self):
+        self.set_overlay(self.overlay is None)
+
+    def open_main(self):
+        self.root.deiconify()
+        self.root.lift()
+        self.root.focus_force()
+
     def toggle_pin(self):
         on = not bool(self.root.attributes("-topmost"))
         self.root.attributes("-topmost", on)
