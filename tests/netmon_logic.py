@@ -11,7 +11,8 @@ C = namedtuple("C", "status laddr raddr pid")
 def main():
     assert grade(220, 0, 5, 0) == "good"
     assert grade(220, 1, 5, 0) == "warn"
-    assert grade(220, 0, 5, 1) == "bad"
+    assert grade(220, 0, 5, 1) == "warn"
+    assert grade(220, 0, 5, 2) == "bad"
     assert grade(5, 0, 1, None, base_ping=30) == "good"
     assert verdict("good", "good", "bad") == ("bad", "Route to server")
     assert verdict("warn", "good", "good") == ("warn", "Wi-Fi / router")

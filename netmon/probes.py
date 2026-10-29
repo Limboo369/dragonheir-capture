@@ -90,7 +90,7 @@ def icmp_ping(ip, timeout_ms=1000):
     if WIN:
         h = _iph.IcmpCreateFile()
         try:
-            data = b"dhnetmon" * 4
+            data = b"abcdefghijklmnopqrstuvwabcdefghi"  # same payload as Windows ping.exe; some firewalls drop others
             size = ctypes.sizeof(ICMP_ECHO_REPLY) + len(data) + 8
             buf = ctypes.create_string_buffer(size)
             n = _iph.IcmpSendEcho(h, _addr(ip), data, len(data), None, buf, size, timeout_ms)

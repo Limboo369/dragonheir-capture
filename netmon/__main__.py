@@ -56,9 +56,21 @@ def main():
 
     logs = app_dir() / "data"
     logs.mkdir(parents=True, exist_ok=True)
+    cfg = logs / "settings.json"
+    try:
+        prefs = json.loads(cfg.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        prefs = {}
+
+    def save(p):
+        try:
+            cfg.write_text(json.dumps(p), encoding="utf-8")
+        except OSError:
+            pass
+
     mon = Monitor(log_dir=logs)
     mon.start()
-    App(monitor=mon, log_dir=logs).run()
+    App(monitor=mon, log_dir=logs, prefs=prefs, on_prefs=save).run()
     return 0
 
 
