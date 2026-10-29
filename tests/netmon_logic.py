@@ -51,3 +51,18 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+def test_anchor():
+    from netmon.winpos import anchor, place
+    game = (100, 50, 1600, 900)
+    a = anchor(game, (1500, 70), (180, 40))  # dragged near the top-right corner
+    assert a["corner"] == "tr" and a["dy"] == 20, a
+    # the game moves and shrinks: the bar keeps the same corner and gap
+    assert place((300, 200, 1200, 700), a, (180, 40)) == (300 + 1200 - 180 - a["dx"], 220)
+    b = anchor(game, (120, 900), (180, 40))
+    assert b["corner"] == "bl" and place(game, b, (180, 40)) == (120, 900), b
+    print("anchor ok")
+
+
+test_anchor()

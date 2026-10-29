@@ -34,6 +34,14 @@ def main():
         app.set_overlay(True)
         app._tick()
         assert app.overlay is not None and app.overlay.ping.cget("text") != "–"
+        from netmon import winpos
+        if winpos.WIN:  # dock to "the game": here our own window stands in for it
+            import os
+            m.tracker.pids = [os.getpid()]
+            app._dock()
+            assert app.game_hwnd and winpos.client_rect(app.game_hwnd), app.game_hwnd
+            app._overlay_moved(app.overlay.winfo_x(), app.overlay.winfo_y())
+            assert app.prefs["overlay_anchor"]["corner"] in ("tl", "tr", "bl", "br")
         app.set_overlay(False)
         m.history.add_minute("43.134.181.208", 9031, 220, 0, 5, 0)
         app.set_tab("Servers")
