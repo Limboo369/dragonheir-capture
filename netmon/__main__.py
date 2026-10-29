@@ -33,7 +33,11 @@ def selftest(out):
             pass
         time.sleep(0.5)
         res["link"] = link.read()
-        conns = [c for c in psutil.net_connections(kind="tcp4") if c.pid == psutil.Process().pid]
+        allc = psutil.net_connections(kind="tcp4")
+        res["pid"] = psutil.Process().pid
+        res["to_remote"] = [(c.pid, c.status, tuple(c.laddr), tuple(c.raddr)) for c in allc
+                            if c.raddr and c.raddr.ip == remote[0]]
+        conns = [c for c in allc if c.pid == res["pid"]]
         cands = Tracker().candidates(conns)
         res["own_conn_found"] = any(k[2] == remote[0] and k[3] == remote[1] for k, _ in cands)
     finally:
