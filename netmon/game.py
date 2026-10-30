@@ -67,3 +67,42 @@ class Tracker:
         cands = self.candidates(conns)
         best = cands[0][0] if cands else None
         return True, best, [k for k, _ in cands]
+
+
+class TrafficPicker:
+    """Picks the game server as the connection that carries the most packets.
+
+    The game also keeps quieter connections open (login, chat, telemetry, often in other
+    countries). Battle traffic dwarfs them, so the busiest connection over the last ~20 s wins,
+    and it only changes when another one is clearly busier, so the choice does not flicker.
+    """
+
+    def __init__(self, alpha=0.3, switch=1.5):
+        self.alpha, self.switch = alpha, switch
+        self.last = {}  # key -> (time, total segments)
+        self.rate = {}  # key -> smoothed segments per second
+
+    def update(self, totals, now):
+        for key in set(self.rate) | set(self.last):
+            if key not in totals:
+                self.rate.pop(key, None)
+                self.last.pop(key, None)
+        for key, total in totals.items():
+            if key in self.last:
+                t0, s0 = self.last[key]
+                if now > t0:
+                    r = max(0.0, (total - s0) / (now - t0))
+                    self.rate[key] = r if key not in self.rate else self.alpha * r + (1 - self.alpha) * self.rate[key]
+            self.last[key] = (now, total)
+
+    def ready(self):
+        return bool(self.rate)
+
+    def pick(self, current):
+        if not self.rate:
+            return None
+        best = max(self.rate, key=self.rate.get)
+        if current in self.rate and best != current:
+            if self.rate[best] < max(0.2, self.rate[current] * self.switch):
+                return current
+        return best if self.rate[best] > 0 else (current if current in self.rate else None)

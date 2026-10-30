@@ -7,7 +7,7 @@ from collections import deque
 from datetime import datetime
 
 from . import probes
-from .game import Tracker
+from .game import TrafficPicker, Tracker
 from .history import History
 
 INTERNET = "1.1.1.1"
@@ -99,6 +99,10 @@ class Monitor:
         self._csv = None
         self.history = history or History()
         self._minute = None  # (server, start time) of the minute being collected
+        self.links = {}  # every game connection -> its Windows counters
+        self.picker = TrafficPicker()
+        self.others = []  # the game's other connections (login, chat, telemetry)
+        self._unsure_since = None
 
     # ---------- threads ----------
     def start(self):
@@ -118,19 +122,47 @@ class Monitor:
     def _watch_game(self):
         def step():
             self.router_ip = probes.gateway()
-            running, best, _ = self.tracker.refresh()
+            running, guess, cands = self.tracker.refresh()
             self.running = running
+            best, sure = self._pick_server(cands[:10], guess)
+            self.others = [c for c in cands if c != best]
             if best != self.server:
                 self.server = best
-                self.link, self.link_prev = None, None
+                self.link_prev = None
                 self.link_window.clear()
-                if best:
+                self.link = self.links.get(best) if best else None
+                if self.link is None and best:
                     self.link = probes.LinkStats((best[0], best[1]), (best[2], best[3]))
-                    self.history.seen(best[2], best[3])
-                    if best[2] not in [s[0] for s in self.servers_seen]:
-                        self.servers_seen.append((best[2], best[3], time.time()))
-                        threading.Thread(target=self._geo, args=(best[2],), daemon=True).start()
+            if best and sure and best[2] not in [s[0] for s in self.servers_seen]:
+                self.servers_seen.append((best[2], best[3], time.time()))
+                self.history.seen(best[2], best[3], verified=True)
+                threading.Thread(target=self._geo, args=(best[2],), daemon=True).start()
         self._every(3, step)
+
+    def _pick_server(self, cands, guess):
+        """(server, sure): the busiest of the game's connections, measured from Windows' own counters.
+
+        Without admin rights the counters are unavailable; then the first guess is used after a while.
+        """
+        for key in list(self.links):
+            if key not in cands:
+                self.links.pop(key)
+        totals = {}
+        for key in cands:
+            if key not in self.links:
+                self.links[key] = probes.LinkStats((key[0], key[1]), (key[2], key[3]))
+            r = self.links[key].read()
+            if r:
+                totals[key] = r["segs_in"] + r["segs_out"]
+        self.picker.update(totals, time.time())
+        if totals and self.picker.ready():
+            best = self.picker.pick(self.server)
+            if best:
+                return best, True
+        if guess and not totals:
+            self._unsure_since = self._unsure_since or time.time()
+            return guess, time.time() - self._unsure_since > 20
+        return (self.server if self.server in cands else guess), False
 
     def _geo(self, ip):
         g = probes.geolocate(ip)
@@ -193,6 +225,9 @@ class Monitor:
             self._minute = (key, now)
             return
         if now - self._minute[1] < 60:
+            return
+        if key[0] not in [x[0] for x in self.servers_seen]:  # not yet confirmed as the game server
+            self._minute = (key, now)
             return
         self._minute = (key, now)
         pts = self.game.since(60)
@@ -273,4 +308,5 @@ class Monitor:
             status, where = ("idle" if status == "good" else status), where
         return {"router": dict(r, grade=rg, ip=self.router_ip), "internet": dict(i, grade=ig, ip=INTERNET),
                 "game": dict(g, grade=gg), "status": status, "where": where,
-                "history": self.game.since(300), "servers": list(self.servers_seen)}
+                "history": self.game.since(300), "servers": list(self.servers_seen),
+                "others": [(k[2], k[3]) for k in self.others]}

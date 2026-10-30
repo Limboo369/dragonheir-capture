@@ -309,7 +309,8 @@ class App:
             ctk.CTkLabel(self.servers_view, text="Servers appear here after a minute of play.", font=f(12),
                          text_color=FAINT).pack(pady=30)
             return
-        hist.sort(key=lambda h: h["ip"] != cur)  # the server you are on now always sits on top
+        # the server you are on now sits on top; entries never confirmed as the game server go last
+        hist.sort(key=lambda h: (h["ip"] != cur, not h["verified"]))
         for h in hist:
             self._server_card(h, h["ip"] == cur)
 
@@ -326,7 +327,14 @@ class App:
         left.pack(side="left")
         top = ctk.CTkFrame(left, fg_color=CARD)
         top.pack(anchor="w")
-        ctk.CTkLabel(top, text=name, font=f(14, "bold"), text_color=FG).pack(side="left")
+        ctk.CTkLabel(top, text=name, font=f(14, "bold"), text_color=FG if h["verified"] else MUTED).pack(side="left")
+        if not h["verified"] and not now:
+            q = ctk.CTkLabel(top, text=" ? ", font=f(10, "bold"), corner_radius=8, height=18, fg_color=CARD_HI,
+                             text_color=MUTED)
+            q.pack(side="left", padx=(8, 0))
+            self.tip.bind(q, "Recorded by an older version, before it could tell the game\n"
+                             "server from the game's login and chat connections.\n"
+                             "Probably not a game server. Right-click to remove.")
         if now:
             ctk.CTkLabel(top, text=" Now ", font=f(10, "bold"), corner_radius=8, height=18, fg_color=SERIES,
                          text_color=FG).pack(side="left", padx=(8, 0))
@@ -339,6 +347,18 @@ class App:
         strip = tk.Canvas(card, height=26, bg=CARD, highlightthickness=0)
         strip.pack(fill="x", padx=14, pady=(6, 12))
         strip.bind("<Configure>", lambda e, c=strip, b=h["blocks"]: self._draw_strip(c, b))
+        for w in (card, row, left, top, strip, badge, *top.winfo_children(), *left.winfo_children()):
+            w.bind("<Button-3>", lambda e, ip=h["ip"]: self._card_menu(e, ip), add="+")
+
+    def _card_menu(self, e, ip):
+        m = tk.Menu(self.root, tearoff=0, bg=CARD_HI, fg=FG, activebackground=SERIES, bd=0)
+        m.add_command(label="Remove from list", command=lambda: self._remove_server(ip))
+        m.tk_popup(e.x_root, e.y_root)
+
+    def _remove_server(self, ip):
+        self.mon.history.remove(ip)
+        self._servers_sig = None
+        self._render_servers()
 
     def _draw_strip(self, c, blocks):
         c.delete("all")
@@ -613,6 +633,9 @@ class App:
         seen = self.snap["servers"]
         if len(seen) > 1:
             lines.append("Earlier this session: " + ", ".join(ip for ip, _, _ in seen[:-1]))
+        if self.snap.get("others"):
+            lines.append(f"\nThe game also keeps {len(self.snap['others'])} quieter connection(s) open\n"
+                         "(login, chat, updates). The server shown is the one\ncarrying the game's traffic.")
         return "\n".join(lines)
 
     def _ping_tip(self):

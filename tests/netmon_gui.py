@@ -47,6 +47,8 @@ def main():
         app.set_tab("Servers")
         app._render_servers()
         assert any(True for _ in app.servers_view.winfo_children())
+        app._remove_server("43.134.181.208")
+        assert not m.history.summary()
         app.set_tab("Live")
         assert app.overlay is None and app.prefs["overlay"] is False and app.prefs["metric"] == "Drops"
         app.root.after(800, app.root.destroy)
