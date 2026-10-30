@@ -6,7 +6,7 @@ import time
 from collections import deque
 from datetime import datetime
 
-from . import probes
+from . import probes, winpos
 from .game import TrafficPicker, Tracker
 from .history import History
 
@@ -123,6 +123,9 @@ class Monitor:
         def step():
             self.router_ip = probes.gateway()
             running, guess, cands = self.tracker.refresh()
+            if running and winpos.WIN and not winpos.find_window(self.tracker.pids):
+                # only a background helper (launcher, updater, crash reporter) is left: the game is closed
+                running, guess, cands = False, None, []
             self.running = running
             best, sure = self._pick_server(cands[:10], guess)
             self.others = [c for c in cands if c != best]

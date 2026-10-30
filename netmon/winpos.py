@@ -41,7 +41,7 @@ def find_window(pids):
     """The biggest visible top-level window owned by one of the game's processes."""
     if not WIN or not pids:
         return None
-    pids, best = set(pids), [None, 0]
+    pids, best = set(pids), [None, -1]  # a minimized window has a 0x0 inside but still counts
 
     def cb(hwnd, _):
         if _u.IsWindowVisible(hwnd) and _pid(hwnd) in pids:
