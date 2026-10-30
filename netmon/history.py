@@ -76,10 +76,14 @@ class History:
             except (OSError, ValueError, AttributeError):
                 self.servers = {}
 
-    def seen(self, ip, port, place=None):
+    def seen(self, ip, port, place=None, verified=False):
         with self.lock:
             s = self.servers.setdefault(ip, {"port": port, "first": time.time(), "minutes": []})
-            s["port"], s["last"] = port, time.time()
+            if port:
+                s["port"] = port
+            s["last"] = time.time()
+            if verified:
+                s["verified"] = True
             if place:
                 s["place"] = place
 
@@ -97,6 +101,11 @@ class History:
             s["last"] = t
         self.save()
         return q
+
+    def remove(self, ip):
+        with self.lock:
+            self.servers.pop(ip, None)
+        self.save()
 
     def save(self):
         if not self.path:
@@ -122,6 +131,7 @@ class History:
                 share[m["q"]] += 1
             pings = sorted(m["p"] for m in mins if m.get("p"))
             out.append({"ip": ip, "port": s.get("port"), "place": s.get("place") or {}, "first": s.get("first"),
+                        "verified": bool(s.get("verified")),
                         "last": s.get("last") or s.get("first"), "minutes": len(mins), "grade": overall(mins),
                         "share": share, "blocks": blocks(mins), "ping": pings[len(pings) // 2] if pings else None})
         out.sort(key=lambda x: -(x["last"] or 0))

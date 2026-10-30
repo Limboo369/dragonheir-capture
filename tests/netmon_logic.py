@@ -1,7 +1,7 @@
 """Pure logic of the net monitor: grading, verdict, picking the game's server connection."""
 from collections import namedtuple
 
-from netmon.game import Tracker, is_public
+from netmon.game import TrafficPicker, Tracker, is_public
 from netmon.history import History, blocks, grade_minute, overall
 from netmon.monitor import grade, jitter, verdict
 
@@ -46,6 +46,19 @@ def main():
         h.add_minute("43.134.181.208", 9031, 220, 0, 5, 0, t=1000 + 60 * k)
     s = h.summary()[0]
     assert s["grade"] == "Excellent" and s["minutes"] == 25 and len(s["blocks"]) == 3, s
+    # the busiest connection is the game server, and the pick does not flicker
+    p = TrafficPicker()
+    sg, cn = ("l", 1, "43.134.152.181", 9031), ("l", 2, "109.244.152.70", 8080)
+    p.update({sg: 0, cn: 0}, 0)
+    p.update({sg: 300, cn: 20}, 10)
+    assert p.pick(None) == sg
+    p.update({sg: 330, cn: 60}, 20)   # a short chat burst
+    assert p.pick(sg) == sg
+    p.update({sg: 330, cn: 2000}, 30)  # the game really moved to the other connection
+    p.update({sg: 330, cn: 4000}, 40)
+    assert p.pick(sg) == cn
+    p.update({cn: 4100}, 50)           # a closed connection is forgotten
+    assert sg not in p.rate
     print("netmon logic ok")
 
 
