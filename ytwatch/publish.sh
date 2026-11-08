@@ -71,7 +71,8 @@ json.dump({"notes": len(notes), "latest_video": latest, "queue": st.get("counts"
 PY
 # server health for Claude in the cloud, which can't reach the server: log tail, last runs, budget
 mkdir -p status
-cp "$OUT"/data/status.json "$OUT"/data/last_run.json "$OUT"/data/last_update.json status/ 2>/dev/null
+cp "$OUT"/data/status.json "$OUT"/data/last_run.json "$OUT"/data/last_update.json "$OUT"/data/youtube.json "$OUT"/data/queue.json status/ 2>/dev/null
+cp "$OUT"/data/publish.json status/ 2>/dev/null
 # push when notes changed, or every 30 minutes for the status (index.json alone changes every round)
 git add notes
 last=$(git log -1 --format=%ct 2>/dev/null || echo 0)

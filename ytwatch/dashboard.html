@@ -76,13 +76,16 @@ td:last-child{border-right:1px solid var(--line);border-radius:0 14px 14px 0}
 let D={videos:[],heroes:{}},S={},LR={},LU={},PB={},Q={videos:[]},addMsg="",tab="videos";
 const $=s=>document.querySelector(s),esc=t=>String(t??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const ago=t=>{if(!t)return"–";const m=(Date.now()-Date.parse(t.replace(/Z?$/,"Z")))/6e4;return m<60?Math.round(m)+"m ago":m<1440?Math.round(m/60)+"h ago":Math.round(m/1440)+"d ago"};
+// Opened as a file on the PC (not from the server): read the copy the server pushes to GitHub every 30 min
+const LOCAL=location.protocol=="file:";
+const src=f=>LOCAL?"https://raw.githubusercontent.com/Limboo369/dragonheir-watch-data/main/status/"+f:"data/"+f;
 async function load(){
-  try{D=await (await fetch("data/youtube.json?"+Date.now())).json()}catch(e){}
-  try{S=await (await fetch("data/status.json?"+Date.now())).json()}catch(e){}
-  try{LR=await (await fetch("data/last_run.json?"+Date.now())).json()}catch(e){LR={}}
-  try{LU=await (await fetch("data/last_update.json?"+Date.now())).json()}catch(e){LU={}}
-  try{PB=await (await fetch("data/publish.json?"+Date.now())).json()}catch(e){PB={}}
-  try{Q=await (await fetch("data/queue.json?"+Date.now())).json()}catch(e){Q={videos:[]}}
+  try{D=await (await fetch(src("youtube.json")+"?"+Date.now())).json()}catch(e){}
+  try{S=await (await fetch(src("status.json")+"?"+Date.now())).json()}catch(e){}
+  try{LR=await (await fetch(src("last_run.json")+"?"+Date.now())).json()}catch(e){LR={}}
+  try{LU=await (await fetch(src("last_update.json")+"?"+Date.now())).json()}catch(e){LU={}}
+  try{PB=await (await fetch(src("publish.json")+"?"+Date.now())).json()}catch(e){PB={}}
+  try{Q=await (await fetch(src("queue.json")+"?"+Date.now())).json()}catch(e){Q={videos:[]}}
   const chs=[...new Set(D.videos.map(v=>v.channel))].sort();
   $("#ch").innerHTML='<option value="">All channels</option>'+chs.map(c=>`<option>${esc(c)}</option>`).join("");
   const c=S.counts||{},queue=Q.videos.length||(c.new||0)+(c.retry||0),bad=(S.problems||[]).filter(p=>p.status=="failed").length;
@@ -130,16 +133,16 @@ function render(){
     const q=$("#q").value.toLowerCase(),ch=$("#ch").value;
     const L=Q.videos.map((v,i)=>({...v,n:i+1})).filter(v=>(!ch||v.channel==ch)&&(!q||(v.title+" "+v.channel).toLowerCase().includes(q)));
     const keep=$("#addurl")?.value||"";
-    m.innerHTML=`<div class="list"><div class="row"><b>Watch a video next</b>
+    m.innerHTML=`<div class="list">${LOCAL?`<div class="row"><small>This copy runs on your PC and shows the server's data from GitHub (updated every 30 min). Pasting links works only on the server page.</small></div>`:`<div class="row"><b>Watch a video next</b>
       <form id="addf" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><input id="addurl" placeholder="Paste a YouTube link" style="flex:1;min-width:220px" value="${esc(keep)}">
-      <button class="chip" style="cursor:pointer">Add to top</button></form>${addMsg?`<div style="margin-top:6px"><small>${addMsg}</small></div>`:""}</div>
+      <button class="chip" style="cursor:pointer">Add to top</button></form>${addMsg?`<div style="margin-top:6px"><small>${addMsg}</small></div>`:""}</div>`}
       <div class="row"><small>${Q.videos.length} videos waiting, watched from the top. About 35-40 a day (Google's free daily limit).</small></div>
       ${L.map(v=>`<div class="row" style="display:flex;gap:10px;align-items:center"><b style="min-width:34px;color:var(--mute)">${v.n}</b>
         <div style="flex:1"><a href="https://www.youtube.com/watch?v=${esc(v.id)}" target="_blank" style="color:inherit">${esc(v.title)}</a>
         <br><small>${esc(v.channel)}${v.published?" · "+esc(v.published.slice(0,10)):""}${v.duration_s?" · "+Math.round(v.duration_s/60)+" min":""}</small>
         ${v.error?`<div class="err">${esc(v.error)}</div>`:""}</div>
         ${v.priority?'<span class="b S1">pasted</span>':""}${v.status=="retry"?'<span class="b bad">retry</span>':""}</div>`).join("")}</div>`;
-    $("#addf").onsubmit=addVideo;
+    if(!LOCAL)$("#addf").onsubmit=addVideo;
   }else{
     const c=S.counts||{};
     const run=(x,label)=>`<div class="row"><b>${label}</b> ${x.time?`${esc(x.time)} <small>(${ago(x.time)})</small> <span class="b ${x.exit?"bad":"S1"}">${x.exit?"exit "+x.exit:"OK"}</span>`:"<small>no record yet</small>"}</div>`;
