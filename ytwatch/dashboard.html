@@ -77,7 +77,7 @@ let D={videos:[],heroes:{}},S={},LR={},LU={},PB={},Q={videos:[]},addMsg="",tab="
 const $=s=>document.querySelector(s),esc=t=>String(t??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const ago=t=>{if(!t)return"–";const m=(Date.now()-Date.parse(t.replace(/Z?$/,"Z")))/6e4;return m<60?Math.round(m)+"m ago":m<1440?Math.round(m/60)+"h ago":Math.round(m/1440)+"d ago"};
 // Opened as a file on the PC (not from the server): read the copy the server pushes to GitHub every 30 min
-const LOCAL=location.protocol=="file:";
+const LOCAL=location.port!="8790";   // anywhere but the server itself (file on a PC, GitHub, ...)
 const src=f=>LOCAL?"https://raw.githubusercontent.com/Limboo369/dragonheir-watch-data/main/status/"+f:"data/"+f;
 // Fallback before the server has pushed youtube.json: read every note file from the data repo
 async function notesFromRepo(){
