@@ -79,8 +79,20 @@ const ago=t=>{if(!t)return"–";const m=(Date.now()-Date.parse(t.replace(/Z?$/,"
 // Opened as a file on the PC (not from the server): read the copy the server pushes to GitHub every 30 min
 const LOCAL=location.protocol=="file:";
 const src=f=>LOCAL?"https://raw.githubusercontent.com/Limboo369/dragonheir-watch-data/main/status/"+f:"data/"+f;
+// Fallback before the server has pushed youtube.json: read every note file from the data repo
+async function notesFromRepo(){
+  const R="https://raw.githubusercontent.com/Limboo369/dragonheir-watch-data/main/";
+  const t=await (await fetch("https://api.github.com/repos/Limboo369/dragonheir-watch-data/git/trees/main?recursive=1")).json();
+  const files=t.tree.map(x=>x.path).filter(p=>/^notes\/.+\.json$/.test(p));
+  const videos=[];
+  for(let i=0;i<files.length;i+=40)
+    videos.push(...(await Promise.all(files.slice(i,i+40).map(f=>fetch(R+f).then(r=>r.json()).catch(()=>null)))).filter(Boolean));
+  videos.sort((a,b)=>b.published.localeCompare(a.published));
+  const heroes={};videos.forEach(n=>n.heroes.forEach(h=>(heroes[h.name]=heroes[h.name]||[]).push(h)));
+  return {videos,heroes};
+}
 async function load(){
-  try{D=await (await fetch(src("youtube.json")+"?"+Date.now())).json()}catch(e){}
+  try{D=await (await fetch(src("youtube.json")+"?"+Date.now())).json()}catch(e){if(LOCAL)D=await notesFromRepo().catch(()=>D)}
   try{S=await (await fetch(src("status.json")+"?"+Date.now())).json()}catch(e){}
   try{LR=await (await fetch(src("last_run.json")+"?"+Date.now())).json()}catch(e){LR={}}
   try{LU=await (await fetch(src("last_update.json")+"?"+Date.now())).json()}catch(e){LU={}}
