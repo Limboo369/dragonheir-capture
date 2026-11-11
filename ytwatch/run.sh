@@ -21,6 +21,12 @@ if [ "$1" != "--updated" ]; then
 fi
 shift
 
+# STOPPED 2026-11-11 at Darko's request: switch off the timers and the dashboard, keep all data
+# (notes, state, out/, the data repo). To start again: systemctl enable --now ytwatch-run.timer ytwatch-update.timer ytwatch-web
+systemctl disable --now ytwatch-run.timer ytwatch-update.timer ytwatch-web 2>/dev/null
+echo "$(date -u '+%F %H:%M') stopped at the owner's request (data kept)"
+exit 0
+
 # Dashboard server: web.py (paste a link -> top of the queue) replaced python's http.server on
 # 2026-10-28. Point the unit at it and restart it whenever web.py changes; plain file serving is the fallback.
 if [ -f web.py ] && [ -w /etc/systemd/system ]; then
